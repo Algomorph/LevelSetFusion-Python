@@ -7,11 +7,15 @@
 
 //local
 #include <eigen_numpy.hpp>
+#include "nonrigid_optimization/DataTermComputer.hpp"
 
 namespace bp = boost::python;
-static const int X = Eigen::Dynamic;
 
-Eigen::Matrix<double,X,X> mul(Eigen::Matrix<double,X,X> a, Eigen::Matrix<double,X,X> b) {
+Eigen::MatrixXd mul(Eigen::MatrixXd a, Eigen::MatrixXd b) {
+	return a * b;
+}
+
+Eigen::MatrixXf mulf(Eigen::MatrixXf a, Eigen::MatrixXf b) {
 	return a * b;
 }
 
@@ -19,6 +23,7 @@ BOOST_PYTHON_MODULE(level_set_fusion_optimization)
 {
     SetupEigenConverters();
 	bp::def("mul", mul);
-
+	bp::def("mulf", mulf);
+	bp::def("data_term_at_location", data_term::data_term_at_location);
 
 }

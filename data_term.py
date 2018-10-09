@@ -18,6 +18,7 @@ from sampling import sample_at, sample_at_replacement, focus_coordinates_match, 
 from printing import *
 from scipy.signal import convolve2d
 from enum import Enum
+import level_set_fusion_optimization as lsfo
 
 
 class FiniteDifferenceMethod(Enum):
@@ -28,7 +29,8 @@ class FiniteDifferenceMethod(Enum):
 
 class DataTermMethod(Enum):
     BASIC = 0
-    THRESHOLDED_FDM = 0  # threshold determines the finite-difference method
+    BASIC_CPP = 1
+    THRESHOLDED_FDM = 2  # threshold determines the finite-difference method
 
 
 gaussian_kernel3x3_sigma1 = np.array([[0.077847, 0.123317, 0.077847],
@@ -138,7 +140,7 @@ def compute_gradient_central_differences_smoothed(field, x, y, verbose=False):
     return np.array([x_grad, y_grad])
 
 
-def data_term_at_location_simple(warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y):
+def data_term_at_location_basic(warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y):
     live_sdf = warped_live_field[y, x]
     canonical_sdf = canonical_field[y, x]
 
@@ -198,8 +200,9 @@ def data_term_at_location_thresholded_fdm(warped_live_field, canonical_field, x,
     return data_gradient, local_energy_contribution
 
 
-data_term_methods = {DataTermMethod.BASIC: data_term_at_location_simple,
-                     DataTermMethod.THRESHOLDED_FDM: data_term_at_location_thresholded_fdm}
+data_term_methods = {DataTermMethod.BASIC: data_term_at_location_basic,
+                     DataTermMethod.THRESHOLDED_FDM: data_term_at_location_thresholded_fdm,
+                     DataTermMethod.BASIC_CPP: lsfo.data_term_at_location}
 
 
 def data_term_at_location(warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y,

@@ -83,8 +83,11 @@ include_directories(
 
 # main library
 add_library(${MODULE_NAME} SHARED
+            include/eigen_numpy.hpp
             src/eigen_numpy.cpp
             src/module.cpp
+            src/nonrigid_optimization/DataTermComputer.hpp
+            src/nonrigid_optimization/DataTermComputer.cpp
             )
 target_link_libraries(${MODULE_NAME}
                       ${Boost_LIBRARIES}
