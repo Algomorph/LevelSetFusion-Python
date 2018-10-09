@@ -83,8 +83,8 @@ include_directories(
 
 # main library
 add_library(${MODULE_NAME} SHARED
-            src/eigen_numpy.cc
-            src/python.cc
+            src/eigen_numpy.cpp
+            src/module.cpp
             )
 target_link_libraries(${MODULE_NAME}
                       ${Boost_LIBRARIES}

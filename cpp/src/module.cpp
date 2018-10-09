@@ -6,7 +6,7 @@
 #include <boost/python.hpp>
 
 //local
-#include <eigen_numpy.h>
+#include <eigen_numpy.hpp>
 
 namespace bp = boost::python;
 static const int X = Eigen::Dynamic;
