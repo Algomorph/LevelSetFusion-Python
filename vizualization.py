@@ -201,8 +201,8 @@ def mark_focus_coordinate_on_sdf_image(image, scale=8):
     else:
         for y in range(y_start, y_end):
             out[y, x_start] = (0, 0, 255)
-            out[y, x_end-1] = (0, 0, 255)
-        for x in range(x_start+1, x_end-1):
+            out[y, x_end - 1] = (0, 0, 255)
+        for x in range(x_start + 1, x_end - 1):
             out[y_start, x] = (0, 0, 255)
             out[y_end, x] = (0, 0, 255)
     return out
@@ -268,3 +268,53 @@ def visualzie_and_save_energy_and_max_warp_progression(log, out_path):
     plt.savefig(os.path.join(out_path, filename))
     plt.clf()
     plt.close()
+
+
+def visualize_and_save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor=8):
+    canonical_visualized = sdf_field_to_image(canonical_field, scale=view_scaling_factor)
+    canonical_visualized = mark_focus_coordinate_on_sdf_image(canonical_visualized)
+    canonical_visualized_unscaled = sdf_field_to_image(canonical_field, scale=1)
+    cv2.imshow("canonical SDF", canonical_visualized)
+    cv2.imwrite(os.path.join(out_path, 'unscaled_initial_canonical.png'), canonical_visualized_unscaled)
+    cv2.imwrite(os.path.join(out_path, 'initial_canonical.png'), canonical_visualized)
+    process_cv_esc()
+    live_visualized = sdf_field_to_image(live_field, scale=view_scaling_factor)
+    live_visualized = mark_focus_coordinate_on_sdf_image(live_visualized)
+    live_visualized_unscaled = sdf_field_to_image(live_field, scale=1)
+    cv2.imwrite(os.path.join(out_path, "unscaled_initial_live.png"), live_visualized_unscaled)
+    cv2.imwrite(os.path.join(out_path, "initial_live.png"), live_visualized)
+    cv2.imshow("live SDF", live_visualized)
+    process_cv_esc()
+    cv2.destroyAllWindows()
+
+
+def save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor=8):
+    canonical_visualized = sdf_field_to_image(canonical_field, scale=view_scaling_factor)
+    canonical_visualized = mark_focus_coordinate_on_sdf_image(canonical_visualized)
+    canonical_visualized_unscaled = sdf_field_to_image(canonical_field, scale=1)
+
+    cv2.imwrite(os.path.join(out_path, 'unscaled_initial_canonical.png'), canonical_visualized_unscaled)
+    cv2.imwrite(os.path.join(out_path, 'initial_canonical.png'), canonical_visualized)
+
+    live_visualized = sdf_field_to_image(live_field, scale=view_scaling_factor)
+    live_visualized = mark_focus_coordinate_on_sdf_image(live_visualized)
+    live_visualized_unscaled = sdf_field_to_image(live_field, scale=1)
+    cv2.imwrite(os.path.join(out_path, "unscaled_initial_live.png"), live_visualized_unscaled)
+    cv2.imwrite(os.path.join(out_path, "initial_live.png"), live_visualized)
+
+    cv2.destroyAllWindows()
+
+
+def visualize_final_fields(canonical_field, live_field, view_scaling_factor):
+    cv2.imshow("live SDF", sdf_field_to_image(live_field, scale=view_scaling_factor))
+    process_cv_esc()
+    cv2.imshow("canonical SDF", sdf_field_to_image(canonical_field, scale=view_scaling_factor))
+    process_cv_esc()
+    cv2.destroyAllWindows()
+
+
+def save_final_fields(canonical_field, live_field, out_path, view_scaling_factor):
+    final_live = sdf_field_to_image(live_field, scale=view_scaling_factor)
+    cv2.imwrite(os.path.join(out_path, 'final_live.png'), final_live)
+    final_canonical = sdf_field_to_image(canonical_field, scale=view_scaling_factor)
+    cv2.imwrite(os.path.join(out_path, "final_canonical.png"), final_canonical)

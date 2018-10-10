@@ -141,3 +141,6 @@ venv.bak/
 .idea/
 cmake-build-release/
 cmake-build-debug/
+
+# ==== OUTPUT =====
+out2D/

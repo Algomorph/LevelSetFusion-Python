@@ -25,17 +25,21 @@ endif()
 include_directories(include)
 
 find_package(PythonInterp ${BOOST_PYTHON_NUMPY_EIGEN_PYTHON_VERSION} REQUIRED)
+set (BOOST_COMPONENTS
+    unit_test_framework
+)
 if (${PYTHON_DESIRED_VERSION} STREQUAL "2.X")
     set(Python_ADDITIONAL_VERSIONS ${PYTHON2_VERSION_MAJOR}.${PYTHON2_VERSION_MINOR})
-    find_package(Boost COMPONENTS python-py${PYTHON2_VERSION_MAJOR}${PYTHON2_VERSION_MINOR} REQUIRED)
+    list(APPEND BOOST_COMPONENTS python-py${PYTHON2_VERSION_MAJOR}${PYTHON2_VERSION_MINOR})
 else ()
     set(Python_ADDITIONAL_VERSIONS ${PYTHON3_VERSION_MAJOR}.${PYTHON3_VERSION_MINOR})
-    find_package(Boost COMPONENTS python-py${PYTHON3_VERSION_MAJOR}${PYTHON3_VERSION_MINOR} REQUIRED)
+    list(APPEND BOOST_COMPONENTS python-py${PYTHON3_VERSION_MAJOR}${PYTHON3_VERSION_MINOR})
 endif ()
+find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
 
 find_package(Eigen3 REQUIRED)
 
-#========pick python stuff========================================
+#======== PICK PYTHON STUFF========================================
 if (${PYTHON_DESIRED_VERSION} STREQUAL "2.X")
     SET(PYTHON_INCLUDE_DIRS ${PYTHON2_INCLUDE_DIR} ${PYTHON2_INCLUDE_DIR2} ${PYTHON2_NUMPY_INCLUDE_DIRS})
     SET(PYTHON_LIBRARIES ${PYTHON2_LIBRARY})
@@ -61,9 +65,6 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
 set(MODULE_INSTALL_PREFIX "${MODULE_INSTALL_PREFIX}" CACHE STRING
     "Output directory for Python modules.")
 
-
-
-
 #-get proper extension for python binary shared object on this platform
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('SO'))"
                 RESULT_VARIABLE PYTHON_${MODULE_NAME}_PY_PROCESS
@@ -71,7 +72,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import distutils.sysconfig; pri
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 
-
+#=================== INCLUDE PATHS =====================================================================================
 
 # Global settings for include paths.
 include_directories(
@@ -81,19 +82,24 @@ include_directories(
         ${NUMPY_INCLUDE_DIRS}
 )
 
+#=================== TARGET DEFININTIONS ===============================================================================
+
 # main library
 add_library(${MODULE_NAME} SHARED
             include/eigen_numpy.hpp
             src/eigen_numpy.cpp
             src/module.cpp
-            src/nonrigid_optimization/DataTermComputer.hpp
-            src/nonrigid_optimization/DataTermComputer.cpp
+            src/nonrigid_optimization/data_term.hpp
+            src/nonrigid_optimization/data_term.cpp
             )
 target_link_libraries(${MODULE_NAME}
                       ${Boost_LIBRARIES}
                       ${PYTHON_LIBRARIES})
 
 message(STATUS "${MODULE_NAME}  ${ARCHIVE_OUTPUT_NAME} ${${MODULE_NAME}_PY_SUFFIX}")
+
+
+#======== INSTALLATION MAKE TARGET =====================================================================================
 
 set_target_properties(${MODULE_NAME} PROPERTIES
                       ARCHIVE_OUTPUT_NAME ${ARCHIVE_OUTPUT_NAME}  # prevent name conflict for python2/3 outputs
@@ -121,3 +127,12 @@ install(TARGETS ${MODULE_NAME}
         LIBRARY DESTINATION ${PYTHON_PACKAGES_PATH} COMPONENT python
         ${PYTHON_INSTALL_ARCHIVE}
         )
+# ================== UNIT TESTING ======================================================================================
+
+enable_testing()
+
+add_executable(test_nonrigid_optimization tests/test_nonrigid_optimization.cpp)
+
+target_link_libraries(test_nonrigid_optimization ${MODULE_NAME})
+
+add_test(NAME nonrigid_optimization COMMAND test_nonrigid_optimization)

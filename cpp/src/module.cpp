@@ -7,23 +7,23 @@
 
 //local
 #include <eigen_numpy.hpp>
-#include "nonrigid_optimization/DataTermComputer.hpp"
+#include "nonrigid_optimization/data_term.hpp"
 
 namespace bp = boost::python;
 
-Eigen::MatrixXd mul(Eigen::MatrixXd a, Eigen::MatrixXd b) {
+Eigen::MatrixXd matrix_product_double(Eigen::MatrixXd a, Eigen::MatrixXd b) {
 	return a * b;
 }
 
-Eigen::MatrixXf mulf(Eigen::MatrixXf a, Eigen::MatrixXf b) {
+Eigen::MatrixXf matrix_product_float(Eigen::MatrixXf a, Eigen::MatrixXf b) {
 	return a * b;
 }
 
 BOOST_PYTHON_MODULE(level_set_fusion_optimization)
 {
     SetupEigenConverters();
-	bp::def("mul", mul);
-	bp::def("mulf", mulf);
-	bp::def("data_term_at_location", data_term::data_term_at_location);
+	bp::def("matrix_product_float64", matrix_product_double);
+	bp::def("matrix_product_float32", matrix_product_float);
+	bp::def("data_term_at_location", data_term::py_data_term_at_location);
 
 }
