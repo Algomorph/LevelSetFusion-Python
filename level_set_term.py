@@ -17,6 +17,14 @@ import numpy as np
 from sampling import sample_at
 
 
+def level_set_term_gradient(warped_live_field, epsilon=1e-5):
+    (live_gradient_x_field, live_gradient_y_field) = np.gradient(warped_live_field)
+    # TODO (hessian, maybe look at
+    # https://stackoverflow.com/questions/18991408/python-finite-difference-functions and
+    # https://stackoverflow.com/questions/31206443/numpy-second-derivative-of-a-ndimensional-array
+    # for clues)
+
+
 def level_set_term_at_location(warped_live_field, x, y, epsilon=1e-5):
     live_y_minus_one = sample_at(warped_live_field, x, y - 1)
     # live_y_minus_two = sample_at(warped_live_field, x, y - 2)

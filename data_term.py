@@ -161,6 +161,22 @@ def data_term_at_location_basic(warped_live_field, canonical_field, x, y, live_g
     return data_gradient, local_energy_contribution
 
 
+def data_term_gradient(warped_live_field, canonical_field, scaling_factor=10.0):
+    """
+    Vectorized method to compute the data term gradient
+    :param warped_live_field: current warped live SDF field
+    :param canonical_field: canonical SDF field
+    :param scaling_factor: scaling factor (usually determined by truncation point in SDF and narrow band
+    width in voxels)
+    :return: data gradient for each location as a matrix, data energy the entire grid summed up
+    """
+    diff = warped_live_field - canonical_field
+    (live_gradient_x, live_gradient_y) = np.gradient(warped_live_field)
+    data_gradient = diff * np.stack((live_gradient_x, live_gradient_y), axis=2) * scaling_factor
+    data_energy = np.sum(0.5 * diff ** 2)
+    return data_gradient, data_energy
+
+
 def data_term_at_location_thresholded_fdm(warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y):
     live_sdf = warped_live_field[y, x]
     canonical_sdf = canonical_field[y, x]

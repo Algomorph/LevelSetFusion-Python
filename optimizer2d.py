@@ -32,9 +32,9 @@ from point import Point
 from printing import *
 from sampling import focus_coordinates_match, get_focus_coordinates, is_outside_narrow_band
 from interpolation import interpolate_warped_live
-from data_term import data_term_at_location, DataTermMethod
+from data_term import data_term_at_location, DataTermMethod, data_term_gradient
 from level_set_term import level_set_term_at_location
-from smoothing_term import SmoothingTermMethod, smoothing_term_at_location
+from smoothing_term import SmoothingTermMethod, smoothing_term_at_location, smoothing_term_gradient
 
 
 class AdaptiveLearningRateMethod(Enum):
@@ -142,6 +142,18 @@ class Optimizer2D:
         self.__initialize_writers(field_size)
         self.last_run_iteration_count = 0
 
+    def optimization_iteration_vectorized(self, warped_live_field, canonical_field, warp_field):
+        data_gradient_field, self.total_data_energy = data_term_gradient(warped_live_field, canonical_field)
+        smoothing_gradient_field, self.total_smoothing_energy = smoothing_term_gradient(warp_field)
+        self.total_data_energy *= self.data_term_weight
+        self.total_smoothing_energy *= self.smoothing_term_weight
+
+        gradient_field = self.data_term_weight * data_gradient_field + \
+                         self.smoothing_term_weight * smoothing_gradient_field
+        if self.sobolev_smoothing_enabled:
+            convolve_with_sobolev_smoothing_kernel(gradient_field, self.sobolev_kernel)
+        #TODO: interpolation, max warp
+
     def optimization_iteration(self, warped_live_field, canonical_field, warp_field, gradient_field,
                                data_component_field=None, smoothing_component_field=None,
                                level_set_component_field=None):
@@ -218,7 +230,6 @@ class Optimizer2D:
                 gradient_field[y, x] = gradient
 
         if self.sobolev_smoothing_enabled:
-            # convolve_with_sobolev_smoothing_kernel_old(gradient_field, self.sobolev_kernel)
             convolve_with_sobolev_smoothing_kernel(gradient_field, self.sobolev_kernel)
 
         max_warp = 0.0

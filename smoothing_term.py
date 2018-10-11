@@ -16,6 +16,8 @@
 from enum import Enum
 import numpy as np
 from printing import *
+import scipy.ndimage
+import scipy
 
 from sampling import focus_coordinates_match, sample_warp_replace_if_zero, sample_warp
 
@@ -23,6 +25,17 @@ from sampling import focus_coordinates_match, sample_warp_replace_if_zero, sampl
 class SmoothingTermMethod(Enum):
     TIKHONOV = 0
     KILLING = 1
+
+
+def smoothing_term_gradient(warp_field):
+    laplace_u = scipy.ndimage.laplace(warp_field[:, :, 0])
+    laplace_v = scipy.ndimage.laplace(warp_field[:, :, 1])
+    smoothing_gradient = np.stack((laplace_u, laplace_v), axis=2)
+    warp_gradient_u_x, warp_gradient_u_y = np.gradient(warp_field[:, :, 0])
+    warp_gradient_v_x, warp_gradient_v_y = np.gradient(warp_field[:, :, 1])
+    smoothing_energy = 0.5 * np.sum(
+        warp_gradient_u_x ** 2 + warp_gradient_v_x ** 2 + warp_gradient_u_y ** 2 + warp_gradient_v_y ** 2)
+    return smoothing_gradient, smoothing_energy
 
 
 def smoothing_term_at_location_killing(warp_field, x, y, ignore_if_zero=False, copy_if_zero=True,
