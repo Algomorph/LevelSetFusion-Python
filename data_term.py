@@ -14,8 +14,8 @@
 #  limitations under the License.
 #  ================================================================
 import numpy as np
-from sampling import sample_at, sample_at_replacement, focus_coordinates_match, sample_flag_at
-from printing import *
+from utils.sampling import sample_at, sample_at_replacement, focus_coordinates_match, sample_flag_at
+from utils.printing import *
 from scipy.signal import convolve2d
 from enum import Enum
 import level_set_fusion_optimization as lsfo

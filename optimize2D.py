@@ -31,7 +31,7 @@ from snoopy_multiframe_experiment import perform_multiple_tests
 from tsdf_field_generation import generate_initial_orthographic_2d_tsdf_fields
 from optimizer2d import Optimizer2D, AdaptiveLearningRateMethod
 from sobolev_filter import generate_1d_sobolev_kernel
-from vizualization import visualize_and_save_initial_fields, visualize_final_fields
+from utils.vizualization import visualize_and_save_initial_fields, visualize_final_fields
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1

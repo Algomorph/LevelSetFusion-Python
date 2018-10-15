@@ -15,11 +15,11 @@
 #  ================================================================
 from enum import Enum
 import numpy as np
-from printing import *
+from utils.printing import *
 import scipy.ndimage
 import scipy
 
-from sampling import focus_coordinates_match, sample_warp_replace_if_zero, sample_warp
+from utils.sampling import focus_coordinates_match, sample_warp_replace_if_zero, sample_warp
 
 
 class SmoothingTermMethod(Enum):

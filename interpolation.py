@@ -16,9 +16,9 @@
 
 import numpy as np
 import math
-from point import Point
-from sampling import sample_at, focus_coordinates_match, is_outside_narrow_band, sample_flag_at
-from printing import BOLD_YELLOW, BOLD_GREEN, RESET
+from utils.point import Point
+from utils.sampling import sample_at, focus_coordinates_match, is_outside_narrow_band, sample_flag_at, sample_at_replacement
+from utils.printing import BOLD_YELLOW, BOLD_GREEN, RESET
 
 
 def interpolate_warped_live(canonical_field, warped_live_field, warp_field, gradient_field, band_union_only=False,
@@ -34,27 +34,30 @@ def interpolate_warped_live(canonical_field, warped_live_field, warp_field, grad
                 if is_outside_narrow_band(original_live_sdf) and is_outside_narrow_band(canonical_sdf):
                     continue
             if known_values_only:
-                if original_live_sdf == 0.0:
+                if original_live_sdf == 1.0:
                     continue
 
             warped_location = Point(x, y) + Point(coordinates=warp_field[y, x])
             base_point = Point(math.floor(warped_location.x), math.floor(warped_location.y))
             ratios = warped_location - base_point
             inverse_ratios = Point(1.0, 1.0) - ratios
-            value00 = sample_at(warped_live_field, point=base_point)
-            value01 = sample_at(warped_live_field, point=base_point + Point(0, 1))
-            value10 = sample_at(warped_live_field, point=base_point + Point(1, 0))
-            value11 = sample_at(warped_live_field, point=base_point + Point(1, 1))
+
             if substitute_original:
-                value00 = value00 if value00 != 0.0 else original_live_sdf
-                value01 = value01 if value01 != 0.0 else original_live_sdf
-                value10 = value10 if value10 != 0.0 else original_live_sdf
-                value11 = value11 if value11 != 0.0 else original_live_sdf
+                value00 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point)
+                value01 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(0, 1))
+                value10 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(1, 0))
+                value11 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(1, 1))
+            else:
+                value00 = sample_at(warped_live_field, point=base_point)
+                value01 = sample_at(warped_live_field, point=base_point + Point(0, 1))
+                value10 = sample_at(warped_live_field, point=base_point + Point(1, 0))
+                value11 = sample_at(warped_live_field, point=base_point + Point(1, 1))
+
             interpolated_value0 = value00 * inverse_ratios.y + value01 * ratios.y
             interpolated_value1 = value10 * inverse_ratios.y + value11 * ratios.y
-            interpolated_value = interpolated_value0 * inverse_ratios.x + interpolated_value1 * ratios.x
-            if 1.0 - abs(interpolated_value) < 1e-6:
-                interpolated_value = np.sign(interpolated_value)
+            new_value = interpolated_value0 * inverse_ratios.x + interpolated_value1 * ratios.x
+            if 1.0 - abs(new_value) < 1e-6:
+                new_value = np.sign(new_value)
                 warp_field[y, x] = 0.0
                 gradient_field[y, x] = 0.0
                 if data_gradient_field is not None:
@@ -72,8 +75,8 @@ def interpolate_warped_live(canonical_field, warped_live_field, warp_field, grad
                       "{:+03.3f}*{:03.3f}, {:+03.3f}*{:03.3f}".format(value01, ratios.y * inverse_ratios.x,
                                                                       value11, ratios.y * ratios.x),
                       RESET, " final value: ", BOLD_GREEN,
-                      interpolated_value, RESET, sep='')
-            new_warped_live_field[y, x] = interpolated_value
+                      new_value, RESET, sep='')
+            new_warped_live_field[y, x] = new_value
     np.copyto(warped_live_field, new_warped_live_field)
 
 

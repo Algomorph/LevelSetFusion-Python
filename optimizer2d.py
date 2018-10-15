@@ -21,16 +21,16 @@ from enum import Enum
 import numpy as np
 import os.path
 
-from sobolev_smoothing import convolve_with_sobolev_smoothing_kernel_old, convolve_with_sobolev_smoothing_kernel
+from sobolev_smoothing import convolve_with_sobolev_smoothing_kernel
 import cv2
 
 # local
-from vizualization import make_3d_plots, make_warp_vector_plot, warp_field_to_heatmap, \
+from utils.vizualization import make_3d_plots, make_warp_vector_plot, warp_field_to_heatmap, \
     sdf_field_to_image, visualize_and_save_sdf_and_warp_magnitude_progression, \
     visualzie_and_save_energy_and_max_warp_progression
-from point import Point
-from printing import *
-from sampling import focus_coordinates_match, get_focus_coordinates, is_outside_narrow_band
+from utils.point import Point
+from utils.printing import *
+from utils.sampling import focus_coordinates_match, get_focus_coordinates, is_outside_narrow_band
 from interpolation import interpolate_warped_live
 from data_term import data_term_at_location, DataTermMethod, data_term_gradient
 from level_set_term import level_set_term_at_location

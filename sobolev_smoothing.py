@@ -14,8 +14,8 @@
 #  limitations under the License.
 #  ================================================================
 import numpy as np
-from sampling import get_focus_coordinates
-from printing import *
+from utils.sampling import get_focus_coordinates
+from utils.printing import *
 
 sobolev_kernel_1d = np.array([2.995900285895913839e-04,
                               4.410949535667896271e-03,

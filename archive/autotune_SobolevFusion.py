@@ -28,8 +28,7 @@ import numpy as np
 from field_generator import generate_initial_fields
 from optimizer2d import Optimizer2D, AdaptiveLearningRateMethod
 from sobolev_filter import generate_1d_sobolev_kernel
-from data_term import DataTermMethod
-from printing import *
+from utils.printing import *
 
 IGNORE_OPENCV = False
 

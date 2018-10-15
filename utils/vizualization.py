@@ -17,11 +17,10 @@ import sys
 import os.path
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
-from sampling import get_focus_coordinates
+from utils.sampling import get_focus_coordinates
 
 VIEW_SCALING_FACTOR = 8
 

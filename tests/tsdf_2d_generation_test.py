@@ -17,10 +17,9 @@
 
 
 import sys
-from calib.camera import Camera
 from calib.camerarig import DepthCameraRig
 from tsdf_field_generation import generate_2d_tsdf_field_from_depth_image
-from vizualization import process_cv_esc, sdf_field_to_image
+from utils.vizualization import process_cv_esc, sdf_field_to_image
 import cv2
 
 EXIT_CODE_SUCCESS = 0

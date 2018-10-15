@@ -29,8 +29,8 @@ from dataset import Dataset
 from smoothing_term import SmoothingTermMethod
 from optimizer2d import Optimizer2D, AdaptiveLearningRateMethod
 from sobolev_filter import generate_1d_sobolev_kernel
-from printing import *
-from vizualization import save_initial_fields, save_final_fields
+from utils.printing import *
+from utils.vizualization import save_initial_fields, save_final_fields
 
 
 def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.BASIC,

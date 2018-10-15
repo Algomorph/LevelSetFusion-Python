@@ -1,5 +1,22 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(LevelSetFusionOptimization)
+#  ================================================================
+#  Created by Gregory Kramida on 10/10/18.
+#  Copyright (c) 2018 Gregory Kramida
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+#  ================================================================
+
+cmake_minimum_required(VERSION 3.9)
+project(LevelSetFusionOptimization LANGUAGES CXX)
+set (CMAKE_CXX_STANDARD 11)
 
 # Name of the target and python module
 set(MODULE_NAME level_set_fusion_optimization)
@@ -16,6 +33,8 @@ set(PYTHON_DESIRED_VERSION "3.X" CACHE STRING "Choose which python version to us
 set_property(CACHE PYTHON_DESIRED_VERSION PROPERTY STRINGS ${PYTHON_OPTIONS})
 
 #==================== FIND PACKAGES ==============================
+
+# *** Python
 include("DetectPython")
 
 if(NOT BOOST_PYTHON_NUMPY_EIGEN_PYTHON_VERSION)
@@ -25,9 +44,10 @@ endif()
 include_directories(include)
 
 find_package(PythonInterp ${BOOST_PYTHON_NUMPY_EIGEN_PYTHON_VERSION} REQUIRED)
-set (BOOST_COMPONENTS
-    unit_test_framework
-)
+
+
+# *** Boost (Boost python version based on python option / availability)
+set (BOOST_COMPONENTS unit_test_framework)
 if (${PYTHON_DESIRED_VERSION} STREQUAL "2.X")
     set(Python_ADDITIONAL_VERSIONS ${PYTHON2_VERSION_MAJOR}.${PYTHON2_VERSION_MINOR})
     list(APPEND BOOST_COMPONENTS python-py${PYTHON2_VERSION_MAJOR}${PYTHON2_VERSION_MINOR})
@@ -35,9 +55,11 @@ else ()
     set(Python_ADDITIONAL_VERSIONS ${PYTHON3_VERSION_MAJOR}.${PYTHON3_VERSION_MINOR})
     list(APPEND BOOST_COMPONENTS python-py${PYTHON3_VERSION_MAJOR}${PYTHON3_VERSION_MINOR})
 endif ()
-find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
 
+find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
+# *** Everything else
 find_package(Eigen3 REQUIRED)
+find_package(OpenMP REQUIRED)
 
 #======== PICK PYTHON STUFF========================================
 if (${PYTHON_DESIRED_VERSION} STREQUAL "2.X")
@@ -91,10 +113,16 @@ add_library(${MODULE_NAME} SHARED
             src/module.cpp
             src/nonrigid_optimization/data_term.hpp
             src/nonrigid_optimization/data_term.cpp
+            src/nonrigid_optimization/interpolation.hpp
+            src/nonrigid_optimization/interpolation.cpp
             )
 target_link_libraries(${MODULE_NAME}
+                      PUBLIC
                       ${Boost_LIBRARIES}
                       ${PYTHON_LIBRARIES})
+target_link_libraries(${MODULE_NAME}
+                      PRIVATE
+                      OpenMP::OpenMP_CXX)
 
 message(STATUS "${MODULE_NAME}  ${ARCHIVE_OUTPUT_NAME} ${${MODULE_NAME}_PY_SUFFIX}")
 

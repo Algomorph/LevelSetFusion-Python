@@ -1,4 +1,4 @@
-from point import Point
+from utils.point import Point
 import numpy as np
 
 IGNORE_OPENCV = False

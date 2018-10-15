@@ -14,7 +14,7 @@
 #  limitations under the License.
 #  ================================================================
 import numpy as np
-from sampling import sample_at
+from utils.sampling import sample_at
 
 
 def level_set_term_gradient(warped_live_field, epsilon=1e-5):
