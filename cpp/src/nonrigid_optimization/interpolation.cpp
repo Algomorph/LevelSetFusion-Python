@@ -41,9 +41,9 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 	const int row_length = static_cast<int>(warped_live_field.cols());
 	const int row_count = static_cast<int>(warped_live_field.rows());
 
-	eig::Matrix<float,eig::Dynamic,eig::Dynamic,eig::RowMajor> new_live_field(row_count,row_length);
+	eig::Matrix<float, eig::Dynamic, eig::Dynamic, eig::RowMajor> new_live_field(row_count, row_length);
 
-	#pragma omp parallel for
+#pragma omp parallel for
 	for (int i_element = 0; i_element < matrix_size; i_element++) {
 		// Matrices in Eigen are column-major by default, but the converter knows to transfer to row-major
 		// i_element = y * row_length + x
@@ -72,16 +72,16 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 		float inverse_ratio_x = 1.0F - ratio_x;
 		float inverse_ratio_y = 1.0F - ratio_y;
 
-		float value00,value01,value10,value11;
+		float value00, value01, value10, value11;
 		if (substitute_original) {
 			value00 = sample_tsdf_value_replacing_when_out_of_bounds(warped_live_field, base_x, base_y,
-			                                                               live_tsdf_value);
+			                                                         live_tsdf_value);
 			value01 = sample_tsdf_value_replacing_when_out_of_bounds(warped_live_field, base_x, base_y + 1,
-			                                                               live_tsdf_value);
+			                                                         live_tsdf_value);
 			value10 = sample_tsdf_value_replacing_when_out_of_bounds(warped_live_field, base_x + 1, base_y,
-			                                                               live_tsdf_value);
+			                                                         live_tsdf_value);
 			value11 = sample_tsdf_value_replacing_when_out_of_bounds(warped_live_field, base_x + 1, base_y + 1,
-			                                                               live_tsdf_value);
+			                                                         live_tsdf_value);
 		} else {
 			value00 = sample_tsdf_value_at(warped_live_field, base_x, base_y);
 			value01 = sample_tsdf_value_at(warped_live_field, base_x, base_y + 1);
@@ -92,15 +92,32 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 		float interpolated_value0 = value00 * inverse_ratio_y + value01 * ratio_y;
 		float interpolated_value1 = value10 * inverse_ratio_y + value11 * ratio_y;
 		float new_value = interpolated_value0 * inverse_ratio_x + interpolated_value1 * inverse_ratio_x;
-		if (std::abs(new_value) - 1.0 < truncation_float_threshold){
+		if (std::abs(new_value) - 1.0 < truncation_float_threshold) {
 			new_value = std::copysign(1.0f, new_value);
 			warp_field_u(i_element) = 0.0f; // probably won't work in python due to conversions, test
 			warp_field_v(i_element) = 0.0f;
 		}
 
-		new_live_field(y,x) = new_value;
+		new_live_field(y, x) = new_value;
 	}
 
 	return new_live_field;
 }
+
+bp::object
+py_interpolate(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field, eig::MatrixXf warp_field_u,
+               eig::MatrixXf warp_field_v, bool band_union_only, bool known_values_only, bool substitute_original,
+               float truncation_float_threshold) {
+
+	eig::MatrixXf new_warped_live_field = interpolate(warped_live_field, canonical_field, warp_field_u, warp_field_v,
+	                                                  band_union_only, known_values_only, substitute_original,
+	                                                  truncation_float_threshold);
+
+	bp::object warp_field_u_out(warp_field_u);
+	bp::object warp_field_v_out(warp_field_v);
+	bp::object warped_live_field_out(new_warped_live_field);
+
+	return bp::make_tuple(warped_live_field_out, bp::make_tuple(warp_field_u_out, warp_field_v_out));
 }
+
+}//namespace interpolation

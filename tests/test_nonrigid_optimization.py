@@ -74,6 +74,11 @@ class InterpolationTest(TestCase):
         # re-prep data
         warped_live_field = warped_live_template.copy()
 
-        warped_live_field_out = cpp_extension.interpolate(warped_live_field, canonical_field, u_vectors, v_vectors)
+        warped_live_field, (out_u_vectors, out_v_vectors) = cpp_extension.interpolate(warped_live_field,
+                                                                                          canonical_field, u_vectors,
+                                                                                          v_vectors)
+        self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
+        self.assertTrue(np.allclose(out_u_vectors, expected_u_vectors))
+        self.assertTrue(np.allclose(out_v_vectors, expected_v_vectors))
 
         # NOTE: not testing gradient_field -- expecting it will simply be reset at each iteration in the future (maybe)
