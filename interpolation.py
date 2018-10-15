@@ -22,8 +22,8 @@ from utils.printing import BOLD_YELLOW, BOLD_GREEN, RESET
 
 
 def interpolate_warped_live(canonical_field, warped_live_field, warp_field, gradient_field, band_union_only=False,
-                            known_values_only=False,
-                            data_gradient_field=None, smoothing_gradient_field=None, substitute_original=False):
+                            known_values_only=False, substitute_original=False,
+                            data_gradient_field=None, smoothing_gradient_field=None):
     field_size = warp_field.shape[0]
     new_warped_live_field = np.ones_like(warped_live_field)
     for y in range(field_size):

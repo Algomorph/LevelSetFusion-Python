@@ -15,6 +15,7 @@
 #  limitations under the License.
 #  ================================================================
 
+# NOTE: This is visual test, not a unit test!
 
 import sys
 from calib.camerarig import DepthCameraRig

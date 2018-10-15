@@ -29,10 +29,9 @@ namespace eig = Eigen;
 namespace interpolation {
 
 eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
-                          const eig::MatrixXf& warp_field_u, const eig::MatrixXf& warp_field_v,
-                          bool band_union_only = false,
-                          bool known_values_only = false, bool substitute_original = false,
-                          float truncation_float_threshold = 1e-6);
+                          eig::MatrixXf& warp_field_u, eig::MatrixXf& warp_field_v,
+                          bool band_union_only = false, bool known_values_only = false,
+                          bool substitute_original = false, float truncation_float_threshold = 1e-6);
 
 }
 

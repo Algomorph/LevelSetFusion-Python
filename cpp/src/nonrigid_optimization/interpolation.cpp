@@ -22,7 +22,7 @@ inline float sample_tsdf_value_at(const eig::MatrixXf& tsdf_field, int x, int y)
 	if (x < 0 || x >= tsdf_field.cols() || y < 0 || y >= tsdf_field.rows()) {
 		return 1.0;
 	}
-	return tsdf_field(x, y);
+	return tsdf_field(y, x);
 }
 
 inline float sample_tsdf_value_replacing_when_out_of_bounds(const eig::MatrixXf& tsdf_field, int x, int y,
@@ -30,7 +30,7 @@ inline float sample_tsdf_value_replacing_when_out_of_bounds(const eig::MatrixXf&
 	if (x < 0 || x >= tsdf_field.cols() || y < 0 || y >= tsdf_field.rows()) {
 		return replacement_value;
 	}
-	return tsdf_field(x, y);
+	return tsdf_field(y, x);
 }
 
 eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
@@ -38,10 +38,10 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
                           bool band_union_only, bool known_values_only,
                           bool substitute_original, float truncation_float_threshold) {
 	int matrix_size = static_cast<int>(warped_live_field.size());
-	int row_length = static_cast<int>(warped_live_field.cols());
-	int rows = static_cast<int>(warped_live_field.rows());
+	const int row_length = static_cast<int>(warped_live_field.cols());
+	const int row_count = static_cast<int>(warped_live_field.rows());
 
-	eig::MatrixXf new_live_field(rows,row_length);
+	eig::Matrix<float,eig::Dynamic,eig::Dynamic,eig::RowMajor> new_live_field(row_count,row_length);
 
 	#pragma omp parallel for
 	for (int i_element = 0; i_element < matrix_size; i_element++) {
@@ -50,9 +50,9 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 		div_t division_result = div(i_element, row_length);
 		int x = division_result.rem;
 		int y = division_result.quot;
-		float live_tsdf_value = warped_live_field[i_element];
+		float live_tsdf_value = warped_live_field(i_element);
 		if (band_union_only) {
-			float canonical_tsdf_value = canonical_field[i_element];
+			float canonical_tsdf_value = canonical_field(i_element);
 			if (std::abs(live_tsdf_value) == 1.0 or std::abs(canonical_tsdf_value) == 1.0) {
 				continue;
 			}
@@ -96,10 +96,11 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 			new_value = std::copysign(1.0f, new_value);
 			warp_field_u(i_element) = 0.0f; // probably won't work in python due to conversions, test
 			warp_field_v(i_element) = 0.0f;
-
 		}
 
-
+		new_live_field(y,x) = new_value;
 	}
+
+	return new_live_field;
 }
 }
