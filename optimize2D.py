@@ -38,11 +38,11 @@ EXIT_CODE_FAILURE = 1
 
 
 def perform_single_test():
-    visualize_and_save_initial_and_final_fields = True
+    visualize_and_save_initial_and_final_fields = False
     field_size = 128
     default_value = 1
     out_path = "out2D"
-    data_to_use = DataToUse.REAL3D_SNOOPY_SET02
+    data_to_use = DataToUse.REAL3D_SNOOPY_SET03
 
     if data_to_use == DataToUse.GENEREATED2D:
         live_field, canonical_field = \

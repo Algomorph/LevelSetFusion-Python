@@ -13,10 +13,27 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #  ================================================================
-FOCUS_COORDINATES = (53, 87)
+FOCUS_COORDINATES = (52, 94)
+
+
+
+def set_focus_coordinates(x, y):
+    FOCUS_COORDINATES = (x, y)
 
 
 def sample_at(field, x=0, y=0, point=None):
+    """
+    Sample from a 2D scalar field at a given coordinate
+    :param field:
+    :type field: numpy.ndarray
+    :param x:
+    :type x: int
+    :param y:
+    :type y: int
+    :param point:
+    :type point: Point
+    :return: scalar value at given coordinate if (x,y) are within bounds of the scalar field, 1 otherwise
+    """
     if point is not None:
         x = point.x
         y = point.y

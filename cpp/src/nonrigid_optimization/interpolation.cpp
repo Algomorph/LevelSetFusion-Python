@@ -15,6 +15,7 @@
 //  ================================================================
 #include "interpolation.hpp"
 #include <cstdlib>
+#include <iostream>
 
 namespace interpolation {
 
@@ -38,35 +39,37 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
                           bool band_union_only, bool known_values_only,
                           bool substitute_original, float truncation_float_threshold) {
 	int matrix_size = static_cast<int>(warped_live_field.size());
-	const int row_length = static_cast<int>(warped_live_field.cols());
+	const int column_count = static_cast<int>(warped_live_field.cols());
 	const int row_count = static_cast<int>(warped_live_field.rows());
 
-	eig::Matrix<float, eig::Dynamic, eig::Dynamic, eig::RowMajor> new_live_field(row_count, row_length);
+	eig::MatrixXf new_live_field(row_count, column_count);
 
 //#pragma omp parallel for
 	for (int i_element = 0; i_element < matrix_size; i_element++) {
-		// Matrices in Eigen are column-major by default, but the converter knows to transfer to row-major
-		// i_element = y * row_length + x
-		div_t division_result = div(i_element, row_length);
+		// Any MatrixXf in Eigen is column-major
+		// i_element = x * column_count + y
+		div_t division_result = div(i_element, column_count);
 		int y = division_result.rem;
 		int x = division_result.quot;
 		float live_tsdf_value = warped_live_field(i_element);
 		if (band_union_only) {
 			float canonical_tsdf_value = canonical_field(i_element);
 			if (std::abs(live_tsdf_value) == 1.0 or std::abs(canonical_tsdf_value) == 1.0) {
+				new_live_field(i_element) = live_tsdf_value;
 				continue;
 			}
 		}
 		if (known_values_only) {
 			//TODO assumes 1.0 is the default value
 			if (std::abs(live_tsdf_value) == 1.0) {
+				new_live_field(i_element) = live_tsdf_value;
 				continue;
 			}
 		}
 		float lookup_x = x + warp_field_u(i_element);
 		float lookup_y = y + warp_field_v(i_element);
-		int base_x = static_cast<int>(lookup_x);
-		int base_y = static_cast<int>(lookup_y);
+		int base_x = static_cast<int>(std::floor(lookup_x));
+		int base_y = static_cast<int>(std::floor(lookup_y));
 		float ratio_x = lookup_x - base_x;
 		float ratio_y = lookup_y - base_y;
 		float inverse_ratio_x = 1.0F - ratio_x;

@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(data_term_test) {
 	BOOST_REQUIRE_CLOSE(out_energy_contribution, expected_energy_contribution, 10e-6);
 }
 
-BOOST_AUTO_TEST_CASE(interpolation_test) {
+BOOST_AUTO_TEST_CASE(interpolation_test01) {
 	using namespace Eigen;
 	MatrixXf warped_live_field(2,2), canonical_field(2,2);
 	MatrixXf u_vectors(2,2), v_vectors(2,2);
@@ -109,6 +109,35 @@ BOOST_AUTO_TEST_CASE(interpolation_test) {
 	expected_live_out << 0.0F, 0.0F, 0.0F, 0.0F;
 
 	BOOST_REQUIRE(warped_live_field_out.isApprox(expected_live_out));
+}
+
+BOOST_AUTO_TEST_CASE(interpolation_test02) {
+	using namespace Eigen;
+	MatrixXf warped_live_field(3,3), canonical_field(3,3);
+	MatrixXf u_vectors(3,3), v_vectors(3,3);
+	//@formatter:off
+	u_vectors << 0.0F, 0.0F, 0.0F,
+                 -.5F, 0.0F, 0.0F,
+                 1.5F, 0.5F, 0.0F;
+	v_vectors << -1.0F, 0.0F, 0.0F,
+                  0.0F, 0.0F, 0.5F,
+                 -1.5F, 0.5F,-0.5F;
+	canonical_field << -1.0F, 0.F, 0.0F,
+                        0.0F, 0.F, 1.0F,
+                        0.0F, 0.F, 1.0F;
+	warped_live_field << 1.0F, 1.0F, 1.0F,
+                         0.5F, 1.0F, 1.0F,
+                         0.5F, 0.5F,-1.0F;
+	//@formatter:on
+	Matrix3f warped_live_field_out = interpolation::interpolate(warped_live_field, canonical_field,
+	                                                            u_vectors, v_vectors, true, false, true);
+	Matrix3f expected_live_out;
+	//@formatter:off
+	expected_live_out << 1.0F,  1.000F,  1.0F,
+                         0.5F,  1.000F,  1.0F,
+                         1.0F,  0.125F, -1.0F;
+	//@formatter:on
 
 
+	BOOST_REQUIRE(warped_live_field_out.isApprox(expected_live_out));
 }
