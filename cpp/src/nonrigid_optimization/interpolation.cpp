@@ -43,13 +43,13 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 
 	eig::Matrix<float, eig::Dynamic, eig::Dynamic, eig::RowMajor> new_live_field(row_count, row_length);
 
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (int i_element = 0; i_element < matrix_size; i_element++) {
 		// Matrices in Eigen are column-major by default, but the converter knows to transfer to row-major
 		// i_element = y * row_length + x
 		div_t division_result = div(i_element, row_length);
-		int x = division_result.rem;
-		int y = division_result.quot;
+		int y = division_result.rem;
+		int x = division_result.quot;
 		float live_tsdf_value = warped_live_field(i_element);
 		if (band_union_only) {
 			float canonical_tsdf_value = canonical_field(i_element);
@@ -92,7 +92,7 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 		float interpolated_value0 = value00 * inverse_ratio_y + value01 * ratio_y;
 		float interpolated_value1 = value10 * inverse_ratio_y + value11 * ratio_y;
 		float new_value = interpolated_value0 * inverse_ratio_x + interpolated_value1 * inverse_ratio_x;
-		if (std::abs(new_value) - 1.0 < truncation_float_threshold) {
+		if (1.0 - std::abs(new_value) < truncation_float_threshold) {
 			new_value = std::copysign(1.0f, new_value);
 			warp_field_u(i_element) = 0.0f; // probably won't work in python due to conversions, test
 			warp_field_v(i_element) = 0.0f;

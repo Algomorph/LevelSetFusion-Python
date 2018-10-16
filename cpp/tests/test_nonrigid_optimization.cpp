@@ -23,8 +23,9 @@
 #include <boost/python.hpp>
 #include <Eigen/Eigen>
 
-//local
+//test targets
 #include "../src/nonrigid_optimization/data_term.hpp"
+#include "../src/nonrigid_optimization/interpolation.hpp"
 
 namespace tt = boost::test_tools;
 namespace bp = boost::python;
@@ -82,8 +83,32 @@ BOOST_AUTO_TEST_CASE(data_term_test) {
 	expected_data_grad_x = -0.47288364F;
 	expected_data_grad_y = -0.24150164F;
 	expected_energy_contribution = 0.009084276938502F;
-	
+
 	BOOST_REQUIRE_CLOSE(out_data_grad_x, expected_data_grad_x, 10e-6);
 	BOOST_REQUIRE_CLOSE(out_data_grad_y, expected_data_grad_y, 10e-6);
 	BOOST_REQUIRE_CLOSE(out_energy_contribution, expected_energy_contribution, 10e-6);
+}
+
+BOOST_AUTO_TEST_CASE(interpolation_test) {
+	using namespace Eigen;
+	MatrixXf warped_live_field(2,2), canonical_field(2,2);
+	MatrixXf u_vectors(2,2), v_vectors(2,2);
+	//@formatter:off
+	u_vectors << 0.5F, -0.5F,
+				 0.5F, -0.5F;
+	v_vectors << 0.5F,  0.5F,
+				-0.5F, -0.5F;
+	canonical_field << 0.0F, 0.0F,
+					   0.0F, 0.0F;
+	warped_live_field << 1.0F, -1.0F,
+					     1.0F, -1.0F;
+	//@formatter:on
+	Matrix2f warped_live_field_out = interpolation::interpolate(warped_live_field, canonical_field,
+	                                                            u_vectors, v_vectors);
+	Matrix2f expected_live_out;
+	expected_live_out << 0.0F, 0.0F, 0.0F, 0.0F;
+
+	BOOST_REQUIRE(warped_live_field_out.isApprox(expected_live_out));
+
+
 }
