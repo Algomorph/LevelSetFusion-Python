@@ -14,7 +14,8 @@
 #  limitations under the License.
 #  ================================================================
 import numpy as np
-from utils.sampling import sample_at, sample_at_replacement, focus_coordinates_match, sample_flag_at
+from utils.sampling import sample_at, sample_at_replacement, focus_coordinates_match, sample_flag_at, \
+    is_outside_narrow_band
 from utils.printing import *
 from scipy.signal import convolve2d
 from enum import Enum
@@ -161,9 +162,12 @@ def data_term_at_location_basic(warped_live_field, canonical_field, x, y, live_g
     return data_gradient, local_energy_contribution
 
 
-def data_term_gradient(warped_live_field, canonical_field, scaling_factor=10.0):
+def data_term_gradient_vectorized(warped_live_field, canonical_field, live_gradient_x, live_gradient_y,
+                                  scaling_factor=10.0):
     """
     Vectorized method to compute the data term gradient
+    :param live_gradient_x: x-component of the gradient of the warped_live_field
+    :param live_gradient_y: y-component of the gradient of the warped_live_field
     :param warped_live_field: current warped live SDF field
     :param canonical_field: canonical SDF field
     :param scaling_factor: scaling factor (usually determined by truncation point in SDF and narrow band
@@ -171,8 +175,8 @@ def data_term_gradient(warped_live_field, canonical_field, scaling_factor=10.0):
     :return: data gradient for each location as a matrix, data energy the entire grid summed up
     """
     diff = warped_live_field - canonical_field
-    (live_gradient_x, live_gradient_y) = np.gradient(warped_live_field)
-    data_gradient = diff * np.stack((live_gradient_x, live_gradient_y), axis=2) * scaling_factor
+
+    data_gradient = np.stack((diff * live_gradient_x, diff * live_gradient_y), axis=2) * scaling_factor
     data_energy = np.sum(0.5 * diff ** 2)
     return data_gradient, data_energy
 
@@ -224,6 +228,28 @@ data_term_methods = {DataTermMethod.BASIC: data_term_at_location_basic,
 def data_term_at_location(warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y,
                           method=DataTermMethod.BASIC):
     return data_term_methods[method](warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y)
+
+
+# for testing the vectorized version
+def data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y,
+                              band_union_only=True):
+    data_gradient_field = np.ndarray((warped_live_field.shape[0], warped_live_field.shape[1], 2), dtype=np.float32)
+    total_data_energy = 0.0
+    for y in range(0, warped_live_field.shape[0]):
+        for x in range(0, warped_live_field.shape[1]):
+            live_sdf = warped_live_field[y, x]
+            canonical_sdf = canonical_field[y, x]
+
+            live_is_truncated = is_outside_narrow_band(live_sdf)
+            canonical_is_truncated = is_outside_narrow_band(canonical_sdf)
+            if band_union_only and live_is_truncated and canonical_is_truncated:
+                continue
+            data_gradient, local_data_energy = \
+                data_term_at_location_basic(warped_live_field, canonical_field, x, y, live_gradient_x,
+                                            live_gradient_y)
+            total_data_energy += local_data_energy
+            data_gradient_field[y, x] = data_gradient
+    return data_gradient_field, total_data_energy
 
 
 def data_term_at_location_advanced_grad(warped_live_field, canonical_field, flag_field, x, y):

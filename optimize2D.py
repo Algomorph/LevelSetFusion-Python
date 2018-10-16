@@ -29,7 +29,7 @@ from dataset import datasets, DataToUse
 from smoothing_term import SmoothingTermMethod
 from snoopy_multiframe_experiment import perform_multiple_tests
 from tsdf_field_generation import generate_initial_orthographic_2d_tsdf_fields
-from optimizer2d import Optimizer2D, AdaptiveLearningRateMethod
+from optimizer2d import Optimizer2D, AdaptiveLearningRateMethod, ComputeMethod
 from sobolev_filter import generate_1d_sobolev_kernel
 from utils.vizualization import visualize_and_save_initial_fields, visualize_final_fields
 
@@ -42,7 +42,7 @@ def perform_single_test():
     field_size = 128
     default_value = 1
     out_path = "out2D"
-    data_to_use = DataToUse.REAL3D_SNOOPY_SET03
+    data_to_use = DataToUse.REAL3D_SNOOPY_SET01
 
     if data_to_use == DataToUse.GENEREATED2D:
         live_field, canonical_field = \
@@ -57,12 +57,17 @@ def perform_single_test():
     warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
     view_scaling_factor = 1024 // field_size
 
+    print(live_field[58:62, 8:12])
+    print(canonical_field[58:62, 8:12])
+
     if visualize_and_save_initial_and_final_fields:
         visualize_and_save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor)
 
     optimizer = Optimizer2D(out_path=out_path,
                             field_size=field_size,
                             default_value=default_value,
+
+                            compute_method=ComputeMethod.VECTORIZED,
 
                             level_set_term_enabled=False,
                             sobolev_smoothing_enabled=True,

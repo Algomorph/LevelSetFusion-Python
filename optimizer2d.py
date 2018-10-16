@@ -16,6 +16,8 @@
 
 # stdlib
 from enum import Enum
+import importlib.machinery
+from inspect import currentframe, getframeinfo
 
 # common libs
 import numpy as np
@@ -32,9 +34,19 @@ from utils.point import Point
 from utils.printing import *
 from utils.sampling import focus_coordinates_match, get_focus_coordinates, is_outside_narrow_band
 from interpolation import interpolate_warped_live
-from data_term import data_term_at_location, DataTermMethod, data_term_gradient
+from data_term import data_term_at_location, DataTermMethod, data_term_gradient_vectorized
 from level_set_term import level_set_term_at_location
 from smoothing_term import SmoothingTermMethod, smoothing_term_at_location, smoothing_term_gradient
+
+# C++ extension
+
+# import  level_set_fusion_optimization as cpp_extension
+
+cpp_extension = \
+    importlib.machinery.ExtensionFileLoader(
+        "level_set_fusion_optimization",
+        "../cpp/cmake-build-release/" +
+        "level_set_fusion_optimization.cpython-35m-x86_64-linux-gnu.so").load_module()
 
 
 class AdaptiveLearningRateMethod(Enum):
@@ -60,10 +72,28 @@ class OptimizationLog:
         self.max_warps = []
 
 
+class ComputeMethod(Enum):
+    DIRECT = 0
+    VECTORIZED = 1
+
+
+def zero_warps_for_truncated_values(warped_live_field, canonical_field, gradient_field):
+    """
+    nullifies the effects outside of the narrow band
+    :param warped_live_field: live SDF
+    :param canonical_field: canonical SDF
+    :param gradient_field: warps
+    """
+    truncated = np.bitwise_and(np.abs(warped_live_field) == 1.0, np.abs(canonical_field) == 1.0)
+    gradient_field[truncated] = 0.0  # nullifies the effects outside of the narrow band
+
+
 class Optimizer2D:
     def __init__(self, out_path="out2D",
                  field_size=128,
                  default_value=1.0,
+
+                 compute_method=ComputeMethod.DIRECT,
 
                  level_set_term_enabled=False,
                  sobolev_smoothing_enabled=False,
@@ -96,7 +126,12 @@ class Optimizer2D:
         self.total_smoothing_energy = 0.
         self.total_level_set_energy = 0.
 
+        self.compute_method = compute_method
+
         # optimization parameters
+
+        self.level_set_term_enabled = level_set_term_enabled
+        self.sobolev_smoothing_enabled = sobolev_smoothing_enabled
 
         self.gradient_descent_rate = gradient_descent_rate
         self.data_term_weight = data_term_weight
@@ -107,9 +142,8 @@ class Optimizer2D:
         self.maximum_warp_length_upper_threshold = maximum_warp_length_upper_threshold
         self.max_iterations = max_iterations
         self.min_iterations = min_iterations
-        self.sobolev_smoothing_enabled = sobolev_smoothing_enabled
         self.sobolev_kernel = sobolev_kernel
-        self.level_set_term_enabled = level_set_term_enabled
+
         self.data_term_method = data_term_method
         self.smoothing_term_method = smoothing_term_method
         self.adaptive_learning_rate_method = adaptive_learning_rate_method
@@ -142,33 +176,95 @@ class Optimizer2D:
         self.__initialize_writers(field_size)
         self.last_run_iteration_count = 0
 
-    def optimization_iteration_vectorized(self, warped_live_field, canonical_field, warp_field):
-        data_gradient_field, self.total_data_energy = data_term_gradient(warped_live_field, canonical_field)
-        smoothing_gradient_field, self.total_smoothing_energy = smoothing_term_gradient(warp_field)
-        self.total_data_energy *= self.data_term_weight
-        self.total_smoothing_energy *= self.smoothing_term_weight
-
-        gradient_field = self.data_term_weight * data_gradient_field + \
-                         self.smoothing_term_weight * smoothing_gradient_field
-        if self.sobolev_smoothing_enabled:
-            convolve_with_sobolev_smoothing_kernel(gradient_field, self.sobolev_kernel)
-        #TODO: interpolation, max warp
-
-    def optimization_iteration(self, warped_live_field, canonical_field, warp_field, gradient_field,
-                               data_component_field=None, smoothing_component_field=None,
-                               level_set_component_field=None):
-        self.total_data_energy = 0.
-        self.total_smoothing_energy = 0.
-        self.total_level_set_energy = 0.
-
+    def run_checks(self, warped_live_field, canonical_field, warp_field):
         if warped_live_field.shape != canonical_field.shape or warped_live_field.shape[0] != warp_field.shape[0] or \
                 warped_live_field.shape[1] != warp_field.shape[1] or warp_field.shape[0] != warp_field.shape[1]:
             raise ValueError(
                 "warp field, warped live field, and canonical field all need to be 1D arrays of the same size.")
+
+    def optimization_iteration_vectorized(self, warped_live_field, canonical_field, warp_field,
+                                          data_component_field=None, smoothing_component_field=None,
+                                          level_set_component_field=None, band_union_only=True):
+        self.run_checks(warped_live_field, canonical_field, warp_field)
+
+        live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
+        data_gradient_field, self.total_data_energy = data_term_gradient_vectorized(warped_live_field, canonical_field,
+                                                                                    live_gradient_x, live_gradient_y)
+        smoothing_gradient_field, self.total_smoothing_energy = smoothing_term_gradient(warp_field)
+        self.total_data_energy *= self.data_term_weight
+        self.total_smoothing_energy *= self.smoothing_term_weight
+
+        if data_component_field is not None:
+            np.copyto(data_component_field, data_gradient_field)
+        if smoothing_component_field is not None:
+            np.copyto(smoothing_component_field, smoothing_gradient_field)
+        if level_set_component_field is not None:
+            frame_info = getframeinfo(currentframe())
+            print("Warning: level set term not implemented in vectorized version, "
+                  "passed level_set_component_field is not None, {:s} : {:d}".format(frame_info.filename,
+                                                                                     frame_info.lineno))
+
+        gradient_field = self.data_term_weight * data_gradient_field + \
+                         self.smoothing_term_weight * smoothing_gradient_field
+
+        if band_union_only:
+            zero_warps_for_truncated_values(warped_live_field, canonical_field, gradient_field)
+
+        # *** Print information at focus voxel
+        focus_x, focus_y = get_focus_coordinates()
+        focus = (focus_y, focus_x)
+        print("Point: ", focus_x, ",", focus_y, sep='', end='')
+        data_term_at_location(warped_live_field, canonical_field, focus_x, focus_y, live_gradient_x,
+                              live_gradient_y, method=DataTermMethod.BASIC)
+        focus_data_gradient = data_gradient_field[focus]
+        print(" Data grad: ", BOLD_GREEN, -focus_data_gradient, RESET, sep='', end='')
+
+        smoothing_term_at_location(warp_field, focus_x, focus_y, method=self.smoothing_term_method,
+                                   copy_if_zero=False,
+                                   isomorphic_enforcement_factor=self.isomorphic_enforcement_factor)
+        focus_smoothing_gradient = smoothing_gradient_field[focus] * self.smoothing_term_weight
+        print(" Smoothing grad (scaled): ", BOLD_GREEN,
+              -focus_smoothing_gradient, RESET, sep='', end='')
+
+        # ***
+
+        if self.sobolev_smoothing_enabled:
+            convolve_with_sobolev_smoothing_kernel(gradient_field, self.sobolev_kernel)
+
+        np.copyto(warp_field, -gradient_field * self.gradient_descent_rate)
+        warp_lengths = np.linalg.norm(warp_field, axis=2)
+        maximum_warp_length_at = np.unravel_index(np.argmax(warp_lengths), warp_lengths.shape)
+        maximum_warp_length = warp_lengths[maximum_warp_length_at]
+
+        # ***
+        print(" Warp: ", BOLD_GREEN, warp_field[focus], RESET, " Warp length: ", BOLD_GREEN,
+              np.linalg.norm(warp_field[focus]), RESET, sep='')
+        # ***
+
+        u_vectors = warp_field[:, :, 0].copy()
+        v_vectors = warp_field[:, :, 1].copy()
+
+        out_warped_live_field, (out_u_vectors, out_v_vectors) = \
+            cpp_extension.interpolate(warped_live_field, canonical_field, u_vectors, v_vectors)
+
+        np.copyto(warped_live_field, out_warped_live_field)
+
+        # some entries might have been erased due to things in the live sdf becoming truncated
+        warp_field[:, :, 0] = out_u_vectors
+        warp_field[:, :, 0] = out_v_vectors
+
+        return maximum_warp_length, maximum_warp_length_at
+
+    def optimization_iteration_direct(self, warped_live_field, canonical_field, warp_field, gradient_field,
+                                      data_component_field=None, smoothing_component_field=None,
+                                      level_set_component_field=None, band_union_only=True):
+        self.total_data_energy = 0.
+        self.total_smoothing_energy = 0.
+        self.total_level_set_energy = 0.
+
+        self.run_checks(warped_live_field, canonical_field, warp_field)
         field_size = warp_field.shape[0]
 
-        band_union_only = True
-        ignore_live_voxels_with_truncated_neighbors = True
         data_band_intersection_only = False
         live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
 
@@ -187,9 +283,6 @@ class Optimizer2D:
 
                 if band_union_only and live_is_truncated and canonical_is_truncated:
                     continue
-
-                if ignore_live_voxels_with_truncated_neighbors:
-                    pass
 
                 if not data_band_intersection_only or (not live_is_truncated and not canonical_is_truncated):
                     data_gradient, local_data_energy = \
@@ -234,8 +327,6 @@ class Optimizer2D:
 
         max_warp = 0.0
         max_warp_location = -1
-        max_gradient = 0.0
-        max_gradient_location = -1
 
         # update the warp field based on the gradient
         for y in range(0, field_size):
@@ -245,13 +336,9 @@ class Optimizer2D:
                     print(" Warp: ", BOLD_GREEN, warp_field[y, x], RESET, " Warp length: ", BOLD_GREEN,
                           np.linalg.norm(warp_field[y, x]), RESET, sep='')
                 warp_length = np.linalg.norm(warp_field[y, x])
-                gradient_length = np.linalg.norm(gradient_field[y, x])
                 if warp_length > max_warp:
                     max_warp = warp_length
                     max_warp_location = Point(x, y)
-                if gradient_length > max_gradient:
-                    max_gradient = gradient_length
-                    max_gradient_location = Point(x, y)
                 if (x, y) in self.focus_neighborhood_log:
                     log = self.focus_neighborhood_log[(x, y)]
                     log.warp_magnitudes.append(warp_length)
@@ -267,11 +354,10 @@ class Optimizer2D:
         self.log.smoothing_energies.append(self.total_smoothing_energy)
         self.log.level_set_energies.append(self.total_level_set_energy)
 
-        return max_warp, max_warp_location, max_gradient, max_gradient_location
+        return max_warp, max_warp_location,
 
     def optimize(self, live_field, canonical_field, warp_field):
         max_warp = np.inf
-        # max_gradient = np.inf
         iteration_number = 0
         gradient_field = np.zeros_like(warp_field)
 
@@ -306,9 +392,17 @@ class Optimizer2D:
         while (iteration_number < self.min_iterations) or \
                 (iteration_number < self.max_iterations and
                  self.maximum_warp_length_lower_threshold < max_warp < self.maximum_warp_length_upper_threshold):
-            max_warp, max_warp_location, max_gradient, max_gradient_location = \
-                self.optimization_iteration(live_field, canonical_field, warp_field, gradient_field,
-                                            data_component_field, smoothing_component_field, level_set_component_field)
+
+            if self.compute_method == ComputeMethod.DIRECT:
+                max_warp, max_warp_location = \
+                    self.optimization_iteration_direct(live_field, canonical_field, warp_field, gradient_field,
+                                                       data_component_field, smoothing_component_field,
+                                                       level_set_component_field)
+            elif self.compute_method == ComputeMethod.VECTORIZED:
+                max_warp, max_warp_location = \
+                    self.optimization_iteration_vectorized(live_field, canonical_field, warp_field, gradient_field,
+                                                           data_component_field, smoothing_component_field,
+                                                           level_set_component_field)
 
             level_set_energy_string = ""
             if self.level_set_term_enabled:
@@ -318,8 +412,7 @@ class Optimizer2D:
                   " data energy: {:5f}".format(self.total_data_energy),
                   "; smoothing energy: {:5f}".format(self.total_smoothing_energy), level_set_energy_string,
                   "; total energy:", self.total_data_energy + self.total_smoothing_energy + self.total_level_set_energy,
-                  "; max warp:", max_warp, "@", max_warp_location, "; max gradient:", max_gradient, "@",
-                  max_gradient_location, sep="")
+                  "; max warp:", max_warp, "@", max_warp_location, sep="")
 
             self.__make_iteration_visualizations(iteration_number, warp_field, gradient_field, data_component_field,
                                                  smoothing_component_field, level_set_component_field, live_field,
