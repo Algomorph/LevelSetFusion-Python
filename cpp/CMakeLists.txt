@@ -16,6 +16,8 @@
 
 cmake_minimum_required(VERSION 3.9)
 project(LevelSetFusionOptimization LANGUAGES CXX)
+# C++11 standard simplifies things in a lot of obvious ways,
+# it also allows us to use Eigen in multithreaded code w/o special initialization
 set (CMAKE_CXX_STANDARD 11)
 
 # Name of the target and python module
@@ -76,7 +78,8 @@ else ()
     SET(ARCHIVE_OUTPUT_NAME ${MODULE_NAME}_py3)
 endif ()
 
-
+# Find true site-packages site on this machine, since find_package(PythonLibs) doesn't seem to get the correct one
+# (Adapted from OpenCV3)
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
                 "from distutils.sysconfig import get_python_lib;\
   print(get_python_lib(plat_specific=True, prefix=''))"

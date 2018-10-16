@@ -44,7 +44,7 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 
 	eig::MatrixXf new_live_field(row_count, column_count);
 
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (int i_element = 0; i_element < matrix_size; i_element++) {
 		// Any MatrixXf in Eigen is column-major
 		// i_element = x * column_count + y
