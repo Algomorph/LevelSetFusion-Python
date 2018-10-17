@@ -13,13 +13,25 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #  ================================================================
+# stdlib
+from enum import Enum
+import importlib.machinery
+
+# libraries
 import numpy as np
+from scipy.signal import convolve2d
+
+# local
 from utils.sampling import sample_at, sample_at_replacement, focus_coordinates_match, sample_flag_at, \
     is_outside_narrow_band
 from utils.printing import *
-from scipy.signal import convolve2d
-from enum import Enum
-import level_set_fusion_optimization as lsfo
+from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union
+
+cpp_extension = \
+    importlib.machinery.ExtensionFileLoader(
+        "level_set_fusion_optimization",
+        "../cpp/cmake-build-release/" +
+        "level_set_fusion_optimization.cpython-35m-x86_64-linux-gnu.so").load_module()
 
 
 class FiniteDifferenceMethod(Enum):
@@ -34,6 +46,7 @@ class DataTermMethod(Enum):
     THRESHOLDED_FDM = 2  # threshold determines the finite-difference method
 
 
+# region =============================================== GAUSSIAN KERNELS ==============================================
 gaussian_kernel3x3_sigma1 = np.array([[0.077847, 0.123317, 0.077847],
                                       [0.123317, 0.195346, 0.123317],
                                       [0.077847, 0.123317, 0.077847]], dtype=np.float32)
@@ -43,7 +56,14 @@ gaussian_kernel3x3_sigmaPoint8 = np.array([[0.0625, 0.125, 0.0625],
 gaussian_kernel3x3 = gaussian_kernel3x3_sigmaPoint8
 
 
+# endregion
+
+
 def sampling_convolve2d(field, kernel, x, y):
+    """
+    Combines sampling with a convolution -- i.e. returns the value resultant from convolving the kernel at the
+     specified location
+    """
     ans = 0.0
     for ky in range(kernel.shape[0]):
         for kx in range(kernel.shape[1]):
@@ -51,6 +71,7 @@ def sampling_convolve2d(field, kernel, x, y):
     return ans
 
 
+# region ======================================= PRINTING ROUTINES =====================================================
 def print_gradient_data(live_y_minus_one, live_x_minus_one, live_y_plus_one, live_x_plus_one, central_value):
     print()
     print("[Grad data         ]", BOLD_BLUE, sep='')
@@ -94,7 +115,10 @@ def print_gradient_data_3x3_receptive_field(field, x, y, live_y_minus_one, live_
         i_line += 1
 
 
-def compute_gradient_central_differences(field, x, y, verbose=False, use_replacement=False):
+# endregion
+
+# region ================================== LOCAL GRADIENTS ============================================================
+def compute_local_gradient_central_differences(field, x, y, verbose=False, use_replacement=False):
     if use_replacement:
         current_value = sample_at(field, x, y)
         live_y_minus_one = sample_at_replacement(field, current_value, x, y - 1)
@@ -116,7 +140,7 @@ def compute_gradient_central_differences(field, x, y, verbose=False, use_replace
     return np.array([x_grad, y_grad])
 
 
-def compute_gradient_central_differences_smoothed(field, x, y, verbose=False):
+def compute_local_gradient_central_differences_smoothed(field, x, y, verbose=False):
     if 2 <= x < field.shape[1] - 2 and 2 <= y < field.shape[0] - 2:
         live_y_minus_one = convolve2d(field[y - 2:y + 1, x - 1:x + 2], gaussian_kernel3x3, mode='valid')[0, 0]
         live_x_minus_one = convolve2d(field[y - 1:y + 2, x - 2:x + 1], gaussian_kernel3x3, mode='valid')[0, 0]
@@ -141,7 +165,7 @@ def compute_gradient_central_differences_smoothed(field, x, y, verbose=False):
     return np.array([x_grad, y_grad])
 
 
-def data_term_at_location_basic(warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y):
+def compute_local_data_term_gradient_basic(warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y):
     live_sdf = warped_live_field[y, x]
     canonical_sdf = canonical_field[y, x]
 
@@ -150,7 +174,7 @@ def data_term_at_location_basic(warped_live_field, canonical_field, x, y, live_g
     if focus_coordinates_match(x, y):
         print("; Live - canonical: {:+01.4f} - {:+01.4f} = {:+01.4f}"
               .format(live_sdf, canonical_sdf, diff))
-        compute_gradient_central_differences(warped_live_field, x, y, True, True)
+        compute_local_gradient_central_differences(warped_live_field, x, y, True, True)
 
     live_local_gradient = np.array([live_gradient_x[y, x], live_gradient_y[y, x]])
 
@@ -162,26 +186,8 @@ def data_term_at_location_basic(warped_live_field, canonical_field, x, y, live_g
     return data_gradient, local_energy_contribution
 
 
-def data_term_gradient_vectorized(warped_live_field, canonical_field, live_gradient_x, live_gradient_y,
-                                  scaling_factor=10.0):
-    """
-    Vectorized method to compute the data term gradient
-    :param live_gradient_x: x-component of the gradient of the warped_live_field
-    :param live_gradient_y: y-component of the gradient of the warped_live_field
-    :param warped_live_field: current warped live SDF field
-    :param canonical_field: canonical SDF field
-    :param scaling_factor: scaling factor (usually determined by truncation point in SDF and narrow band
-    width in voxels)
-    :return: data gradient for each location as a matrix, data energy the entire grid summed up
-    """
-    diff = warped_live_field - canonical_field
-
-    data_gradient = np.stack((diff * live_gradient_x, diff * live_gradient_y), axis=2) * scaling_factor
-    data_energy = np.sum(0.5 * diff ** 2)
-    return data_gradient, data_energy
-
-
-def data_term_at_location_thresholded_fdm(warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y):
+def compute_local_data_term_gradient_thresholded_fdm(warped_live_field, canonical_field, x, y, live_gradient_x,
+                                                     live_gradient_y):
     live_sdf = warped_live_field[y, x]
     canonical_sdf = canonical_field[y, x]
 
@@ -190,7 +196,7 @@ def data_term_at_location_thresholded_fdm(warped_live_field, canonical_field, x,
     if focus_coordinates_match(x, y):
         print("; Live - canonical: {:+01.4f} - {:+01.4f} = {:+01.4f}"
               .format(live_sdf, canonical_sdf, diff))
-        compute_gradient_central_differences(warped_live_field, x, y, True, True)
+        compute_local_gradient_central_differences(warped_live_field, x, y, True, True)
 
     x_grad = live_gradient_x[y, x]
     if abs(x_grad) > 0.5:
@@ -220,39 +226,18 @@ def data_term_at_location_thresholded_fdm(warped_live_field, canonical_field, x,
     return data_gradient, local_energy_contribution
 
 
-data_term_methods = {DataTermMethod.BASIC: data_term_at_location_basic,
-                     DataTermMethod.THRESHOLDED_FDM: data_term_at_location_thresholded_fdm,
-                     DataTermMethod.BASIC_CPP: lsfo.data_term_at_location}
+data_term_methods = {DataTermMethod.BASIC: compute_local_data_term_gradient_basic,
+                     DataTermMethod.THRESHOLDED_FDM: compute_local_data_term_gradient_thresholded_fdm,
+                     DataTermMethod.BASIC_CPP: cpp_extension.data_term_at_location}
 
 
-def data_term_at_location(warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y,
-                          method=DataTermMethod.BASIC):
+def compute_local_data_term(warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y,
+                            method=DataTermMethod.BASIC):
     return data_term_methods[method](warped_live_field, canonical_field, x, y, live_gradient_x, live_gradient_y)
 
 
-# for testing the vectorized version
-def data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y,
-                              band_union_only=True):
-    data_gradient_field = np.zeros((warped_live_field.shape[0], warped_live_field.shape[1], 2), dtype=np.float32)
-    total_data_energy = 0.0
-    for y in range(0, warped_live_field.shape[0]):
-        for x in range(0, warped_live_field.shape[1]):
-            live_sdf = warped_live_field[y, x]
-            canonical_sdf = canonical_field[y, x]
-
-            live_is_truncated = is_outside_narrow_band(live_sdf)
-            canonical_is_truncated = is_outside_narrow_band(canonical_sdf)
-            if band_union_only and live_is_truncated and canonical_is_truncated:
-                continue
-            data_gradient, local_data_energy = \
-                data_term_at_location_basic(warped_live_field, canonical_field, x, y, live_gradient_x,
-                                            live_gradient_y)
-            total_data_energy += local_data_energy
-            data_gradient_field[y, x] = data_gradient
-    return data_gradient_field, total_data_energy
-
-
-def data_term_at_location_advanced_grad(warped_live_field, canonical_field, flag_field, x, y):
+# TODO: deprecated
+def compute_local_data_term_gradient_advanced_grad(warped_live_field, canonical_field, flag_field, x, y):
     live_sdf = warped_live_field[y, x]
     canonical_sdf = canonical_field[y, x]
 
@@ -340,3 +325,64 @@ def data_term_at_location_advanced_grad(warped_live_field, canonical_field, flag
     local_energy_contribution = 0.5 * pow(diff, 2)
 
     return unscaled_warp_gradient_contribution, local_energy_contribution
+
+
+# endregion
+
+
+def compute_data_term_gradient_vectorized(warped_live_field, canonical_field, live_gradient_x, live_gradient_y,
+                                          scaling_factor=10.0):
+    """
+    Vectorized method to compute the data term gradient
+    :param live_gradient_x: x-component of the gradient of the warped_live_field
+    :param live_gradient_y: y-component of the gradient of the warped_live_field
+    :param warped_live_field: current warped live SDF field
+    :param canonical_field: canonical SDF field
+    :param scaling_factor: scaling factor (usually determined by truncation point in SDF and narrow band
+    width in voxels)
+    :return: data gradient for each location as a matrix, data energy the entire grid summed up
+    """
+    diff = warped_live_field - canonical_field
+
+    data_gradient = np.stack((diff * live_gradient_x, diff * live_gradient_y), axis=2) * scaling_factor
+    return data_gradient
+
+
+def compute_data_term_energy_contribution(warped_live_field, canonical_field,
+                                          zeroes_for_outside_narrow_band_union=True):
+    diff = warped_live_field - canonical_field
+    if zeroes_for_outside_narrow_band_union:
+        set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, diff)
+    data_energy = np.sum(0.5 * diff ** 2)
+    return data_energy
+
+
+def compute_data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y,
+                                      band_union_only=True):
+    """
+    Computes the data gradient directly by traversing the 2D grid (live and canonical scalar fields) and computing the
+     gradient separately at each location. Made mostly for testing the vectorized version.
+    :param warped_live_field:
+    :param canonical_field:
+    :param live_gradient_x:
+    :param live_gradient_y:
+    :param band_union_only:
+    :return:
+    """
+    data_gradient_field = np.zeros((warped_live_field.shape[0], warped_live_field.shape[1], 2), dtype=np.float32)
+    total_data_energy = 0.0
+    for y in range(0, warped_live_field.shape[0]):
+        for x in range(0, warped_live_field.shape[1]):
+            live_sdf = warped_live_field[y, x]
+            canonical_sdf = canonical_field[y, x]
+
+            live_is_truncated = is_outside_narrow_band(live_sdf)
+            canonical_is_truncated = is_outside_narrow_band(canonical_sdf)
+            if band_union_only and live_is_truncated and canonical_is_truncated:
+                continue
+            data_gradient, local_data_energy = \
+                compute_local_data_term_gradient_basic(warped_live_field, canonical_field, x, y, live_gradient_x,
+                                                       live_gradient_y)
+            total_data_energy += local_data_energy
+            data_gradient_field[y, x] = data_gradient
+    return data_gradient_field, total_data_energy

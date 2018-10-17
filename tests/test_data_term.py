@@ -16,7 +16,7 @@
 from unittest import TestCase
 import numpy as np
 import data_term as dt
-from optimizer2d import zero_warps_for_truncated_values
+from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union
 
 
 class DataTermTest(TestCase):
@@ -26,21 +26,24 @@ class DataTermTest(TestCase):
         canonical_field = np.array([[0.5, 0.5],
                                     [1.0, 0.8]], dtype=np.float32)
 
-        (live_gradient_y, live_gradient_x) = np.gradient(warped_live_field)
+        live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
 
         expected_gradient_out = np.array([[[-.2, -1], [-.1, -.4]],
                                           [[0.0, -1.0], [0.0, 0.0]]], dtype=np.float32)
+        expected_energy_out = 0.045
         data_gradient_out, energy_out = \
-            dt.data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y)
+            dt.compute_data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y)
 
         self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out))
-        self.assertAlmostEqual(energy_out, 0.045)
+        self.assertAlmostEqual(energy_out, expected_energy_out)
 
-        data_gradient_out, energy_out = \
-            dt.data_term_gradient_vectorized(warped_live_field, canonical_field, live_gradient_x, live_gradient_y)
+        data_gradient_out = dt.compute_data_term_gradient_vectorized(warped_live_field, canonical_field,
+                                                                     live_gradient_x, live_gradient_y)
 
-        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out))
-        self.assertAlmostEqual(energy_out, 0.045)
+        energy_out = dt.compute_data_term_energy_contribution(warped_live_field, canonical_field)
+
+        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out, atol=1e-6))
+        self.assertAlmostEqual(energy_out, expected_energy_out)
 
     def test_data_term02(self):
         warped_live_field = np.array([[0.3, 0.4],
@@ -48,21 +51,70 @@ class DataTermTest(TestCase):
         canonical_field = np.array([[0.5, -0.3],
                                     [1.0, -1.0]], dtype=np.float32)
 
-        (live_gradient_y, live_gradient_x) = np.gradient(warped_live_field)
+        live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
 
         expected_gradient_out = np.array([[[-.2, 2.2], [0.7, 4.2]],
                                           [[-32.4, 19.8], [0.0, 0.0]]], dtype=np.float32)
+        expected_energy_out = 1.885
         data_gradient_out, energy_out = \
-            dt.data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y)
-
-
-        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out, atol=1e-6))
-        self.assertAlmostEqual(energy_out, 1.885, places=6)
-
-        data_gradient_out, energy_out = \
-            dt.data_term_gradient_vectorized(warped_live_field, canonical_field, live_gradient_x, live_gradient_y)
-
-        zero_warps_for_truncated_values(warped_live_field, canonical_field, data_gradient_out)
+            dt.compute_data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y)
 
         self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out))
-        self.assertAlmostEqual(energy_out, 3.885, places=6)
+        self.assertAlmostEqual(energy_out, expected_energy_out, places=6)
+
+        data_gradient_out = \
+            dt.compute_data_term_gradient_vectorized(warped_live_field, canonical_field, live_gradient_x,
+                                                     live_gradient_y)
+        set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, data_gradient_out)
+        energy_out = dt.compute_data_term_energy_contribution(warped_live_field, canonical_field)
+
+        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out))
+        self.assertAlmostEqual(energy_out, expected_energy_out)
+
+    def test_data_term03(self):
+        warped_live_field = np.array([[1., 1., 0.49999955, 0.42499956],
+                                      [1., 0.44999936, 0.34999937, 0.32499936],
+                                      [1., 0.35000065, 0.25000066, 0.22500065],
+                                      [1., 0.20000044, 0.15000044, 0.07500044]], dtype=np.float32)
+        canonical_field = np.array([[1.0000000e+00, 1.0000000e+00, 3.7499955e-01, 2.4999955e-01],
+                                    [1.0000000e+00, 3.2499936e-01, 1.9999936e-01, 1.4999935e-01],
+                                    [1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02],
+                                    [1.0000000e+00, 7.5000443e-02, 4.4107438e-07, -9.9999562e-02]], dtype=np.float32)
+
+        live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
+
+        expected_gradient_out = np.array([[[0., 0.],
+                                           [0., 0.],
+                                           [-0.35937524, -0.18750024],
+                                           [-0.13125, -0.17500037], ],
+
+                                          [[0., 0.],
+                                           [-0.4062504, -0.4062496],
+                                           [-0.09375, -0.1874992],
+                                           [-0.04375001, -0.17499907], ],
+
+                                          [[0., 0.],
+                                           [-0.65624946, -0.21874908],
+                                           [-0.09375, -0.1499992],
+                                           [-0.04375001, -0.21874908], ],
+
+                                          [[0., 0.],
+                                           [-0.5312497, -0.18750025],
+                                           [-0.09374999, -0.15000032],
+                                           [-0.13125001, -0.2625004], ]], dtype=np.float32)
+        expected_energy_out = 0.13375
+
+        data_gradient_out, energy_out = \
+            dt.compute_data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y)
+
+        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out))
+        self.assertAlmostEqual(energy_out, expected_energy_out)
+
+        data_gradient_out = \
+            dt.compute_data_term_gradient_vectorized(warped_live_field, canonical_field, live_gradient_x,
+                                                     live_gradient_y)
+        set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, data_gradient_out)
+        energy_out = dt.compute_data_term_energy_contribution(warped_live_field, canonical_field)
+
+        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out))
+        self.assertAlmostEqual(energy_out, expected_energy_out)

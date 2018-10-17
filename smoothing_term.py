@@ -27,19 +27,24 @@ class SmoothingTermMethod(Enum):
     KILLING = 1
 
 
-def smoothing_term_gradient(warp_field):
-    laplace_u = scipy.ndimage.laplace(warp_field[:, :, 0])
-    laplace_v = scipy.ndimage.laplace(warp_field[:, :, 1])
-    smoothing_gradient = np.stack((laplace_u, laplace_v), axis=2)
-    warp_gradient_u_x, warp_gradient_u_y = np.gradient(warp_field[:, :, 0])
-    warp_gradient_v_x, warp_gradient_v_y = np.gradient(warp_field[:, :, 1])
-    smoothing_energy = 0.5 * np.sum(
-        warp_gradient_u_x ** 2 + warp_gradient_v_x ** 2 + warp_gradient_u_y ** 2 + warp_gradient_v_y ** 2)
-    return smoothing_gradient, smoothing_energy
+# region ==================================== PRINTING ROUTINES ========================================================
+def print_smoothing_term_data(warp_y_minus_one, warp_x_minus_one, warp_y_plus_one, warp_x_plus_one, warp):
+    print()
+    print("[Warp data         ]", BOLD_LIGHT_CYAN, sep='')
+    print("                     ", "                 [{:+01.4f},{:+01.4f}]"
+          .format(warp_y_minus_one[0], warp_y_minus_one[1]), sep='')
+    print("                     ",
+          "[{:+01.4f},{:+01.4f}][{:+01.4f},{:+01.4f}][{:+01.4f},{:+01.4f}]"
+          .format(warp_x_minus_one[0], warp_x_minus_one[1], warp[0], warp[1], warp_x_plus_one[0], warp_x_plus_one[1]),
+          sep='')
+    print("                     ", "                 [{:+01.4f},{:+01.4f}]"
+          .format(warp_y_plus_one[0], warp_y_plus_one[1]), RESET, sep='')
+# endregion
 
 
-def smoothing_term_at_location_killing(warp_field, x, y, ignore_if_zero=False, copy_if_zero=True,
-                                       isomorphic_enforcement_factor=0.1):
+# region ==================================== LOCAL GRADIENTS ==========================================================
+def compute_local_smoothing_term_gradient_killing(warp_field, x, y, ignore_if_zero=False, copy_if_zero=True,
+                                                  isomorphic_enforcement_factor=0.1):
     warp = warp_field[y, x]
 
     if copy_if_zero:
@@ -91,21 +96,8 @@ def smoothing_term_at_location_killing(warp_field, x, y, ignore_if_zero=False, c
     return smoothing_gradient, local_energy_contribution
 
 
-def print_smoothing_term_data(warp_y_minus_one, warp_x_minus_one, warp_y_plus_one, warp_x_plus_one, warp):
-    print()
-    print("[Warp data         ]", BOLD_LIGHT_CYAN, sep='')
-    print("                     ", "                 [{:+01.4f},{:+01.4f}]"
-          .format(warp_y_minus_one[0], warp_y_minus_one[1]), sep='')
-    print("                     ",
-          "[{:+01.4f},{:+01.4f}][{:+01.4f},{:+01.4f}][{:+01.4f},{:+01.4f}]"
-          .format(warp_x_minus_one[0], warp_x_minus_one[1], warp[0], warp[1], warp_x_plus_one[0], warp_x_plus_one[1]),
-          sep='')
-    print("                     ", "                 [{:+01.4f},{:+01.4f}]"
-          .format(warp_y_plus_one[0], warp_y_plus_one[1]), RESET, sep='')
-
-
-def smoothing_term_at_location_tikhonov(warp_field, x, y, ignore_if_zero=False, copy_if_zero=True,
-                                        isomorphic_enforcement_factor=0.1):
+def compute_local_smoothing_term_gradient_tikhonov(warp_field, x, y, ignore_if_zero=False, copy_if_zero=True,
+                                                   isomorphic_enforcement_factor=0.1):
     # 1D discrete laplacian using finite-differences
     warp = warp_field[y, x]
 
@@ -143,11 +135,28 @@ def smoothing_term_at_location_tikhonov(warp_field, x, y, ignore_if_zero=False, 
     return smoothing_gradient, local_energy_contribution
 
 
-smoothing_term_methods = {SmoothingTermMethod.KILLING: smoothing_term_at_location_killing,
-                          SmoothingTermMethod.TIKHONOV: smoothing_term_at_location_tikhonov}
+smoothing_term_methods = {SmoothingTermMethod.KILLING: compute_local_smoothing_term_gradient_killing,
+                          SmoothingTermMethod.TIKHONOV: compute_local_smoothing_term_gradient_tikhonov}
 
 
 def smoothing_term_at_location(warp_field, x, y, ignore_if_zero=False,
                                copy_if_zero=True, method=SmoothingTermMethod.TIKHONOV,
                                isomorphic_enforcement_factor=0.1):
     return smoothing_term_methods[method](warp_field, x, y, ignore_if_zero, copy_if_zero, isomorphic_enforcement_factor)
+# endregion
+
+
+def compute_smoothing_term_gradient_vectorized(warp_field):
+    laplace_u = scipy.ndimage.laplace(warp_field[:, :, 0])
+    laplace_v = scipy.ndimage.laplace(warp_field[:, :, 1])
+    smoothing_gradient = np.stack((laplace_u, laplace_v), axis=2)
+    warp_gradient_u_x, warp_gradient_u_y = np.gradient(warp_field[:, :, 0])
+    warp_gradient_v_x, warp_gradient_v_y = np.gradient(warp_field[:, :, 1])
+    smoothing_energy = 0.5 * np.sum(
+        warp_gradient_u_x ** 2 + warp_gradient_v_x ** 2 + warp_gradient_u_y ** 2 + warp_gradient_v_y ** 2)
+    return smoothing_gradient, smoothing_energy
+
+def compute_smoothing_term_gradient_direct(warp_field):
+    pass
+    #TODO
+
