@@ -60,10 +60,6 @@ def sample_at_replacement(field, replacement, x=0, y=0, point=None):
     return field[y, x]
 
 
-def is_outside_narrow_band(sdf_value):
-    return sdf_value == 1.0 or sdf_value == -1.0  # or sdf_value == 0.0
-
-
 def focus_coordinates_match(x, y):
     return x == FOCUS_COORDINATES[0] and y == FOCUS_COORDINATES[1]
 
@@ -73,14 +69,14 @@ def get_focus_coordinates():
 
 
 def sample_warp(warp_field, x, y, replacement):
-    if x >= warp_field.shape[1] or y >= warp_field.shape[0] - 1 or x < 0 or y < 0:
+    if x >= warp_field.shape[1] or y >= warp_field.shape[0] or x < 0 or y < 0:
         return replacement
     else:
         return warp_field[y, x]
 
 
 def sample_warp_replace_if_zero(warp_field, x, y, replacement):
-    if x >= warp_field.shape[1] or y >= warp_field.shape[0] - 1 or x < 0 or y < 0 or np.linalg.norm(
+    if x >= warp_field.shape[1] or y >= warp_field.shape[0] or x < 0 or y < 0 or np.linalg.norm(
             warp_field[y, x]) == 0.0:
         return replacement
     else:

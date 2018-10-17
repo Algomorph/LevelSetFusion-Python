@@ -27,17 +27,18 @@ from sobolev_smoothing import convolve_with_sobolev_smoothing_kernel
 import cv2
 
 # local
-from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union
+from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union, voxel_is_outside_narrow_band_union
 from utils.vizualization import make_3d_plots, make_warp_vector_plot, warp_field_to_heatmap, \
     sdf_field_to_image, visualize_and_save_sdf_and_warp_magnitude_progression, \
     visualzie_and_save_energy_and_max_warp_progression
 from utils.point import Point
 from utils.printing import *
-from utils.sampling import focus_coordinates_match, get_focus_coordinates, is_outside_narrow_band
+from utils.sampling import focus_coordinates_match, get_focus_coordinates
+from utils.tsdf_set_routines import value_outside_narrow_band
 from interpolation import interpolate_warped_live
 import data_term as dt
 from level_set_term import level_set_term_at_location
-from smoothing_term import SmoothingTermMethod, smoothing_term_at_location, compute_smoothing_term_gradient_vectorized
+import smoothing_term as st
 
 # C++ extension
 
@@ -81,6 +82,8 @@ class ComputeMethod(Enum):
 class Optimizer2D:
     def __init__(self, out_path="out2D",
                  field_size=128,
+                 # TODO writers should be initialized only after the field size becomes known during optimization and
+                 #  should be destroyed afterward
                  default_value=1.0,
 
                  compute_method=ComputeMethod.DIRECT,
@@ -89,7 +92,7 @@ class Optimizer2D:
                  sobolev_smoothing_enabled=False,
 
                  data_term_method=dt.DataTermMethod.BASIC,
-                 smoothing_term_method=SmoothingTermMethod.TIKHONOV,
+                 smoothing_term_method=st.SmoothingTermMethod.TIKHONOV,
                  adaptive_learning_rate_method=AdaptiveLearningRateMethod.NONE,
 
                  gradient_descent_rate=0.1,
@@ -180,10 +183,12 @@ class Optimizer2D:
         live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
         data_gradient_field = dt.compute_data_term_gradient_vectorized(warped_live_field, canonical_field,
                                                                        live_gradient_x, live_gradient_y)
-        self.total_data_energy = dt.compute_data_term_energy_contribution(warped_live_field, canonical_field)
-        smoothing_gradient_field, self.total_smoothing_energy = compute_smoothing_term_gradient_vectorized(warp_field)
-        self.total_data_energy *= self.data_term_weight
-        self.total_smoothing_energy *= self.smoothing_term_weight
+        self.total_data_energy = \
+            dt.compute_data_term_energy_contribution(warped_live_field, canonical_field) * self.data_term_weight
+        smoothing_gradient_field = st.compute_smoothing_term_gradient_vectorized(warp_field)
+        self.total_smoothing_energy = \
+            st.compute_smoothing_term_energy(warp_field, warped_live_field,
+                                             canonical_field) * self.smoothing_term_weight
 
         if data_component_field is not None:
             np.copyto(data_component_field, data_gradient_field)
@@ -210,9 +215,9 @@ class Optimizer2D:
         focus_data_gradient = data_gradient_field[focus]
         print(" Data grad: ", BOLD_GREEN, -focus_data_gradient, RESET, sep='', end='')
 
-        smoothing_term_at_location(warp_field, focus_x, focus_y, method=self.smoothing_term_method,
-                                   copy_if_zero=False,
-                                   isomorphic_enforcement_factor=self.isomorphic_enforcement_factor)
+        st.compute_local_smoothing_term_gradient(warp_field, focus_x, focus_y, method=self.smoothing_term_method,
+                                                 copy_if_zero=False,
+                                                 isomorphic_enforcement_factor=self.isomorphic_enforcement_factor)
         focus_smoothing_gradient = smoothing_gradient_field[focus] * self.smoothing_term_weight
         print(" Smoothing grad (scaled): ", BOLD_GREEN,
               -focus_smoothing_gradient, RESET, sep='', end='')
@@ -254,7 +259,6 @@ class Optimizer2D:
 
         field_size = warp_field.shape[0]
 
-        data_band_intersection_only = False
         live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
 
         for y in range(0, field_size):
@@ -267,39 +271,39 @@ class Optimizer2D:
                 live_sdf = warped_live_field[y, x]
                 canonical_sdf = canonical_field[y, x]
 
-                live_is_truncated = is_outside_narrow_band(live_sdf)
-                canonical_is_truncated = is_outside_narrow_band(canonical_sdf)
+                live_is_truncated = value_outside_narrow_band(live_sdf)
+                canonical_is_truncated = value_outside_narrow_band(canonical_sdf)
 
-                if band_union_only and live_is_truncated and canonical_is_truncated:
+                if band_union_only and voxel_is_outside_narrow_band_union(warped_live_field, canonical_field, x, y):
                     continue
 
-                if not data_band_intersection_only or (not live_is_truncated and not canonical_is_truncated):
-                    data_gradient, local_data_energy = \
-                        dt.compute_local_data_term(warped_live_field, canonical_field, x, y, live_gradient_x,
-                                                   live_gradient_y, method=self.data_term_method)
-                    scaled_data_gradient = self.data_term_weight * data_gradient
-                    self.total_data_energy += self.data_term_weight * local_data_energy
-                    gradient += scaled_data_gradient
+                data_gradient, local_data_energy = \
+                    dt.compute_local_data_term(warped_live_field, canonical_field, x, y, live_gradient_x,
+                                               live_gradient_y, method=self.data_term_method)
+                scaled_data_gradient = self.data_term_weight * data_gradient
+                self.total_data_energy += self.data_term_weight * local_data_energy
+                gradient += scaled_data_gradient
+                if focus_coordinates_match(x, y):
+                    print(" Data grad: ", BOLD_GREEN, -data_gradient, RESET, sep='', end='')
+                if data_component_field is not None:
+                    data_component_field[y, x] = data_gradient
+                if self.level_set_term_enabled and not live_is_truncated:
+                    level_set_gradient, local_level_set_energy = \
+                        level_set_term_at_location(warped_live_field, x, y)
+                    scaled_level_set_gradient = self.level_set_term_weight * level_set_gradient
+                    self.total_level_set_energy += self.level_set_term_weight * local_level_set_energy
+                    gradient += scaled_level_set_gradient
+                    if level_set_component_field is not None:
+                        level_set_component_field[y, x] = level_set_gradient
                     if focus_coordinates_match(x, y):
-                        print(" Data grad: ", BOLD_GREEN, -data_gradient, RESET, sep='', end='')
-                    if data_component_field is not None:
-                        data_component_field[y, x] = data_gradient
-                    if self.level_set_term_enabled and not live_is_truncated:
-                        level_set_gradient, local_level_set_energy = \
-                            level_set_term_at_location(warped_live_field, x, y)
-                        scaled_level_set_gradient = self.level_set_term_weight * level_set_gradient
-                        self.total_level_set_energy += self.level_set_term_weight * local_level_set_energy
-                        gradient += scaled_level_set_gradient
-                        if level_set_component_field is not None:
-                            level_set_component_field[y, x] = level_set_gradient
-                        if focus_coordinates_match(x, y):
-                            print(" Level-set grad (scaled): ", BOLD_GREEN,
-                                  -scaled_level_set_gradient, RESET, sep='', end='')
+                        print(" Level-set grad (scaled): ", BOLD_GREEN,
+                              -scaled_level_set_gradient, RESET, sep='', end='')
 
                 smoothing_gradient, local_smoothing_energy = \
-                    smoothing_term_at_location(warp_field, x, y, method=self.smoothing_term_method,
-                                               copy_if_zero=False,
-                                               isomorphic_enforcement_factor=self.isomorphic_enforcement_factor)
+                    st.compute_local_smoothing_term_gradient(warp_field, x, y, method=self.smoothing_term_method,
+                                                             copy_if_zero=False,
+                                                             isomorphic_enforcement_factor=
+                                                             self.isomorphic_enforcement_factor)
                 scaled_smoothing_gradient = self.smoothing_term_weight * smoothing_gradient
                 self.total_smoothing_energy += self.smoothing_term_weight * local_smoothing_energy
                 gradient += scaled_smoothing_gradient

@@ -20,6 +20,8 @@ import scipy.ndimage
 import scipy
 
 from utils.sampling import focus_coordinates_match, sample_warp_replace_if_zero, sample_warp
+from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union_multitarget, \
+    value_outside_narrow_band, voxel_is_outside_narrow_band_union
 
 
 class SmoothingTermMethod(Enum):
@@ -39,6 +41,8 @@ def print_smoothing_term_data(warp_y_minus_one, warp_x_minus_one, warp_y_plus_on
           sep='')
     print("                     ", "                 [{:+01.4f},{:+01.4f}]"
           .format(warp_y_plus_one[0], warp_y_plus_one[1]), RESET, sep='')
+
+
 # endregion
 
 
@@ -139,24 +143,60 @@ smoothing_term_methods = {SmoothingTermMethod.KILLING: compute_local_smoothing_t
                           SmoothingTermMethod.TIKHONOV: compute_local_smoothing_term_gradient_tikhonov}
 
 
-def smoothing_term_at_location(warp_field, x, y, ignore_if_zero=False,
-                               copy_if_zero=True, method=SmoothingTermMethod.TIKHONOV,
-                               isomorphic_enforcement_factor=0.1):
+def compute_local_smoothing_term_gradient(warp_field, x, y, ignore_if_zero=False,
+                                          copy_if_zero=True, method=SmoothingTermMethod.TIKHONOV,
+                                          isomorphic_enforcement_factor=0.1):
     return smoothing_term_methods[method](warp_field, x, y, ignore_if_zero, copy_if_zero, isomorphic_enforcement_factor)
+
+
 # endregion
 
 
 def compute_smoothing_term_gradient_vectorized(warp_field):
     laplace_u = scipy.ndimage.laplace(warp_field[:, :, 0])
     laplace_v = scipy.ndimage.laplace(warp_field[:, :, 1])
-    smoothing_gradient = np.stack((laplace_u, laplace_v), axis=2)
+    smoothing_gradient = -np.stack((laplace_u, laplace_v), axis=2)
+    return smoothing_gradient
+
+
+def compute_smoothing_term_energy(warp_field, warped_live_field=None, canonical_field=None, band_union_only=True):
+    if band_union_only and (warped_live_field is None or canonical_field is None):
+        raise ValueError(
+            "To determine the narrow band union, warped_live_field and canonical_field should be defined."
+            " Otherwise, please set the 'band_union_only argument' to 'False'")
+
     warp_gradient_u_x, warp_gradient_u_y = np.gradient(warp_field[:, :, 0])
     warp_gradient_v_x, warp_gradient_v_y = np.gradient(warp_field[:, :, 1])
+
+    if band_union_only:
+        set_zeros_for_values_outside_narrow_band_union_multitarget(warped_live_field, canonical_field,
+                                                                   (warp_gradient_u_x, warp_gradient_u_y,
+                                                                    warp_gradient_v_x, warp_gradient_v_y))
+
     smoothing_energy = 0.5 * np.sum(
         warp_gradient_u_x ** 2 + warp_gradient_v_x ** 2 + warp_gradient_u_y ** 2 + warp_gradient_v_y ** 2)
-    return smoothing_gradient, smoothing_energy
+    return smoothing_energy
 
-def compute_smoothing_term_gradient_direct(warp_field):
-    pass
-    #TODO
 
+def compute_smoothing_term_gradient_direct(warp_field, warped_live_field, canonical_field, band_union_only=True):
+    """
+    Computes the data gradient directly by traversing the 2D grid (live and canonical scalar fields) and computing the
+     gradient separately at each location. Made mostly for testing the vectorized version.
+    :param warped_live_field:
+    :param canonical_field:
+    :param live_gradient_x:
+    :param live_gradient_y:
+    :param band_union_only:
+    :return:
+    """
+    smoothing_gradient_field = np.zeros((warped_live_field.shape[0], warped_live_field.shape[1], 2), dtype=np.float32)
+    total_smoothing_energy = 0.0
+    for y in range(0, warped_live_field.shape[0]):
+        for x in range(0, warped_live_field.shape[1]):
+            if band_union_only and voxel_is_outside_narrow_band_union(warped_live_field, canonical_field, x, y):
+                continue
+            smoothing_gradient, local_smoothing_energy = \
+                compute_local_smoothing_term_gradient_tikhonov(warp_field, x, y, copy_if_zero=False)
+            total_smoothing_energy += local_smoothing_energy
+            smoothing_gradient_field[y, x] = smoothing_gradient
+    return smoothing_gradient_field, total_smoothing_energy

@@ -17,8 +17,9 @@
 import numpy as np
 import math
 from utils.point import Point
-from utils.sampling import sample_at, focus_coordinates_match, is_outside_narrow_band, sample_flag_at, \
+from utils.sampling import sample_at, focus_coordinates_match, sample_flag_at, \
     sample_at_replacement
+from utils.tsdf_set_routines import value_outside_narrow_band
 from utils.printing import BOLD_YELLOW, BOLD_GREEN, RESET
 
 
@@ -32,7 +33,7 @@ def interpolate_warped_live(canonical_field, warped_live_field, warp_field, grad
             original_live_sdf = warped_live_field[y, x]
             if band_union_only:
                 canonical_sdf = canonical_field[y, x]
-                if is_outside_narrow_band(original_live_sdf) and is_outside_narrow_band(canonical_sdf):
+                if value_outside_narrow_band(original_live_sdf) and value_outside_narrow_band(canonical_sdf):
                     new_warped_live_field[y, x] = original_live_sdf
                     continue
             if known_values_only:

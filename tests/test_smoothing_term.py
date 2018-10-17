@@ -22,5 +22,25 @@ from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_uni
 
 class SmoothingTermTest(TestCase):
     def test_smoothing_term01(self):
-        pass
-        # TODO
+        warp_field = np.array([[[0., 0.], [1., 1.]],
+                               [[1., 1.], [1., 1.]]], dtype=np.float32)
+
+        live_field = np.array([[0.3, 0.5],
+                               [-0.8, 1.]])
+        canoincal_field = np.array([[0.5, -0.3],
+                                    [1., 0.]])
+
+        expected_gradient_out = np.array([[[-2., -2.], [1., 1.]],
+                                          [[1., 1.], [0., 0.]]], dtype=np.float32)
+        expected_energy_out = 1.0
+
+        gradient_out, energy_out = st.compute_smoothing_term_gradient_direct(warp_field, live_field, canoincal_field)
+
+        self.assertTrue(np.allclose(gradient_out, expected_gradient_out))
+        self.assertTrue(energy_out, expected_gradient_out)
+
+        gradient_out = st.compute_smoothing_term_gradient_vectorized(warp_field)
+        energy_out = st.compute_smoothing_term_energy(warp_field, live_field, canoincal_field)
+
+        self.assertTrue(np.allclose(gradient_out, expected_gradient_out))
+        self.assertTrue(energy_out, expected_gradient_out)

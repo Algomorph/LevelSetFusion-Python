@@ -22,10 +22,10 @@ import numpy as np
 from scipy.signal import convolve2d
 
 # local
-from utils.sampling import sample_at, sample_at_replacement, focus_coordinates_match, sample_flag_at, \
-    is_outside_narrow_band
+from utils.sampling import sample_at, sample_at_replacement, focus_coordinates_match, sample_flag_at
 from utils.printing import *
-from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union
+from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union, value_outside_narrow_band, \
+    voxel_is_outside_narrow_band_union
 
 cpp_extension = \
     importlib.machinery.ExtensionFileLoader(
@@ -373,12 +373,7 @@ def compute_data_term_gradient_direct(warped_live_field, canonical_field, live_g
     total_data_energy = 0.0
     for y in range(0, warped_live_field.shape[0]):
         for x in range(0, warped_live_field.shape[1]):
-            live_sdf = warped_live_field[y, x]
-            canonical_sdf = canonical_field[y, x]
-
-            live_is_truncated = is_outside_narrow_band(live_sdf)
-            canonical_is_truncated = is_outside_narrow_band(canonical_sdf)
-            if band_union_only and live_is_truncated and canonical_is_truncated:
+            if band_union_only and voxel_is_outside_narrow_band_union(warped_live_field, canonical_field, x, y):
                 continue
             data_gradient, local_data_energy = \
                 compute_local_data_term_gradient_basic(warped_live_field, canonical_field, x, y, live_gradient_x,
