@@ -57,8 +57,6 @@ def perform_single_test():
     warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
     view_scaling_factor = 1024 // field_size
 
-    print(live_field[58:62, 8:12])
-    print(canonical_field[58:62, 8:12])
 
     if visualize_and_save_initial_and_final_fields:
         visualize_and_save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor)
