@@ -16,6 +16,7 @@
 from unittest import TestCase
 import numpy as np
 import data_term as dt
+from optimizer2d import zero_warps_for_truncated_values
 
 
 class DataTermTest(TestCase):
@@ -49,16 +50,19 @@ class DataTermTest(TestCase):
 
         (live_gradient_y, live_gradient_x) = np.gradient(warped_live_field)
 
-        expected_gradient_out = np.array([[[-.2, -1], [-.1, -.4]],
-                                          [[0.0, -1.0], [0.0, 0.0]]], dtype=np.float32)
+        expected_gradient_out = np.array([[[-.2, 2.2], [0.7, 4.2]],
+                                          [[-32.4, 19.8], [0.0, 0.0]]], dtype=np.float32)
         data_gradient_out, energy_out = \
             dt.data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y)
 
-        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out))
-        self.assertAlmostEqual(energy_out, 0.045)
+
+        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out, atol=1e-6))
+        self.assertAlmostEqual(energy_out, 1.885, places=6)
 
         data_gradient_out, energy_out = \
             dt.data_term_gradient_vectorized(warped_live_field, canonical_field, live_gradient_x, live_gradient_y)
 
+        zero_warps_for_truncated_values(warped_live_field, canonical_field, data_gradient_out)
+
         self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out))
-        self.assertAlmostEqual(energy_out, 0.045)
+        self.assertAlmostEqual(energy_out, 3.885, places=6)

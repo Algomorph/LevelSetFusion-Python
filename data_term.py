@@ -233,7 +233,7 @@ def data_term_at_location(warped_live_field, canonical_field, x, y, live_gradien
 # for testing the vectorized version
 def data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y,
                               band_union_only=True):
-    data_gradient_field = np.ndarray((warped_live_field.shape[0], warped_live_field.shape[1], 2), dtype=np.float32)
+    data_gradient_field = np.zeros((warped_live_field.shape[0], warped_live_field.shape[1], 2), dtype=np.float32)
     total_data_energy = 0.0
     for y in range(0, warped_live_field.shape[0]):
         for x in range(0, warped_live_field.shape[1]):
