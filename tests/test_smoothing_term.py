@@ -20,6 +20,13 @@ import smoothing_term as st
 from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union
 
 
+# NOTE: expected energies are different, since the vectorized version uses forward/backward differences at
+# the boundaries as appropriate, while the non-vectorized version simply replicates values at the border and
+# uses central differences. Technically, using central differences is better-reflective of the way the
+# gradients are computed, but for a large-enough field, this makes close to no difference, especially
+# considering the energy value is just used as a heuristic to analyze convergence progress.
+
+
 class SmoothingTermTest(TestCase):
     def test_smoothing_term01(self):
         warp_field = np.array([[[0., 0.], [1., 1.]],
@@ -46,6 +53,55 @@ class SmoothingTermTest(TestCase):
         self.assertEqual(energy_out, expected_energy_out)
 
     def test_smoothing_term02(self):
+        warped_live_field = np.array([[1., 1., 0.49999955],
+                                      [1., 0.44999936, 0.34999937],
+                                      [1., 0.35000065, 0.25000066]], dtype=np.float32)
+        canonical_field = np.array([[1.0000000e+00, 1.0000000e+00, 3.7499955e-01],
+                                    [1.0000000e+00, 3.2499936e-01, 1.9999936e-01],
+                                    [1.0000000e+00, 1.7500064e-01, 1.0000064e-01]], dtype=np.float32)
+
+        warp_field = np.array([[[0., 0.],
+                                [0., 0.],
+                                [-0.3, -0.2]],
+
+                               [[0., 0.],
+                                [-0.40, -0.40],
+                                [-0.1, -0.2]],
+
+                               [[0., 0.],
+                                [-0.6, -0.2],
+                                [-0.1, -0.1]]], dtype=np.float32)
+
+        expected_gradient_out = np.array([[[0., 0.],
+                                           [0., 0.],
+                                           [-0.5, -0.2]],
+
+                                          [[0., 0.],
+                                           [-0.9, -1.2],
+                                           [0.5, 0.1]],
+
+                                          [[0., 0.],
+                                           [-1.3, -0.1],
+                                           [0.5, 0.2]]], dtype=np.float32)
+        expected_energy_out = 0.14625
+
+        smoothing_gradient_out, smoothing_energy_out = \
+            st.compute_smoothing_term_gradient_direct(warp_field, warped_live_field, canonical_field)
+
+        self.assertTrue(np.allclose(smoothing_gradient_out, expected_gradient_out))
+        self.assertAlmostEqual(smoothing_energy_out, expected_energy_out, places=6)
+
+        smoothing_gradient_out = st.compute_smoothing_term_gradient_vectorized(warp_field)
+        set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, smoothing_gradient_out)
+        smoothing_energy_out = st.compute_smoothing_term_energy(warp_field, warped_live_field, canonical_field)
+
+        # See note at top of file on why expected energies are different for the vectorized/non-vectorized version
+        expected_energy_out = 0.39
+
+        self.assertTrue(np.allclose(smoothing_gradient_out, expected_gradient_out))
+        self.assertAlmostEqual(smoothing_energy_out, expected_energy_out, places=6)
+
+    def test_smoothing_term03(self):
         warped_live_field = np.array([[1., 1., 0.49999955, 0.42499956],
                                       [1., 0.44999936, 0.34999937, 0.32499936],
                                       [1., 0.35000065, 0.25000066, 0.22500065],
@@ -94,17 +150,21 @@ class SmoothingTermTest(TestCase):
                                            [-0.8437496, -0.19375136],
                                            [0.47499973, 0.14999892],
                                            [-0.125, -0.1562514]]], dtype=np.float32)
+
         expected_energy_out = 0.2126010925276205
 
         smoothing_gradient_out, energy_out = \
             st.compute_smoothing_term_gradient_direct(warp_field, warped_live_field, canonical_field)
 
         self.assertTrue(np.allclose(smoothing_gradient_out, expected_gradient_out))
-        self.assertEqual(energy_out, expected_energy_out)
+        self.assertAlmostEqual(energy_out, expected_energy_out, places=6)
 
         smoothing_gradient_out = st.compute_smoothing_term_gradient_vectorized(warp_field)
         set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, smoothing_gradient_out)
         energy_out = st.compute_smoothing_term_energy(warp_field, warped_live_field, canonical_field)
 
+        # See note at top of file on why expected energies are different for the vectorized/non-vectorized version
+        expected_energy_out = 0.2802989184856415
+
         self.assertTrue(np.allclose(smoothing_gradient_out, expected_gradient_out))
-        self.assertEqual(energy_out, expected_energy_out)
+        self.assertAlmostEqual(energy_out, expected_energy_out, places=6)

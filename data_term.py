@@ -30,7 +30,7 @@ from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_uni
 cpp_extension = \
     importlib.machinery.ExtensionFileLoader(
         "level_set_fusion_optimization",
-        "../cpp/cmake-build-release/" +
+        "./cpp/cmake-build-release/" +
         "level_set_fusion_optimization.cpython-35m-x86_64-linux-gnu.so").load_module()
 
 

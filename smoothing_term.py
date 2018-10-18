@@ -178,8 +178,7 @@ def compute_smoothing_term_energy(warp_field, warped_live_field=None, canonical_
     if band_union_only:
         set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, gradient_aggregate)
 
-    smoothing_energy = 0.5 * np.sum(
-        warp_gradient_u_x ** 2 + warp_gradient_v_x ** 2 + warp_gradient_u_y ** 2 + warp_gradient_v_y ** 2)
+    smoothing_energy = 0.5 * np.sum(gradient_aggregate)
     return smoothing_energy
 
 

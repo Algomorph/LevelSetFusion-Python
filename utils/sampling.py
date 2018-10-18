@@ -14,6 +14,7 @@
 #  limitations under the License.
 #  ================================================================
 FOCUS_COORDINATES = (52, 94)
+import numpy as np
 
 
 
