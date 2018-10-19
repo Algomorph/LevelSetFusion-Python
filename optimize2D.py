@@ -19,6 +19,7 @@
 import sys
 from enum import Enum
 import argparse
+import time
 
 # libraries
 import numpy as np
@@ -42,7 +43,7 @@ def perform_single_test():
     field_size = 128
     default_value = 1
     out_path = "out2D"
-    data_to_use = DataToUse.REAL3D_SNOOPY_SET01
+    data_to_use = DataToUse.REAL3D_SNOOPY_SET03
 
     if data_to_use == DataToUse.GENEREATED2D:
         live_field, canonical_field = \
@@ -56,7 +57,6 @@ def perform_single_test():
 
     warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
     view_scaling_factor = 1024 // field_size
-
 
     if visualize_and_save_initial_and_final_fields:
         visualize_and_save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor)
@@ -87,7 +87,10 @@ def perform_single_test():
                             enable_component_fields=True,
                             view_scaling_factor=view_scaling_factor)
 
+    start_time = time.time()
     optimizer.optimize(live_field, canonical_field, warp_field)
+    end_time = time.time()
+    print("Total optimization runtime: {:f}".format(end_time - start_time))
     optimizer.plot_logged_sdf_and_warp_magnitudes()
     optimizer.plot_logged_energies_and_max_warps()
 
