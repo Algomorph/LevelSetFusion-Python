@@ -13,7 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #  ================================================================
-FOCUS_COORDINATES = (52, 94)
+FOCUS_COORDINATES = (1, 3)
 import numpy as np
 
 

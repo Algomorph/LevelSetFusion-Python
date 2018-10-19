@@ -27,11 +27,12 @@ from utils.printing import *
 from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union, value_outside_narrow_band, \
     voxel_is_outside_narrow_band_union
 
-cpp_extension = \
-    importlib.machinery.ExtensionFileLoader(
-        "level_set_fusion_optimization",
-        "./cpp/cmake-build-release/" +
-        "level_set_fusion_optimization.cpython-35m-x86_64-linux-gnu.so").load_module()
+import level_set_fusion_optimization as cpp_extension
+# cpp_extension = \
+#     importlib.machinery.ExtensionFileLoader(
+#         "level_set_fusion_optimization",
+#         "./cpp/cmake-build-release/" +
+#         "level_set_fusion_optimization.cpython-35m-x86_64-linux-gnu.so").load_module()
 
 
 class FiniteDifferenceMethod(Enum):

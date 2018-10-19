@@ -91,8 +91,8 @@ BOOST_AUTO_TEST_CASE(data_term_test) {
 
 BOOST_AUTO_TEST_CASE(interpolation_test01) {
 	using namespace Eigen;
-	MatrixXf warped_live_field(2,2), canonical_field(2,2);
-	MatrixXf u_vectors(2,2), v_vectors(2,2);
+	MatrixXf warped_live_field(2, 2), canonical_field(2, 2);
+	MatrixXf u_vectors(2, 2), v_vectors(2, 2);
 	//@formatter:off
 	u_vectors << 0.5F, -0.5F,
 				 0.5F, -0.5F;
@@ -113,8 +113,8 @@ BOOST_AUTO_TEST_CASE(interpolation_test01) {
 
 BOOST_AUTO_TEST_CASE(interpolation_test02) {
 	using namespace Eigen;
-	MatrixXf warped_live_field(3,3), canonical_field(3,3);
-	MatrixXf u_vectors(3,3), v_vectors(3,3);
+	MatrixXf warped_live_field(3, 3), canonical_field(3, 3);
+	MatrixXf u_vectors(3, 3), v_vectors(3, 3);
 	//@formatter:off
 	u_vectors << 0.0F, 0.0F, 0.0F,
                  -.5F, 0.0F, 0.0F,
@@ -131,11 +131,86 @@ BOOST_AUTO_TEST_CASE(interpolation_test02) {
 	//@formatter:on
 	Matrix3f warped_live_field_out = interpolation::interpolate(warped_live_field, canonical_field,
 	                                                            u_vectors, v_vectors, true, false, true);
+
+
 	Matrix3f expected_live_out;
 	//@formatter:off
 	expected_live_out << 1.0F,  1.000F,  1.0F,
                          0.5F,  1.000F,  1.0F,
                          1.0F,  0.125F, -1.0F;
+	//@formatter:on
+
+	BOOST_REQUIRE(warped_live_field_out.isApprox(expected_live_out));
+}
+
+BOOST_AUTO_TEST_CASE(interpolation_test03) {
+	using namespace Eigen;
+	MatrixXf warped_live_field(4, 4), canonical_field(4, 4);
+	MatrixXf u_vectors(4, 4), v_vectors(4, 4);
+	//@formatter:off
+	u_vectors <<-0., -0., 0.03732542, 0.01575381,
+                -0., 0.04549519, 0.01572882, 0.00634488,
+                -0., 0.07203466, 0.01575179, 0.00622413,
+                -0., 0.05771814, 0.01468342, 0.01397111;
+	v_vectors << -0., -0., 0.02127664, 0.01985903,
+                 -0., 0.04313552, 0.02502393, 0.02139519,
+                 -0., 0.02682102, 0.0205336, 0.02577237,
+                 -0., 0.02112256, 0.01908935, 0.02855439;
+	warped_live_field << 1., 1., 0.49999955, 0.42499956,
+                       1., 0.44999936, 0.34999937, 0.32499936,
+                       1., 0.35000065, 0.25000066, 0.22500065,
+                       1., 0.20000044, 0.15000044, 0.07500044;
+	canonical_field << 1.0000000e+00, 1.0000000e+00, 3.7499955e-01, 2.4999955e-01,
+                       1.0000000e+00, 3.2499936e-01, 1.9999936e-01, 1.4999935e-01,
+                       1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02,
+                       1.0000000e+00, 7.5000443e-02, 4.4107438e-07, -9.9999562e-02;
+	//@formatter:on
+	MatrixXf warped_live_field_out = interpolation::interpolate(warped_live_field, canonical_field,
+	                                                            u_vectors, v_vectors, false, false, false);
+
+	MatrixXf expected_live_out(4,4);
+	//@formatter:off
+	expected_live_out << 1., 1., 0.49404836, 0.4321034,
+                         1., 0.44113636, 0.34710377, 0.32715625,
+                         1., 0.3388706, 0.24753733, 0.22598255,
+                         1., 0.21407352, 0.16514614, 0.11396749;
+	//@formatter:on
+
+
+	BOOST_REQUIRE(warped_live_field_out.isApprox(expected_live_out));
+}
+
+BOOST_AUTO_TEST_CASE(interpolation_test04) {
+	using namespace Eigen;
+	MatrixXf warped_live_field(4, 4), canonical_field(4, 4);
+	MatrixXf u_vectors(4, 4), v_vectors(4, 4);
+	//@formatter:off
+	u_vectors << -0., -0.,         0.0334751 , 0.01388371,
+                 -0.,  0.04041886, 0.0149368 , 0.00573045,
+                 -0.,  0.06464156, 0.01506416, 0.00579486,
+                 -0.,  0.06037777, 0.0144603 , 0.01164452;
+	v_vectors << -0., -0.        , 0.019718  , 0.02146172,
+                 -0.,  0.03823357, 0.02406227, 0.02212186,
+                 -0.,  0.02261183, 0.01864575, 0.02234527,
+                 -0.,  0.01906347, 0.01756042, 0.02574961;
+	warped_live_field << 1., 1.,         0.49404836, 0.4321034 ,
+						 1., 0.44113636, 0.34710377, 0.32715625,
+                         1., 0.3388706 , 0.24753733, 0.22598255,
+                         1., 0.21407352, 0.16514614, 0.11396749;
+	canonical_field << 1.0000000e+00, 1.0000000e+00, 3.7499955e-01, 2.4999955e-01,
+                       1.0000000e+00, 3.2499936e-01, 1.9999936e-01, 1.4999935e-01,
+                       1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02,
+                       1.0000000e+00, 7.5000443e-02, 4.4107438e-07, -9.9999562e-02;
+	//@formatter:on
+	MatrixXf warped_live_field_out = interpolation::interpolate(warped_live_field, canonical_field,
+	                                                            u_vectors, v_vectors, false, false, false);
+	std::cout << warped_live_field_out << std::endl;
+	MatrixXf expected_live_out(4,4);
+	//@formatter:off
+	expected_live_out << 1., 1., 0.48910502, 0.43776682,
+                         1., 0.43342987, 0.34440944, 0.3287866,
+                         1., 0.33020678, 0.24566805, 0.22797936,
+                         1., 0.2261582, 0.17907946, 0.14683424;
 	//@formatter:on
 
 

@@ -174,3 +174,88 @@ class InterpolationTest(TestCase):
         self.assertTrue(np.allclose(out_v_vectors, expected_v_vectors))
 
         # NOTE: not testing gradient_field -- expecting it will simply be reset at each iteration in the future (maybe)
+
+    def test_interpolate_warped_live04(self):
+        u_vectors = np.array([[-0., -0., 0.03732542, 0.01575381],
+                              [-0., 0.04549519, 0.01572882, 0.00634488],
+                              [-0., 0.07203466, 0.01575179, 0.00622413],
+                              [-0., 0.05771814, 0.01468342, 0.01397111]], dtype=np.float32)
+        v_vectors = np.array([[-0., -0., 0.02127664, 0.01985903],
+                              [-0., 0.04313552, 0.02502393, 0.02139519],
+                              [-0., 0.02682102, 0.0205336, 0.02577237],
+                              [-0., 0.02112256, 0.01908935, 0.02855439]], dtype=np.float32)
+
+        warp_field_template = np.stack((u_vectors, v_vectors), axis=2)
+        warp_field = warp_field_template.copy()
+        gradient_field_template = warp_field_template * 10
+        gradient_field = gradient_field_template.copy()
+        warped_live_template = np.array([[1., 1., 0.49999955, 0.42499956],
+                                         [1., 0.44999936, 0.34999937, 0.32499936],
+                                         [1., 0.35000065, 0.25000066, 0.22500065],
+                                         [1., 0.20000044, 0.15000044, 0.07500044]], dtype=np.float32)
+        warped_live_field = warped_live_template.copy()
+        canonical_field = np.array([[1.0000000e+00, 1.0000000e+00, 3.7499955e-01, 2.4999955e-01],
+                                    [1.0000000e+00, 3.2499936e-01, 1.9999936e-01, 1.4999935e-01],
+                                    [1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02],
+                                    [1.0000000e+00, 7.5000443e-02, 4.4107438e-07, -9.9999562e-02]], dtype=np.float32)
+        expected_new_warped_live_field = np.array(
+            [[1., 1., 0.49404836, 0.4321034],
+             [1., 0.44113636, 0.34710377, 0.32715625],
+             [1., 0.3388706, 0.24753733, 0.22598255],
+             [1., 0.21407352, 0.16514614, 0.11396749]], dtype=np.float32)
+
+        ipt.interpolate_warped_live(canonical_field, warped_live_field, warp_field, gradient_field,
+                                    band_union_only=False, known_values_only=False, substitute_original=False)
+        out_u_vectors = warp_field[:, :, 0]
+        out_v_vectors = warp_field[:, :, 1]
+        self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
+
+        # re-prep data
+        warped_live_field = warped_live_template.copy()
+
+        warped_live_field, (out_u_vectors, out_v_vectors) = cpp_extension.interpolate(warped_live_field,
+                                                                                      canonical_field, u_vectors,
+                                                                                      v_vectors)
+        self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
+
+    def test_interpolate_warped_live05(self):
+        u_vectors = np.array([[-0., -0., 0.0334751, 0.01388371],
+                              [-0., 0.04041886, 0.0149368, 0.00573045],
+                              [-0., 0.06464156, 0.01506416, 0.00579486],
+                              [-0., 0.06037777, 0.0144603, 0.01164452]], dtype=np.float32)
+        v_vectors = np.array([[-0., -0., 0.019718, 0.02146172],
+                              [-0., 0.03823357, 0.02406227, 0.02212186],
+                              [-0., 0.02261183, 0.01864575, 0.02234527],
+                              [-0., 0.01906347, 0.01756042, 0.02574961]], dtype=np.float32)
+
+        warp_field_template = np.stack((u_vectors, v_vectors), axis=2)
+        warp_field = warp_field_template.copy()
+        gradient_field_template = warp_field_template * 10
+        gradient_field = gradient_field_template.copy()
+        warped_live_template = np.array([[1., 1., 0.49404836, 0.4321034],
+                                         [1., 0.44113636, 0.34710377, 0.32715625],
+                                         [1., 0.3388706, 0.24753733, 0.22598255],
+                                         [1., 0.21407352, 0.16514614, 0.11396749]], dtype=np.float32)
+        warped_live_field = warped_live_template.copy()
+        canonical_field = np.array([[1.0000000e+00, 1.0000000e+00, 3.7499955e-01, 2.4999955e-01],
+                                    [1.0000000e+00, 3.2499936e-01, 1.9999936e-01, 1.4999935e-01],
+                                    [1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02],
+                                    [1.0000000e+00, 7.5000443e-02, 4.4107438e-07, -9.9999562e-02]], dtype=np.float32)
+        expected_new_warped_live_field = np.array(
+            [[1., 1., 0.48910502, 0.43776682],
+             [1., 0.43342987, 0.34440944, 0.3287866],
+             [1., 0.33020678, 0.24566805, 0.22797936],
+             [1., 0.2261582, 0.17907946, 0.14683424]], dtype=np.float32)
+
+        ipt.interpolate_warped_live(canonical_field, warped_live_field, warp_field, gradient_field,
+                                    band_union_only=False, known_values_only=False, substitute_original=False)
+        out_u_vectors = warp_field[:, :, 0]
+        out_v_vectors = warp_field[:, :, 1]
+        self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
+
+        # re-prep data
+        warped_live_field = warped_live_template.copy()
+
+        warped_live_field, (out_u_vectors, out_v_vectors) = \
+            cpp_extension.interpolate(warped_live_field, canonical_field, u_vectors, v_vectors)
+        self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))

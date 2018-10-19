@@ -42,13 +42,14 @@ import smoothing_term as st
 
 # C++ extension
 
-# import  level_set_fusion_optimization as cpp_extension
+import level_set_fusion_optimization as cpp_extension
 
-cpp_extension = \
-    importlib.machinery.ExtensionFileLoader(
-        "level_set_fusion_optimization",
-        "../cpp/cmake-build-release/" +
-        "level_set_fusion_optimization.cpython-35m-x86_64-linux-gnu.so").load_module()
+
+# cpp_extension = \
+#     importlib.machinery.ExtensionFileLoader(
+#         "level_set_fusion_optimization",
+#         "../cpp/cmake-build-release/" +
+#         "level_set_fusion_optimization.cpython-35m-x86_64-linux-gnu.so").load_module()
 
 
 class AdaptiveLearningRateMethod(Enum):
@@ -84,7 +85,7 @@ class Optimizer2D:
                  field_size=128,
                  # TODO writers should be initialized only after the field size becomes known during optimization and
                  #  should be destroyed afterward
-                 default_value=1.0,
+                 default_value=1.0,  # TODO fix default at 1.0: it should not vary
 
                  compute_method=ComputeMethod.DIRECT,
 
@@ -151,7 +152,7 @@ class Optimizer2D:
 
         # statistical aggregates
         self.focus_neighborhood_log = \
-            self.__generate_initial_focus_neighborhood_log()
+            self.__generate_initial_focus_neighborhood_log(field_size)
         self.log = OptimizationLog()
 
         # video writers
@@ -179,6 +180,7 @@ class Optimizer2D:
     def __optimization_iteration_vectorized(self, warped_live_field, canonical_field, warp_field,
                                             data_component_field=None, smoothing_component_field=None,
                                             level_set_component_field=None, band_union_only=True):
+
 
         live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
         data_gradient_field = dt.compute_data_term_gradient_vectorized(warped_live_field, canonical_field,
@@ -246,13 +248,14 @@ class Optimizer2D:
 
         # some entries might have been erased due to things in the live sdf becoming truncated
         warp_field[:, :, 0] = out_u_vectors
-        warp_field[:, :, 0] = out_v_vectors
+        warp_field[:, :, 1] = out_v_vectors
 
         return maximum_warp_length, maximum_warp_length_at
 
     def __optimization_iteration_direct(self, warped_live_field, canonical_field, warp_field, gradient_field,
                                         data_component_field=None, smoothing_component_field=None,
                                         level_set_component_field=None, band_union_only=True):
+
         self.total_data_energy = 0.
         self.total_smoothing_energy = 0.
         self.total_level_set_energy = 0.
@@ -337,7 +340,6 @@ class Optimizer2D:
                     log.warp_magnitudes.append(warp_length)
                     log.sdf_values.append(warped_live_field[y, x])
 
-        # warp live frame using the warp field
         interpolate_warped_live(canonical_field, warped_live_field, warp_field, gradient_field,
                                 band_union_only=False, known_values_only=False, substitute_original=False)
 
@@ -395,7 +397,7 @@ class Optimizer2D:
                                                          level_set_component_field)
             elif self.compute_method == ComputeMethod.VECTORIZED:
                 max_warp, max_warp_location = \
-                    self.__optimization_iteration_vectorized(live_field, canonical_field, warp_field, gradient_field,
+                    self.__optimization_iteration_vectorized(live_field, canonical_field, warp_field,
                                                              data_component_field, smoothing_component_field,
                                                              level_set_component_field)
 
@@ -477,12 +479,13 @@ class Optimizer2D:
         visualzie_and_save_energy_and_max_warp_progression(self.log, self.out_path)
 
     @staticmethod
-    def __generate_initial_focus_neighborhood_log():
+    def __generate_initial_focus_neighborhood_log(field_size):
         focus_coordinates = get_focus_coordinates()
         neighborhood_log = {}
         for y in range(focus_coordinates[1] - 1, focus_coordinates[1] + 2):
             for x in range(focus_coordinates[0] - 1, focus_coordinates[0] + 2):
-                neighborhood_log[(x, y)] = VoxelLog()
+                if 0 <= x < field_size and 0 <= y < field_size:
+                    neighborhood_log[(x, y)] = VoxelLog()
 
         return neighborhood_log
 

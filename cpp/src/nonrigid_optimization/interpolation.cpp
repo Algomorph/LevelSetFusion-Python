@@ -94,7 +94,7 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 
 		float interpolated_value0 = value00 * inverse_ratio_y + value01 * ratio_y;
 		float interpolated_value1 = value10 * inverse_ratio_y + value11 * ratio_y;
-		float new_value = interpolated_value0 * inverse_ratio_x + interpolated_value1 * inverse_ratio_x;
+		float new_value = interpolated_value0 * inverse_ratio_x + interpolated_value1 * ratio_x;
 		if (1.0 - std::abs(new_value) < truncation_float_threshold) {
 			new_value = std::copysign(1.0f, new_value);
 			warp_field_u(i_element) = 0.0f; // probably won't work in python due to conversions, test
