@@ -35,7 +35,7 @@ from utils.point import Point
 from utils.printing import *
 from utils.sampling import focus_coordinates_match, get_focus_coordinates
 from utils.tsdf_set_routines import value_outside_narrow_band
-from interpolation import interpolate_warped_live
+from interpolation import interpolate_warped_live, get_and_print_interpolation_data
 import data_term as dt
 from level_set_term import level_set_term_at_location
 import smoothing_term as st
@@ -181,7 +181,6 @@ class Optimizer2D:
                                             data_component_field=None, smoothing_component_field=None,
                                             level_set_component_field=None, band_union_only=True):
 
-
         live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
         data_gradient_field = dt.compute_data_term_gradient_vectorized(warped_live_field, canonical_field,
                                                                        live_gradient_x, live_gradient_y)
@@ -238,6 +237,8 @@ class Optimizer2D:
               np.linalg.norm(warp_field[focus]), RESET, sep='')
         # ***
 
+        get_and_print_interpolation_data(canonical_field, warped_live_field, warp_field, focus_x, focus_y)
+
         u_vectors = warp_field[:, :, 0].copy()
         v_vectors = warp_field[:, :, 1].copy()
 
@@ -250,7 +251,7 @@ class Optimizer2D:
         warp_field[:, :, 0] = out_u_vectors
         warp_field[:, :, 1] = out_v_vectors
 
-        return maximum_warp_length, maximum_warp_length_at
+        return maximum_warp_length, Point(maximum_warp_length_at[1],maximum_warp_length_at[0])
 
     def __optimization_iteration_direct(self, warped_live_field, canonical_field, warp_field, gradient_field,
                                         data_component_field=None, smoothing_component_field=None,

@@ -18,6 +18,7 @@ import numpy as np
 import interpolation as ipt
 import importlib.machinery
 
+#import level_set_fusion_optimization as cpp_extension
 cpp_extension = \
     importlib.machinery.ExtensionFileLoader(
         "level_set_fusion_optimization",

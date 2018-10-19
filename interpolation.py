@@ -23,6 +23,57 @@ from utils.tsdf_set_routines import value_outside_narrow_band
 from utils.printing import BOLD_YELLOW, BOLD_GREEN, RESET
 
 
+def print_interpolation_data(value00, value01, value10, value11, ratios, inverse_ratios, original_live_sdf, new_value):
+    print("[Interpolation data] ", BOLD_YELLOW,
+          "{:+03.3f}*{:03.3f}, {:+03.3f}*{:03.3f}".format(value00, inverse_ratios.y * inverse_ratios.x,
+                                                          value10, inverse_ratios.y * ratios.x, ),
+          RESET, " original value: ", BOLD_GREEN,
+          original_live_sdf, RESET, sep='')
+    print("                     ", BOLD_YELLOW,
+          "{:+03.3f}*{:03.3f}, {:+03.3f}*{:03.3f}".format(value01, ratios.y * inverse_ratios.x,
+                                                          value11, ratios.y * ratios.x),
+          RESET, " final value: ", BOLD_GREEN,
+          new_value, RESET, sep='')
+
+
+def get_and_print_interpolation_data(canonical_field, warped_live_field, warp_field, x, y, band_union_only=False,
+                                     known_values_only=False, substitute_original=False):
+    # TODO: use in interpolation function (don't forget the component fields and the updates) to avoid DRY violation
+    original_live_sdf = warped_live_field[y, x]
+    original_live_sdf = warped_live_field[y, x]
+    if band_union_only:
+        canonical_sdf = canonical_field[y, x]
+        if value_outside_narrow_band(original_live_sdf) and value_outside_narrow_band(canonical_sdf):
+            return
+    if known_values_only:
+        if original_live_sdf == 1.0:
+            return
+
+    warped_location = Point(x, y) + Point(coordinates=warp_field[y, x])
+    base_point = Point(math.floor(warped_location.x), math.floor(warped_location.y))
+    ratios = warped_location - base_point
+    inverse_ratios = Point(1.0, 1.0) - ratios
+
+    if substitute_original:
+        value00 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point)
+        value01 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(0, 1))
+        value10 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(1, 0))
+        value11 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(1, 1))
+    else:
+        value00 = sample_at(warped_live_field, point=base_point)
+        value01 = sample_at(warped_live_field, point=base_point + Point(0, 1))
+        value10 = sample_at(warped_live_field, point=base_point + Point(1, 0))
+        value11 = sample_at(warped_live_field, point=base_point + Point(1, 1))
+
+    interpolated_value0 = value00 * inverse_ratios.y + value01 * ratios.y
+    interpolated_value1 = value10 * inverse_ratios.y + value11 * ratios.y
+    new_value = interpolated_value0 * inverse_ratios.x + interpolated_value1 * ratios.x
+    if 1.0 - abs(new_value) < 1e-6:
+        new_value = np.sign(new_value)
+
+    print_interpolation_data(value00, value01, value10, value11, ratios, inverse_ratios, original_live_sdf, new_value)
+
+
 def interpolate_warped_live(canonical_field, warped_live_field, warp_field, gradient_field, band_union_only=False,
                             known_values_only=False, substitute_original=False,
                             data_gradient_field=None, smoothing_gradient_field=None):
@@ -38,6 +89,7 @@ def interpolate_warped_live(canonical_field, warped_live_field, warp_field, grad
                     continue
             if known_values_only:
                 if original_live_sdf == 1.0:
+                    new_warped_live_field[y, x] = original_live_sdf
                     continue
 
             warped_location = Point(x, y) + Point(coordinates=warp_field[y, x])
@@ -69,16 +121,8 @@ def interpolate_warped_live(canonical_field, warped_live_field, warp_field, grad
                     smoothing_gradient_field[y, x] = 0.0
 
             if focus_coordinates_match(x, y):
-                print("[Interpolation data] ", BOLD_YELLOW,
-                      "{:+03.3f}*{:03.3f}, {:+03.3f}*{:03.3f}".format(value00, inverse_ratios.y * inverse_ratios.x,
-                                                                      value10, inverse_ratios.y * ratios.x, ),
-                      RESET, " original value: ", BOLD_GREEN,
-                      original_live_sdf, RESET, sep='')
-                print("                     ", BOLD_YELLOW,
-                      "{:+03.3f}*{:03.3f}, {:+03.3f}*{:03.3f}".format(value01, ratios.y * inverse_ratios.x,
-                                                                      value11, ratios.y * ratios.x),
-                      RESET, " final value: ", BOLD_GREEN,
-                      new_value, RESET, sep='')
+                print_interpolation_data(value00, value01, value10, value11, ratios, inverse_ratios, original_live_sdf,
+                                         new_value)
             new_warped_live_field[y, x] = new_value
     np.copyto(warped_live_field, new_warped_live_field)
 

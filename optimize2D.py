@@ -43,7 +43,7 @@ def perform_single_test():
     field_size = 128
     default_value = 1
     out_path = "out2D"
-    data_to_use = DataToUse.REAL3D_SNOOPY_SET03
+    data_to_use = DataToUse.SIMPLE_TEST_CASE01
 
     if data_to_use == DataToUse.GENEREATED2D:
         live_field, canonical_field = \
@@ -79,10 +79,10 @@ def perform_single_test():
                             isomorphic_enforcement_factor=0.1,
                             level_set_term_weight=0.2,
 
-                            maximum_warp_length_lower_threshold=0.1,
+                            maximum_warp_length_lower_threshold=0.05,
                             max_iterations=100,
 
-                            sobolev_kernel=generate_1d_sobolev_kernel(size=7, strength=0.1),
+                            sobolev_kernel=generate_1d_sobolev_kernel(size=7 if field_size > 7 else 3, strength=0.1),
 
                             enable_component_fields=True,
                             view_scaling_factor=view_scaling_factor)

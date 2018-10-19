@@ -25,7 +25,7 @@ from matplotlib import pyplot as plt
 
 # local
 from data_term import DataTermMethod
-from dataset import Dataset
+from dataset import ImageBasedDataset
 from smoothing_term import SmoothingTermMethod
 from optimizer2d import Optimizer2D, AdaptiveLearningRateMethod
 from sobolev_filter import generate_1d_sobolev_kernel
@@ -63,7 +63,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                 live_frame_index)
         out_subpath = os.path.join(out_path, "snoopy frames {:0>6d}-{:0>6d} line {:0>3d}"
                                    .format(canonical_frame_index, live_frame_index, pixel_row_index))
-        dataset = Dataset(calibration_path, canonical_frame_path, live_frame_path, pixel_row_index, field_size, offset)
+        dataset = ImageBasedDataset(calibration_path, canonical_frame_path, live_frame_path, pixel_row_index, field_size, offset)
         live_field, canonical_field = dataset.generate_2d_sdf_fields(default_value)
 
         warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
