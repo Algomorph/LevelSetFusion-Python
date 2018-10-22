@@ -76,9 +76,10 @@ BOOST_AUTO_TEST_CASE(data_term_test) {
 	float out_data_grad_x, out_data_grad_y, out_energy_contribution;
 	x = 0;
 	y = 0;
-	data_term::data_term_at_location(warped_live_field, canonical_field, x, y,
-	                                 live_gradient_x_field, live_gradient_y_field, out_data_grad_x, out_data_grad_y,
-	                                 out_energy_contribution);
+	data_term::compute_local_data_term_gradient(warped_live_field, canonical_field, x, y,
+	                                            live_gradient_x_field, live_gradient_y_field, out_data_grad_x,
+	                                            out_data_grad_y,
+	                                            out_energy_contribution);
 
 	expected_data_grad_x = -0.47288364F;
 	expected_data_grad_y = -0.24150164F;
@@ -175,7 +176,6 @@ BOOST_AUTO_TEST_CASE(interpolation_test03) {
                          1., 0.3388706, 0.24753733, 0.22598255,
                          1., 0.21407352, 0.16514614, 0.11396749;
 	//@formatter:on
-
 
 	BOOST_REQUIRE(warped_live_field_out.isApprox(expected_live_out));
 }

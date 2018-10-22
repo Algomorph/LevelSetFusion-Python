@@ -17,6 +17,21 @@
 
 namespace data_term {
 
+void gradient(const eig::MatrixXf& field, eig::MatrixXf& live_gradient_x, eig::MatrixXf& live_gradient_y) {
+	int matrix_size = static_cast<int>(field.size());
+	const int column_count = static_cast<int>(field.cols());
+	const int row_count = static_cast<int>(field.rows());
+
+#pragma omp parallel for
+	for (int i_col = 1; i_col < column_count-1; i_col++){
+		float prev_row_val = field(0,i_col);
+		float row_val = field(1, i_col);
+		for(int i_row = 1; i_row < row_count-1; i_row++){
+			float next_row_val = field(i_row+1,i_col);
+		}
+	}
+}
+
 /***
  * \brief Computes data term for KillingFusion/SobolevFusion-based optimization on a 2D grid at the specified location
  * \details See Section 4.1 in KillingFusion[1] / 1.1 in KillingFusion Supplementary Material / 4.1 in SobolevFusion[2]
@@ -32,9 +47,13 @@ namespace data_term {
  * \param data_gradient_y [out] y, or v-component of the data term gradient
  * \param local_energy_contribution contribution to the data energy
  */
-void data_term_at_location(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field, int x, int y,
-                           const eig::MatrixXf& live_gradient_x_field, const eig::MatrixXf& live_gradient_y_field,
-                           float& data_gradient_x, float& data_gradient_y, float& local_energy_contribution) {
+void compute_local_data_term_gradient(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
+                                      int x,
+                                      int y,
+                                      const eig::MatrixXf& live_gradient_x_field,
+                                      const eig::MatrixXf& live_gradient_y_field,
+                                      float& data_gradient_x, float& data_gradient_y,
+                                      float& local_energy_contribution) {
 	float live_sdf = warped_live_field(y, x);
 	float canonical_sdf = canonical_field(y, x);
 	float difference = live_sdf - canonical_sdf;
@@ -52,8 +71,9 @@ bp::tuple py_data_term_at_location(eig::MatrixXf warped_live_field, eig::MatrixX
                                    eig::MatrixXf live_gradient_x_field, eig::MatrixXf live_gradient_y_field) {
 
 	float data_gradient_x, data_gradient_y, local_energy_contribution;
-	data_term_at_location(warped_live_field, canonical_field, x, y, live_gradient_x_field, live_gradient_y_field,
-	                      data_gradient_x, data_gradient_y, local_energy_contribution);
+	compute_local_data_term_gradient(warped_live_field, canonical_field, x, y, live_gradient_x_field,
+	                                 live_gradient_y_field,
+	                                 data_gradient_x, data_gradient_y, local_energy_contribution);
 	eig::RowVector2f data_gradient;
 	data_gradient(0) = data_gradient_x;
 	data_gradient(1) = data_gradient_y;
