@@ -32,12 +32,13 @@ namespace data_term {
 void gradient(const eig::MatrixXf& field,eig::MatrixXf& live_gradient_x, eig::MatrixXf& live_gradient_y);
 
 
+
 void compute_local_data_term_gradient(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
                                       int x, int y,
                                       const eig::MatrixXf& live_gradient_x_field,
                                       const eig::MatrixXf& live_gradient_y_field,
                                       float& data_gradient_x, float& data_gradient_y, float& local_energy_contribution);
-bp::tuple py_data_term_at_location(eig::MatrixXf warped_live_field, eig::MatrixXf canonical_field, int x, int y,
+bp::tuple py_data_term_at_location(eig::MatrixXf warped_live_field, eig::MatrixXf canonical_field, int i_col, int i_row,
                                    eig::MatrixXf live_gradient_x, eig::MatrixXf live_gradient_y);
 }//namespace data_term
 

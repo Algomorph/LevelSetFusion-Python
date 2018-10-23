@@ -18,7 +18,7 @@ cmake_minimum_required(VERSION 3.9)
 project(LevelSetFusionOptimization LANGUAGES CXX)
 # C++11 standard simplifies things in a lot of obvious ways,
 # it also allows us to use Eigen in multithreaded code w/o special initialization
-set (CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 11)
 
 # Name of the target and python module
 set(MODULE_NAME level_set_fusion_optimization)
@@ -39,9 +39,9 @@ set_property(CACHE PYTHON_DESIRED_VERSION PROPERTY STRINGS ${PYTHON_OPTIONS})
 # *** Python
 include("DetectPython")
 
-if(NOT BOOST_PYTHON_NUMPY_EIGEN_PYTHON_VERSION)
+if (NOT BOOST_PYTHON_NUMPY_EIGEN_PYTHON_VERSION)
     set(BOOST_PYTHON_NUMPY_EIGEN_PYTHON_VERSION 3.4 CACHE STRING "Choose the target Python version (e.g., 3.4, 2.7)" FORCE)
-endif()
+endif ()
 
 include_directories(include)
 
@@ -49,7 +49,7 @@ find_package(PythonInterp ${BOOST_PYTHON_NUMPY_EIGEN_PYTHON_VERSION} REQUIRED)
 
 
 # *** Boost (Boost python version based on python option / availability)
-set (BOOST_COMPONENTS unit_test_framework)
+set(BOOST_COMPONENTS unit_test_framework)
 if (${PYTHON_DESIRED_VERSION} STREQUAL "2.X")
     set(Python_ADDITIONAL_VERSIONS ${PYTHON2_VERSION_MAJOR}.${PYTHON2_VERSION_MINOR})
     list(APPEND BOOST_COMPONENTS python-py${PYTHON2_VERSION_MAJOR}${PYTHON2_VERSION_MINOR})
@@ -81,20 +81,20 @@ endif ()
 # Find true site-packages site on this machine, since find_package(PythonLibs) doesn't seem to get the correct one
 # (Adapted from OpenCV3)
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
-                "from distutils.sysconfig import get_python_lib;\
+        "from distutils.sysconfig import get_python_lib;\
   print(get_python_lib(plat_specific=True, prefix=''))"
-                OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
-                OUTPUT_STRIP_TRAILING_WHITESPACE
-                )
+        OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
 
 set(MODULE_INSTALL_PREFIX "${MODULE_INSTALL_PREFIX}" CACHE STRING
-    "Output directory for Python modules.")
+        "Output directory for Python modules.")
 
 #-get proper extension for python binary shared object on this platform
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('SO'))"
-                RESULT_VARIABLE PYTHON_${MODULE_NAME}_PY_PROCESS
-                OUTPUT_VARIABLE ${MODULE_NAME}_PY_SUFFIX
-                OUTPUT_STRIP_TRAILING_WHITESPACE)
+        RESULT_VARIABLE PYTHON_${MODULE_NAME}_PY_PROCESS
+        OUTPUT_VARIABLE ${MODULE_NAME}_PY_SUFFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 
 #=================== INCLUDE PATHS =====================================================================================
@@ -118,14 +118,24 @@ add_library(${MODULE_NAME} SHARED
             src/nonrigid_optimization/data_term.cpp
             src/nonrigid_optimization/interpolation.hpp
             src/nonrigid_optimization/interpolation.cpp
-            )
+            src/nonrigid_optimization/utils.hpp
+            src/nonrigid_optimization/energy_gradient.cpp
+            src/nonrigid_optimization/energy_gradient.hpp
+            src/nonrigid_optimization/smoothing_term.cpp
+            src/nonrigid_optimization/smoothing_term.hpp
+            src/math/eigen_utils.hpp
+            src/math/vector_base.hpp
+            src/math/matrix_base.hpp
+            src/math/vector2.hpp
+            src/math/platform_independence.hpp
+            src/math/matrix2.hpp)
 target_link_libraries(${MODULE_NAME}
-                      PUBLIC
-                      ${Boost_LIBRARIES}
-                      ${PYTHON_LIBRARIES})
+        PUBLIC
+        ${Boost_LIBRARIES}
+        ${PYTHON_LIBRARIES})
 target_link_libraries(${MODULE_NAME}
-                      PRIVATE
-                      OpenMP::OpenMP_CXX)
+        PRIVATE
+        OpenMP::OpenMP_CXX)
 
 message(STATUS "${MODULE_NAME}  ${ARCHIVE_OUTPUT_NAME} ${${MODULE_NAME}_PY_SUFFIX}")
 
@@ -133,11 +143,10 @@ message(STATUS "${MODULE_NAME}  ${ARCHIVE_OUTPUT_NAME} ${${MODULE_NAME}_PY_SUFFI
 #======== INSTALLATION MAKE TARGET =====================================================================================
 
 set_target_properties(${MODULE_NAME} PROPERTIES
-                      ARCHIVE_OUTPUT_NAME ${ARCHIVE_OUTPUT_NAME}  # prevent name conflict for python2/3 outputs
-                      PREFIX ""
-                      OUTPUT_NAME ${MODULE_NAME}
-                      SUFFIX ${${MODULE_NAME}_PY_SUFFIX})
-
+        ARCHIVE_OUTPUT_NAME ${ARCHIVE_OUTPUT_NAME}  # prevent name conflict for python2/3 outputs
+        PREFIX ""
+        OUTPUT_NAME ${MODULE_NAME}
+        SUFFIX ${${MODULE_NAME}_PY_SUFFIX})
 
 
 if (MSVC AND NOT PYTHON_DEBUG_LIBRARIES)
@@ -162,7 +171,11 @@ install(TARGETS ${MODULE_NAME}
 
 enable_testing()
 
-add_executable(test_nonrigid_optimization tests/test_nonrigid_optimization.cpp)
+set(TEST_SOURCES
+    tests/test_nonrigid_optimization.cpp
+    tests/test_data_nonrigid_optimization.hpp)
+
+add_executable(test_nonrigid_optimization ${TEST_SOURCES} )
 
 target_link_libraries(test_nonrigid_optimization ${MODULE_NAME})
 

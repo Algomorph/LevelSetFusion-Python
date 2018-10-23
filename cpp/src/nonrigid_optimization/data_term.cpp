@@ -23,44 +23,51 @@ namespace data_term {
  * Central difference formula: (f(x + h) - f(x-h))/2h, with h = 1 matrix grid cell
  *
  * @param[in] field scalar field representing the implicit function to differentiate
- * @param[out] live_gradient_x
- * @param[out] live_gradient_y
+ * @param[out] live_gradient_x output gradient along the x axis
+ * @param[out] live_gradient_y output gradient along the y axis
  */
 void gradient(const eig::MatrixXf& field, eig::MatrixXf& live_gradient_x, eig::MatrixXf& live_gradient_y) {
-    eigen_assert(field.rows() == live_gradient_x.rows() && field.cols() == live_gradient_x.cols() &&
-                         field.rows() == live_gradient_y.rows() && field.cols() == live_gradient_y.cols());
+
+	eig::Index column_count = field.cols();
+	eig::Index row_count = field.rows();
+
+	live_gradient_x = eig::MatrixXf(row_count, column_count);
+	live_gradient_y = eig::MatrixXf(row_count, column_count);
+
 #pragma omp parallel for
-	for (eig::Index i_col = 0; i_col < field.cols(); i_col++){
-		float prev_row_val = field(0,i_col);
+	for (eig::Index i_col = 0; i_col < column_count; i_col++) {
+		float prev_row_val = field(0, i_col);
 		float row_val = field(1, i_col);
-        live_gradient_y(0,i_col) = row_val - prev_row_val;
-        eig::Index i_row;
-		for(i_row = 1; i_row < field.rows()-1; i_row++){
-			float next_row_val = field(i_row+1,i_col);
-			live_gradient_y(i_row,i_col) = 0.5*(next_row_val - prev_row_val);
+		live_gradient_y(0, i_col) = row_val - prev_row_val;
+		eig::Index i_row;
+		for (i_row = 1; i_row < row_count - 1; i_row++) {
+			float next_row_val = field(i_row + 1, i_col);
+			live_gradient_y(i_row, i_col) = 0.5 * (next_row_val - prev_row_val);
 			prev_row_val = row_val;
 			row_val = next_row_val;
 		}
-        live_gradient_y(i_row,i_col) = row_val - prev_row_val;
+		live_gradient_y(i_row, i_col) = row_val - prev_row_val;
 	}
 #pragma omp parallel for
-	for (eig::Index  i_row = 0; i_row < field.rows(); i_row++){
+	for (eig::Index i_row = 0; i_row < row_count; i_row++) {
 		float prev_col_val = field(i_row, 0);
 		float col_val = field(i_row, 1);
-        live_gradient_x(i_row,0) = col_val - prev_col_val;
-        eig::Index  i_col;
-		for(i_col = 1; i_col < field.cols()-1; i_col++){
-			float next_col_val = field(i_row,i_col+1);
-			live_gradient_x(i_row,i_col) = 0.5*(next_col_val - prev_col_val);
+		live_gradient_x(i_row, 0) = col_val - prev_col_val;
+		eig::Index i_col;
+		for (i_col = 1; i_col < column_count - 1; i_col++) {
+			float next_col_val = field(i_row, i_col + 1);
+			live_gradient_x(i_row, i_col) = 0.5 * (next_col_val - prev_col_val);
 			prev_col_val = col_val;
 			col_val = next_col_val;
 		}
-        live_gradient_x(i_row, i_col) = col_val - prev_col_val;
+		live_gradient_x(i_row, i_col) = col_val - prev_col_val;
 	}
 }
 
+
 /***
- * \brief Computes data term for KillingFusion/SobolevFusion-based optimization on a 2D grid at the specified location
+ * \brief Computes the local gradient of the data energy term for KillingFusion/SobolevFusion-based optimization on a
+ * 2D grid at the specified location
  * \details See Section 4.1 in KillingFusion[1] / 1.1 in KillingFusion Supplementary Material / 4.1 in SobolevFusion[2]
  * [1] M. Slavcheva, M. Baust, D. Cremers, and S. Ilic, “KillingFusion: Non-rigid 3D Reconstruction without Correspondences,” in IEEE Conference on Computer Vision and Pattern Recognition (CVPR), 2017, no. 4, pp. 1386–1395.
  * [2] M. Slavcheva, M. Baust, and S. Ilic, “SobolevFusion : 3D Reconstruction of Scenes Undergoing Free Non-rigid Motion,” in Computer Vision and Pattern Recognition, 2018.
@@ -75,18 +82,18 @@ void gradient(const eig::MatrixXf& field, eig::MatrixXf& live_gradient_x, eig::M
  * \param[out] local_energy_contribution contribution to the data energy
  */
 void compute_local_data_term_gradient(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
-                                      int x,
-                                      int y,
+                                      int i_col,
+                                      int i_row,
                                       const eig::MatrixXf& live_gradient_x_field,
                                       const eig::MatrixXf& live_gradient_y_field,
                                       float& data_gradient_x, float& data_gradient_y,
                                       float& local_energy_contribution) {
-	float live_sdf = warped_live_field(y, x);
-	float canonical_sdf = canonical_field(y, x);
+	float live_sdf = warped_live_field(i_col, i_row);
+	float canonical_sdf = canonical_field(i_col, i_row);
 	float difference = live_sdf - canonical_sdf;
 	float scaling_factor = 10.0F;
-	float gradient_x = live_gradient_x_field(y, x);
-	float gradient_y = live_gradient_y_field(y, x);
+	float gradient_x = live_gradient_x_field(i_col, i_row);
+	float gradient_y = live_gradient_y_field(i_col, i_row);
 
 
 	data_gradient_x = difference * gradient_x * scaling_factor;
