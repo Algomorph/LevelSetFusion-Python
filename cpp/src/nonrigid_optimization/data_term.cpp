@@ -16,19 +16,46 @@
 #include "data_term.hpp"
 
 namespace data_term {
-
+/**
+ * Compute numerical gradient of given matrix. Uses forward and backward differences at the boundary matrix entries,
+ * central difference formula for all other entries.
+ * Reference: https://en.wikipedia.org/wiki/Numerical_differentiation ;
+ * Central difference formula: (f(x + h) - f(x-h))/2h, with h = 1 matrix grid cell
+ *
+ * @param[in] field scalar field representing the implicit function to differentiate
+ * @param[out] live_gradient_x
+ * @param[out] live_gradient_y
+ */
 void gradient(const eig::MatrixXf& field, eig::MatrixXf& live_gradient_x, eig::MatrixXf& live_gradient_y) {
-	int matrix_size = static_cast<int>(field.size());
-	const int column_count = static_cast<int>(field.cols());
-	const int row_count = static_cast<int>(field.rows());
-
+    eigen_assert(field.rows() == live_gradient_x.rows() && field.cols() == live_gradient_x.cols() &&
+                         field.rows() == live_gradient_y.rows() && field.cols() == live_gradient_y.cols());
 #pragma omp parallel for
-	for (int i_col = 1; i_col < column_count-1; i_col++){
+	for (eig::Index i_col = 0; i_col < field.cols(); i_col++){
 		float prev_row_val = field(0,i_col);
 		float row_val = field(1, i_col);
-		for(int i_row = 1; i_row < row_count-1; i_row++){
+        live_gradient_y(0,i_col) = row_val - prev_row_val;
+        eig::Index i_row;
+		for(i_row = 1; i_row < field.rows()-1; i_row++){
 			float next_row_val = field(i_row+1,i_col);
+			live_gradient_y(i_row,i_col) = 0.5*(next_row_val - prev_row_val);
+			prev_row_val = row_val;
+			row_val = next_row_val;
 		}
+        live_gradient_y(i_row,i_col) = row_val - prev_row_val;
+	}
+#pragma omp parallel for
+	for (eig::Index  i_row = 0; i_row < field.rows(); i_row++){
+		float prev_col_val = field(i_row, 0);
+		float col_val = field(i_row, 1);
+        live_gradient_x(i_row,0) = col_val - prev_col_val;
+        eig::Index  i_col;
+		for(i_col = 1; i_col < field.cols()-1; i_col++){
+			float next_col_val = field(i_row,i_col+1);
+			live_gradient_x(i_row,i_col) = 0.5*(next_col_val - prev_col_val);
+			prev_col_val = col_val;
+			col_val = next_col_val;
+		}
+        live_gradient_x(i_row, i_col) = col_val - prev_col_val;
 	}
 }
 
@@ -43,9 +70,9 @@ void gradient(const eig::MatrixXf& field, eig::MatrixXf& live_gradient_x, eig::M
  * \param y coordinate of the desired location
  * \param live_gradient_x_field precomputed x gradient of warped_live_field
  * \param live_gradient_y_field precomputed y gradient of warped_live_field
- * \param data_gradient_x [out] x, or u-component of the data term gradient
- * \param data_gradient_y [out] y, or v-component of the data term gradient
- * \param local_energy_contribution contribution to the data energy
+ * \param[out] data_gradient_x  x, or u-component of the data term gradient
+ * \param[out] data_gradient_y  y, or v-component of the data term gradient
+ * \param[out] local_energy_contribution contribution to the data energy
  */
 void compute_local_data_term_gradient(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
                                       int x,
