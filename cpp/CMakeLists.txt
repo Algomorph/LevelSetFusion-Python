@@ -45,17 +45,19 @@ endif ()
 
 include_directories(include)
 
-find_package(PythonInterp ${BOOST_PYTHON_NUMPY_EIGEN_PYTHON_VERSION} REQUIRED)
-
+find_package(Python3 COMPONENTS Interpreter Development Python)
+find_package(Python2 COMPONENTS Interpreter Development Python)
 
 # *** Boost (Boost python version based on python option / availability)
 set(BOOST_COMPONENTS unit_test_framework)
 if (${PYTHON_DESIRED_VERSION} STREQUAL "2.X")
     set(Python_ADDITIONAL_VERSIONS ${PYTHON2_VERSION_MAJOR}.${PYTHON2_VERSION_MINOR})
-    list(APPEND BOOST_COMPONENTS python-py${PYTHON2_VERSION_MAJOR}${PYTHON2_VERSION_MINOR})
+    list(APPEND BOOST_COMPONENTS python-py${Python2_VERSION_MAJOR}${Python2_VERSION_MINOR})
+    set(PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
 else ()
     set(Python_ADDITIONAL_VERSIONS ${PYTHON3_VERSION_MAJOR}.${PYTHON3_VERSION_MINOR})
-    list(APPEND BOOST_COMPONENTS python-py${PYTHON3_VERSION_MAJOR}${PYTHON3_VERSION_MINOR})
+    list(APPEND BOOST_COMPONENTS python-py${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR})
+    set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
 endif ()
 
 find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
@@ -65,15 +67,15 @@ find_package(OpenMP REQUIRED)
 
 #======== PICK PYTHON STUFF========================================
 if (${PYTHON_DESIRED_VERSION} STREQUAL "2.X")
-    SET(PYTHON_INCLUDE_DIRS ${PYTHON2_INCLUDE_DIR} ${PYTHON2_INCLUDE_DIR2} ${PYTHON2_NUMPY_INCLUDE_DIRS})
-    SET(PYTHON_LIBRARIES ${PYTHON2_LIBRARY})
-    SET(PYTHON_EXECUTABLE ${PYTHON2_EXECUTABLE})
+    SET(PYTHON_INCLUDE_DIRS ${Python2_INCLUDE_DIRS} ${PYTHON2_NUMPY_INCLUDE_DIRS})
+    SET(PYTHON_LIBRARIES ${Python2_LIBRARIES})
+    SET(PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
     SET(PYTHON_PACKAGES_PATH ${PYTHON2_PACKAGES_PATH})
     SET(ARCHIVE_OUTPUT_NAME ${MODULE_NAME}_py2)
 else ()
-    SET(PYTHON_INCLUDE_DIRS ${PYTHON3_INCLUDE_DIR} ${PYTHON3_INCLUDE_DIR2} ${PYTHON3_NUMPY_INCLUDE_DIRS})
-    SET(PYTHON_LIBRARIES ${PYTHON3_LIBRARY})
-    SET(PYTHON_EXECUTABLE ${PYTHON3_EXECUTABLE})
+    SET(PYTHON_INCLUDE_DIRS ${Python3_INCLUDE_DIRS} ${PYTHON3_NUMPY_INCLUDE_DIRS})
+    SET(PYTHON_LIBRARIES ${Python3_LIBRARIES})
+    SET(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
     SET(PYTHON_PACKAGES_PATH ${PYTHON3_PACKAGES_PATH})
     SET(ARCHIVE_OUTPUT_NAME ${MODULE_NAME}_py3)
 endif ()
@@ -89,6 +91,7 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
 
 set(MODULE_INSTALL_PREFIX "${MODULE_INSTALL_PREFIX}" CACHE STRING
         "Output directory for Python modules.")
+
 
 #-get proper extension for python binary shared object on this platform
 execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('SO'))"
@@ -128,7 +131,7 @@ add_library(${MODULE_NAME} SHARED
             src/math/matrix_base.hpp
             src/math/vector2.hpp
             src/math/platform_independence.hpp
-            src/math/matrix2.hpp)
+            src/math/matrix2.hpp src/math/vector3.hpp)
 target_link_libraries(${MODULE_NAME}
         PUBLIC
         ${Boost_LIBRARIES}
@@ -137,8 +140,8 @@ target_link_libraries(${MODULE_NAME}
         PRIVATE
         OpenMP::OpenMP_CXX)
 
-message(STATUS "${MODULE_NAME}  ${ARCHIVE_OUTPUT_NAME} ${${MODULE_NAME}_PY_SUFFIX}")
-
+#message(STATUS "${MODULE_NAME}: [archive output name:]  ${ARCHIVE_OUTPUT_NAME} [archive suffix:] ${${MODULE_NAME}_PY_SUFFIX}")
+message(STATUS [include dirs:] "${PYTHON_INCLUDE_DIRS}")
 
 #======== INSTALLATION MAKE TARGET =====================================================================================
 
