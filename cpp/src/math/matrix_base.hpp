@@ -31,6 +31,14 @@ template <class T> struct Matrix2_{
 			T xy00, xy10;	// |0, 2|
 			T xy01, xy11;	// |1, 3|
 		};
+		struct { // Jacobian of vector [u v]* struct representation (* = transpose)
+			T u_x, u_y;
+			T v_x, v_y;
+		};
+		struct { // Hermitian
+			T xx, xy;
+			T yx, yy;
+		};
 		T m[4];
 	};
 };
@@ -47,10 +55,10 @@ template <class T> struct Matrix3_{
 			T xy01, xy11, xy21;	// |1, 4, 7|
 			T xy02, xy12, xy22;	// |2, 5, 8|
 		};
-		struct { //Jacobian of [u v w] struct representation
-			T u_x, v_x, w_x; // |0, 3, 6|
-			T u_y, v_y, w_y; // |1, 4, 7|
-			T u_z, v_z, w_z; // |2, 5, 8|
+		struct { //Jacobian of vector [u v w]* struct representation (* = transpose)
+			T u_x, u_y, u_z; // |0, 3, 6|
+			T v_x, v_y, v_z; // |1, 4, 7|
+			T w_x, w_y, w_z; // |2, 5, 8|
 		};
 		struct { //Hermitian struct representation
 			T xx, xy, xz; // |0, 3, 6|

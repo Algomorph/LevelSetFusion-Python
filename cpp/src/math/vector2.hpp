@@ -16,7 +16,7 @@
 #pragma once
 
 //local
-#include "math_utils.h"
+#include "math_utils.hpp"
 #include "vector_base.hpp"
 #include "platform_independence.hpp"
 

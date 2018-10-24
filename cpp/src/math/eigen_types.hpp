@@ -18,8 +18,14 @@
 //libraries
 #include <Eigen/Eigen>
 
-typedef Eigen::Matrix<Eigen::Vector2f, Eigen::Dynamic, Eigen::Dynamic> MatrixX2f;
-typedef Eigen::Matrix<Eigen::Vector4f, Eigen::Dynamic, Eigen::Dynamic> MatrixX4f;
+//local
+#include "vector2.hpp"
+#include "matrix2.hpp"
+
+namespace math{
+	typedef Eigen::Matrix<math::Vector2<float>, Eigen::Dynamic, Eigen::Dynamic> MatrixXv2f;
+	typedef Eigen::Matrix<math::Matrix2<float>, Eigen::Dynamic, Eigen::Dynamic> MatrixXm2f;
+}
 
 
 

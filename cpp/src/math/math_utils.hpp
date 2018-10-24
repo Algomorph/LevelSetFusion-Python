@@ -28,7 +28,6 @@
 #define DEGTORAD float(0.017453292519943295769236907684886)
 #endif
 
-#ifndef __METALC__
 
 inline bool portable_finite(float a)
 {
@@ -48,4 +47,3 @@ inline void matmul(const float *A, const float *b, float *x, int numRows, int nu
 	}
 }
 
-#endif

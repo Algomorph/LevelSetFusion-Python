@@ -21,15 +21,17 @@
 #include <boost/python.hpp>
 #include <unsupported/Eigen/NumericalDiff>
 
-
 //local
 #include <eigen_numpy.hpp>
+#include "../math/eigen_types.hpp"
 
 namespace bp = boost::python;
 namespace eig = Eigen;
 
 namespace data_term {
 void gradient(const eig::MatrixXf& field,eig::MatrixXf& live_gradient_x, eig::MatrixXf& live_gradient_y);
+void gradient(const eig::MatrixXf& field,math::MatrixXv2f& live_gradient_field);
+
 
 
 

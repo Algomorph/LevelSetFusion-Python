@@ -29,6 +29,7 @@
 //test targets
 #include "../src/nonrigid_optimization/data_term.hpp"
 #include "../src/nonrigid_optimization/interpolation.hpp"
+#include "../src/math/eigen_types.hpp"
 
 namespace tt = boost::test_tools;
 namespace bp = boost::python;
@@ -275,4 +276,58 @@ BOOST_AUTO_TEST_CASE(gradient_test03) {
     BOOST_REQUIRE(gradient_x.isApprox(test_data::expected_gradient_x));
     BOOST_REQUIRE(gradient_y.isApprox(test_data::expected_gradient_y));
 }
+
+
+BOOST_AUTO_TEST_CASE(gradient_test04) {
+    using namespace Eigen;
+    using namespace math;
+    Matrix2f field;
+    field << -0.46612028, -0.8161121,
+            0.2427629, -0.79432599;
+
+
+    math::MatrixXv2f expected_gradient;
+    expected_gradient << Vector2f(-0.34999183,0.70888318),Vector2f(-0.34999183,0.02178612),
+		    Vector2f(-1.03708889,0.70888318), Vector2f(-1.03708889,0.02178612);
+
+    math::MatrixXv2f gradient;
+    data_term::gradient(field, gradient);
+
+    BOOST_REQUIRE(gradient.isApprox(expected_gradient));
+}
+//
+//
+//BOOST_AUTO_TEST_CASE(gradient_test05) {
+//    using namespace Eigen;
+//    Matrix3f field;
+//    field << 0.11007435, -0.94589225, -0.54835034,
+//            -0.09617922, 0.15561824, 0.60624432,
+//            -0.83068796, 0.19262577, -0.21090505;
+//
+//
+//
+//    Matrix3f expected_gradient_x, expected_gradient_y;
+//    expected_gradient_x << -1.0559666, -0.32921235, 0.39754191,
+//            0.25179745, 0.35121177, 0.45062608,
+//            1.02331373, 0.30989146, -0.40353082;
+//    expected_gradient_y << -0.20625357, 1.10151049, 1.15459466,
+//            -0.47038115, 0.56925901, 0.16872265,
+//            -0.73450874, 0.03700753, -0.81714937;
+//
+//    MatrixXf gradient_x, gradient_y;
+//    data_term::gradient(field, gradient_x, gradient_y);
+//
+//    BOOST_REQUIRE(gradient_x.isApprox(expected_gradient_x));
+//    BOOST_REQUIRE(gradient_y.isApprox(expected_gradient_y));
+//}
+//
+//BOOST_AUTO_TEST_CASE(gradient_test06) {
+//    using namespace Eigen;
+//
+//    MatrixXf gradient_x, gradient_y;
+//    data_term::gradient(test_data::field, gradient_x, gradient_y);
+//
+//    BOOST_REQUIRE(gradient_x.isApprox(test_data::expected_gradient_x));
+//    BOOST_REQUIRE(gradient_y.isApprox(test_data::expected_gradient_y));
+//}
 

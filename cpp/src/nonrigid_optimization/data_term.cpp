@@ -64,6 +64,51 @@ void gradient(const eig::MatrixXf& field, eig::MatrixXf& live_gradient_x, eig::M
 	}
 }
 
+/**
+ * Compute numerical gradient of given matrix. Uses forward and backward differences at the boundary matrix entries,
+ * central difference formula for all other entries.
+ * Reference: https://en.wikipedia.org/wiki/Numerical_differentiation ;
+ * Central difference formula: (f(x + h) - f(x-h))/2h, with h = 1 matrix grid cell
+ *
+ * @param[in] field scalar field representing the implicit function to differentiate
+ * @param[out] live_gradient_field output gradient field with vectors containing the x and the y gradient for each location
+ */
+void gradient(const eig::MatrixXf& field, math::MatrixXv2f& live_gradient_field) {
+	eig::Index column_count = field.cols();
+	eig::Index row_count = field.rows();
+	live_gradient_field = math::MatrixXv2f(row_count, column_count);
+
+
+#pragma omp parallel for
+	for (eig::Index i_col = 0; i_col < column_count; i_col++) {
+		float prev_row_val = field(0, i_col);
+		float row_val = field(1, i_col);
+		live_gradient_field(0, i_col).y = row_val - prev_row_val;
+		eig::Index i_row;
+		for (i_row = 1; i_row < row_count - 1; i_row++) {
+			float next_row_val = field(i_row + 1, i_col);
+			live_gradient_field(i_row, i_col).y = 0.5 * (next_row_val - prev_row_val);
+			prev_row_val = row_val;
+			row_val = next_row_val;
+		}
+		live_gradient_field(i_row, i_col).y = row_val - prev_row_val;
+	}
+#pragma omp parallel for
+	for (eig::Index i_row = 0; i_row < row_count; i_row++) {
+		float prev_col_val = field(i_row, 0);
+		float col_val = field(i_row, 1);
+		live_gradient_field(i_row, 0).x = col_val - prev_col_val;
+		eig::Index i_col;
+		for (i_col = 1; i_col < column_count - 1; i_col++) {
+			float next_col_val = field(i_row, i_col + 1);
+			live_gradient_field(i_row, i_col).x = 0.5 * (next_col_val - prev_col_val);
+			prev_col_val = col_val;
+			col_val = next_col_val;
+		}
+		live_gradient_field(i_row, i_col).x = col_val - prev_col_val;
+	}
+}
+
 
 /***
  * \brief Computes the local gradient of the data energy term for KillingFusion/SobolevFusion-based optimization on a
@@ -100,6 +145,8 @@ void compute_local_data_term_gradient(const eig::MatrixXf& warped_live_field, co
 	data_gradient_y = difference * gradient_y * scaling_factor;
 	local_energy_contribution = 0.5F * difference * difference;
 }
+
+
 
 bp::tuple py_data_term_at_location(eig::MatrixXf warped_live_field, eig::MatrixXf canonical_field, int x, int y,
                                    eig::MatrixXf live_gradient_x_field, eig::MatrixXf live_gradient_y_field) {
