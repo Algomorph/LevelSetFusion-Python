@@ -332,3 +332,7 @@ BOOST_AUTO_TEST_CASE(gradient_test06) {
 	BOOST_REQUIRE(math::almost_equal(gradient, expected_gradient, 1e-6));
 }
 
+BOOST_AUTO_TEST_CASE(vector_field_gradient_test01){
+
+}
+

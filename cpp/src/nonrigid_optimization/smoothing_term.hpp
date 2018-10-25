@@ -17,16 +17,15 @@
 
 //libraries
 #include <Eigen/Eigen>
-#include <unsupported/Eigen/CXX11/Tensor>
+
+//local
+#include "../math/tensors.hpp"
 
 namespace eig = Eigen;
 
 namespace smoothing_term {
 
-//void gradient(const eig::MatrixXf& warp_field_x, const eig::MatrixXf& warp_field_y,
-//              eig::MatrixXf& live_gradient_ux, eig::MatrixXf& live_gradient_uy,
-//              eig::MatrixXf& live_gradient_vx, eig::MatrixXf& live_gradient_vy);
-void gradient(const eig::Tensor<float, 3>& warp_field,eig::Tensor<float, 3>& warp_field_gradient);
+void gradient(const math::MatrixXv2f& field, math::MatrixXm2f& gradient);
 
 void
 compute_local_smoothing_term_gradient_tikhonov(

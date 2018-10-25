@@ -16,58 +16,58 @@
 
 //local
 #include "smoothing_term.hpp"
+#include "../math/math.hpp"
 
 
 namespace smoothing_term {
 
-//void gradient(const eig::MatrixXf& warp_field_u, const eig::MatrixXf& warp_field_v,
-//              eig::MatrixXf& live_gradient_ux, eig::MatrixXf& live_gradient_uy,
-//              eig::MatrixXf& live_gradient_vx, eig::MatrixXf& live_gradient_vy) {
+/**
+ * \brief Computes gradient of the given 2D vector field
+ * \details If the input vector field contains vectors of the form [u v]*, the output
+ * will contain, for each corresponding location, the Jacobian 2x2 matrix
+ *       |u_x u_y|
+ *       |v_x v_y|
+ * Gradients are computed numerically using central differences, with forward & backward differences applied to the
+ * boundary values.
+ * \param field a matrix of 2-entry vectors
+ * \param gradient numerical gradient of the input matrix
+ */
+void gradient(const math::MatrixXv2f& field, math::MatrixXm2f& gradient) {
 
-//void gradient(const eig::Tensor<float, 3>& warp_field,
-//              eig::Tensor<float, 3>& warp_field_gradient) {
-//
-//	eigen_assert((warp_field.dimension(2) == 2) &&
-//	"Tensor passed in for the warp field doesn't have a depth dimension of 2.");
-//
-//	eig::Index row_count = warp_field.dimension(0);
-//	eig::Index column_count = warp_field.dimension(1);
-//	const eig::Index output_depth = 4; // u_x, u_y, v_x, v_y, where u_x means du/dx
-//	warp_field_gradient = eig::Tensor<float,3>(row_count,column_count,output_depth);
-//
-//#pragma omp parallel for
-//	for (eig::Index i_col = 0; i_col < column_count; i_col++) {
-//		float prev_row_u = warp_field(0, i_col, 0);
-//		float prev_row_v = warp_field(0, i_col, 1);
-//		float row_u = warp_field(1, i_col, 0);
-//		float row_v = warp_field(1, i_col, 1);
-//		warp_field_gradient(0, i_col, 1) = row_u - prev_row_u; //u_y
-//		warp_field_gradient(0, i_col, 3) = row_u - prev_row_u; //v_y
-//		eig::Index i_row;
-//		for (i_row = 1; i_row < row_count - 1; i_row++) {
-//			float next_row_val = field(i_row + 1, i_col);
-//			live_gradient_y(i_row, i_col) = 0.5 * (next_row_val - prev_row_val);
-//			prev_row_val = row_val;
-//			row_val = next_row_val;
-//		}
-//		live_gradient_y(i_row, i_col) = row_val - prev_row_val;
-//	}
-//#pragma omp parallel for
-//	for (eig::Index i_row = 0; i_row < row_count; i_row++) {
-//		float prev_col_val = field(i_row, 0);
-//		float col_val = field(i_row, 1);
-//		live_gradient_x(i_row, 0) = col_val - prev_col_val;
-//		eig::Index i_col;
-//		for (i_col = 1; i_col < column_count - 1; i_col++) {
-//			float next_col_val = field(i_row, i_col + 1);
-//			live_gradient_x(i_row, i_col) = 0.5 * (next_col_val - prev_col_val);
-//			prev_col_val = col_val;
-//			col_val = next_col_val;
-//		}
-//		live_gradient_x(i_row, i_col) = col_val - prev_col_val;
-//	}
-//
-//
-//}
+	eig::Index row_count = field.rows();
+	eig::Index column_count = field.cols();
+
+	gradient = math::MatrixXm2f(row_count,column_count);
+
+#pragma omp parallel for
+	for (eig::Index i_col = 0; i_col < column_count; i_col++) {
+		math::Vector2f prev_row_vector = field(0, i_col);
+		math::Vector2f current_row_vector = field(1, i_col);
+		gradient(0, i_col).set_column(1, current_row_vector - prev_row_vector);
+		eig::Index i_row;
+		//traverse each column in vertical (y) direction
+		for (i_row = 1; i_row < row_count - 1; i_row++) {
+			math::Vector2f next_row_vector = field(i_row + 1, i_col);
+			gradient(i_row, i_col).set_column(1, 0.5 * (next_row_vector - prev_row_vector));
+			prev_row_vector = current_row_vector;
+			current_row_vector = next_row_vector;
+		}
+		gradient(i_row, i_col).set_column(1, current_row_vector - prev_row_vector);
+	}
+#pragma omp parallel for
+	for (eig::Index i_row = 0; i_row < row_count; i_row++) {
+		math::Vector2f prev_col_vector = field(i_row, 0);
+		math::Vector2f current_col_vector = field(i_row, 1);
+		gradient(i_row, 0).set_column(1, current_col_vector - prev_col_vector);
+		eig::Index i_col;
+		for (i_col = 1; i_col < column_count - 1; i_col++) {
+			math::Vector2f next_col_vector = field(i_row, i_col + 1);
+			gradient(i_row, i_col).set_column(1, 0.5 * (next_col_vector - prev_col_vector));
+			prev_col_vector = current_col_vector;
+			current_col_vector = next_col_vector;
+		}
+		gradient(i_row, i_col).set_column(1, current_col_vector - prev_col_vector);
+	}
+}
 
 }//smoothing_term

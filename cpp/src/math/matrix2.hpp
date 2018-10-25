@@ -95,13 +95,13 @@ public:
 	// get slices
 	_CPU_AND_GPU_CODE_ inline Vector2<T> get_row(int r) const {
 		Vector2<T> v;
-		for (int x = 0; x < 4; x++) v[x] = at(x, r);
+		for (int x = 0; x < 2; x++) v[x] = at(x, r);
 		return v;
 	}
 
 	_CPU_AND_GPU_CODE_ inline Vector2<T> get_column(int c) const {
 		Vector2<T> v;
-		memcpy(v.values, this->values + 4 * c, sizeof(T) * 4);
+		memcpy(v.values, this->values + 2 * c, sizeof(T) * 2);
 		return v;
 	}
 
