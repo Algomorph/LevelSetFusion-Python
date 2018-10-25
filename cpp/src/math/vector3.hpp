@@ -24,7 +24,8 @@ template<class T>
 class Vector3 : public Vector3_<T> {
 public:
 	typedef T value_type;
-	_CPU_AND_GPU_CODE_ inline int size() const { return 3; }
+	static const int size = 3;
+	_CPU_AND_GPU_CODE_ inline int get_size() const { return 3; }
 
 	////////////////////////////////////////////////////////
 	//  Constructors

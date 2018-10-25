@@ -45,8 +45,8 @@ endif ()
 
 include_directories(include)
 
-find_package(Python3 COMPONENTS Interpreter Development Python)
-find_package(Python2 COMPONENTS Interpreter Development Python)
+find_package(Python3 COMPONENTS Interpreter Development)
+find_package(Python2 COMPONENTS Interpreter Development)
 
 # *** Boost (Boost python version based on python option / availability)
 set(BOOST_COMPONENTS unit_test_framework)
@@ -126,14 +126,16 @@ add_library(${MODULE_NAME} SHARED
             src/nonrigid_optimization/energy_gradient.hpp
             src/nonrigid_optimization/smoothing_term.cpp
             src/nonrigid_optimization/smoothing_term.hpp
-            src/math/eigen_types.hpp
+            src/math/tensors.hpp
+            src/math/tensors.cpp
             src/math/math_utils.hpp
             src/math/vector_base.hpp
             src/math/matrix_base.hpp
             src/math/vector2.hpp
             src/math/platform_independence.hpp
             src/math/matrix2.hpp src/math/vector3.hpp
-            src/math/math.hpp)
+            src/math/math.hpp
+            src/math/conversion.hpp )
 target_link_libraries(${MODULE_NAME}
         PUBLIC
         ${Boost_LIBRARIES}
@@ -143,7 +145,7 @@ target_link_libraries(${MODULE_NAME}
         OpenMP::OpenMP_CXX)
 
 #message(STATUS "${MODULE_NAME}: [archive output name:]  ${ARCHIVE_OUTPUT_NAME} [archive suffix:] ${${MODULE_NAME}_PY_SUFFIX}")
-message(STATUS [include dirs:] "${PYTHON_INCLUDE_DIRS}")
+#message(STATUS [include dirs:] "${PYTHON_INCLUDE_DIRS}")
 
 #======== INSTALLATION MAKE TARGET =====================================================================================
 
@@ -178,7 +180,7 @@ enable_testing()
 
 set(TEST_SOURCES
     tests/test_nonrigid_optimization.cpp
-    tests/test_data_nonrigid_optimization.hpp)
+    tests/test_data_nonrigid_optimization.hpp )
 
 add_executable(test_nonrigid_optimization ${TEST_SOURCES} )
 

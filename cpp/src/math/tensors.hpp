@@ -15,17 +15,37 @@
 //  ================================================================
 #pragma once
 
-//libraries
-#include <Eigen/Eigen>
+
 
 //local
 #include "vector2.hpp"
 #include "matrix2.hpp"
 
-namespace math{
-	typedef Eigen::Matrix<math::Vector2<float>, Eigen::Dynamic, Eigen::Dynamic> MatrixXv2f;
-	typedef Eigen::Matrix<math::Matrix2<float>, Eigen::Dynamic, Eigen::Dynamic> MatrixXm2f;
+//libraries
+#include <Eigen/Eigen>
+
+namespace math {
+typedef Eigen::Matrix<math::Vector2<float>, Eigen::Dynamic, Eigen::Dynamic> MatrixXv2f;
+typedef Eigen::Matrix<math::Matrix2<float>, Eigen::Dynamic, Eigen::Dynamic> MatrixXm2f;
+
+
+//TODO: write verbose version which prints out row/column of the mismatch if one occurs
+template<typename TMatrix>
+bool almost_equal(TMatrix matrix_a, TMatrix matrix_b, double tolerance = 1e-10) {
+	if (matrix_a.rows() != matrix_b.rows() || matrix_a.cols() != matrix_b.rows()) {
+		return false;
+	}
+	for (Eigen::Index index = 0; index < matrix_a.size(); index++) {
+		if (!matrix_a(index).is_close(matrix_b(index), tolerance)) {
+			return false;
+		}
+	}
+	return true;
 }
+
+MatrixXv2f stack_as_xv2f(const Eigen::MatrixXf& matrix_a, const Eigen::MatrixXf& matrix_b);
+
+}//namespace math
 
 
 

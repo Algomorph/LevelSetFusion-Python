@@ -39,7 +39,7 @@ template <class T> struct Matrix2_{
 			T xx, xy;
 			T yx, yy;
 		};
-		T m[4];
+		T values[4];
 	};
 };
 
@@ -65,7 +65,7 @@ template <class T> struct Matrix3_{
 			T yx, yy, yz; // |1, 4, 7|
 			T zx, zy, zz; // |2, 5, 8|
 		};
-		T m[9];
+		T values[9];
 	};
 };
 
@@ -83,7 +83,7 @@ template <class T> struct Matrix4_{
 			T xy02, xy12, xy22, xy32;	// |2, 6, 10, 14|
 			T xy03, xy13, xy23, xy33;	// |3, 7, 11, 15|
 		};
-		T m[16];
+		T values[16];
 	};
 };
 
