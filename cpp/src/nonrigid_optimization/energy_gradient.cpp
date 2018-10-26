@@ -14,12 +14,11 @@
 //  limitations under the License.
 //  ================================================================
 
-
-
 //local
 #include "data_term.hpp"
 #include "energy_gradient.hpp"
 #include "utils.hpp"
+#include "../math/gradients.hpp"
 
 namespace energy_gradient {
 /**
@@ -60,7 +59,7 @@ void compute_energy_gradient(const eig::MatrixXf& warped_live_field, const eig::
 	eig::MatrixXf live_gradient_x_field, live_gradient_y_field;
 
 	// compute warped live numerical gradient
-	data_term::gradient(warped_live_field, live_gradient_x_field, live_gradient_y_field);
+	math::scalar_field_gradient(warped_live_field, live_gradient_x_field, live_gradient_y_field);
 
 #pragma omp parallel for
 	for (int i_element = 0; i_element < entry_count; i_element++) {
@@ -85,9 +84,6 @@ void compute_energy_gradient(const eig::MatrixXf& warped_live_field, const eig::
 
 		gradient_field_x(i_element) = local_data_gradient_x;
 		gradient_field_y(i_element) = local_data_gradient_y;
-
-
-
 	}
 }
 

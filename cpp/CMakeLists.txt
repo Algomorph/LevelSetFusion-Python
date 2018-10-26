@@ -134,8 +134,8 @@ add_library(${MODULE_NAME} SHARED
             src/math/vector2.hpp
             src/math/platform_independence.hpp
             src/math/matrix2.hpp src/math/vector3.hpp
-            src/math/math.hpp
-            src/math/conversion.hpp )
+            src/math/typedefs.hpp
+            src/math/conversion.hpp src/math/gradients.cpp src/math/gradients.hpp)
 target_link_libraries(${MODULE_NAME}
         PUBLIC
         ${Boost_LIBRARIES}

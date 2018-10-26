@@ -25,7 +25,7 @@ namespace eig = Eigen;
 
 namespace smoothing_term {
 
-void gradient(const math::MatrixXv2f& field, math::MatrixXm2f& gradient);
+
 
 void
 compute_local_smoothing_term_gradient_tikhonov(

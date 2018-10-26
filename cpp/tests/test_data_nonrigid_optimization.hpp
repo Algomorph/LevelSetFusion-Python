@@ -16,12 +16,14 @@
 #pragma once
 
 #include <Eigen/Eigen>
+#include "../src/math/typedefs.hpp"
+#include "../src/math/tensors.hpp"
 
 namespace test_data {
-    namespace eig = Eigen;
-    static eig::MatrixXf field = [] {
-        eig::MatrixXf field(16, 16);
-        //@formatter:off
+namespace eig = Eigen;
+static eig::MatrixXf field = [] {
+	eig::MatrixXf field(16, 16);
+	//@formatter:off
         field << 4.71329689e-03, -8.68739009e-01, -5.74181378e-01, -8.74342024e-01,
                 4.57525730e-01, 2.99881458e-01, 9.47121620e-01, -8.15366149e-01,
                 -8.39478970e-01, 1.19697332e-01, -5.41317701e-01, -2.85580277e-01,
@@ -102,13 +104,13 @@ namespace test_data {
                -7.21962512e-01, 4.47731376e-01, -1.69224143e-01, 2.65484810e-01,
                -9.40007687e-01, -3.37775290e-01, -1.68722153e-01, -2.38238335e-01; // line 16
         //@formatter:on
-        return field;
-    }();
+	return field;
+}();
 
-    static eig::MatrixXf expected_gradient_x = [] {
-        eig::MatrixXf expected_gradient_x(16, 16);
-        expected_gradient_x <<
-        //@formatter:off
+static eig::MatrixXf expected_gradient_x = [] {
+	eig::MatrixXf expected_gradient_x(16, 16);
+	expected_gradient_x <<
+	                    //@formatter:off
                -8.73452306e-01, -2.89447337e-01, -2.80150771e-03, 5.15853524e-01,
                 5.87111712e-01, 2.44797945e-01, -5.57623804e-01, -8.93300295e-01,
                 4.67531741e-01, 1.49080634e-01, -2.02638805e-01, 7.01272070e-01,
@@ -190,13 +192,13 @@ namespace test_data {
                 -3.01630050e-01, 3.85642767e-01, 4.97684777e-02, -6.95161819e-02;  // line 16
         //@formatter:on
 
-        return expected_gradient_x;
-    }();
+	return expected_gradient_x;
+}();
 
-    static eig::MatrixXf expected_gradient_y = [] {
-        eig::MatrixXf expected_gradient_y(16, 16);
-        expected_gradient_y <<
-        //@formatter:off
+static eig::MatrixXf expected_gradient_y = [] {
+	eig::MatrixXf expected_gradient_y(16, 16);
+	expected_gradient_y <<
+	                    //@formatter:off
                 2.92929411e-01,1.49114382e+00,9.31649625e-01,1.24069786e+00,
                 -1.08427203e+00,2.17267513e-01,-1.67242849e+00,1.70721459e+00,
                 1.23834884e+00,-1.32202566e-01,4.42566097e-01,-3.20101976e-02,
@@ -277,7 +279,67 @@ namespace test_data {
                 -9.62501764e-03,8.18617105e-01,4.50996399e-01,5.81519604e-02,
                 -9.39785898e-01,1.10070884e-01,-4.97517228e-01,-1.10162640e+00;  // line 16
         //@formatter:on
-        return expected_gradient_y;
-    }();
+	return expected_gradient_y;
+}();
+
+static math::MatrixXv2f vector_field = [] {
+	math::MatrixXv2f field(4, 4);
+	field << math::Vector2f(0.66137378f, 0.22941163f), math::Vector2f(-0.79364663f, -0.51078996f),
+			math::Vector2f(0.31330802f, -0.62231087f), math::Vector2f(0.38155258f, 0.25911068f),
+
+			math::Vector2f(-0.93761754f, 0.22711085f), math::Vector2f(-0.84484027f, 0.74134703f),
+			math::Vector2f(-0.77734907f, 0.31051154f), math::Vector2f(0.05594392f, 0.62550403f),
+
+			math::Vector2f(0.24144975f, -0.03810476f), math::Vector2f(-0.83927967f, 0.2171229f),
+			math::Vector2f(0.3517115f, -0.34761186f), math::Vector2f(-0.3781738f, 0.4708583f),
+
+			math::Vector2f(-0.60896495f, 0.32025099f), math::Vector2f(0.11699246f, -0.98680021f),
+			math::Vector2f(-0.96371592f, -0.93434108f), math::Vector2f(0.42603218f, 0.76691092f);
+	return field;
+}();
+
+static math::MatrixXm2f vector_field_gradient = [] {
+	math::MatrixXm2f gradient(4, 4);
+	gradient <<
+			math::Matrix2f(-1.4550204, -1.5989913,
+	                       -0.7402016, -0.00230078),
+			math::Matrix2f(-0.17403288, -0.05119364,
+			               -0.42586124, 1.252137),
+			math::Matrix2f(0.58759964, -1.0906571,
+			               0.3849503, 0.9328224),
+			math::Matrix2f(0.06824457, -0.32560867,
+			               0.88142157, 0.36639336),
+
+
+			math::Matrix2f(0.09277727, -0.20996201,
+			               0.51423615, -0.13375819),
+			math::Matrix2f(0.08013424, -0.02281652,
+			               0.04170034, 0.36395642),
+			math::Matrix2f(0.4503921, 0.01920174,
+			               -0.0579215, 0.1373495),
+			math::Matrix2f(0.833293, -0.3798632,
+			               0.3149925, 0.10587381),
+
+
+			math::Matrix2f(-1.0807294, 0.1643263,
+			               0.25522766, 0.04657007),
+			math::Matrix2f(0.05513087, 0.48091638,
+			               -0.15475355, -0.86407363),
+			math::Matrix2f(0.23055294, -0.09318343,
+			               0.1268677, -0.62242633),
+			math::Matrix2f(-0.7298853, 0.18504412,
+			               0.8184702, 0.07070345),
+
+
+			math::Matrix2f(0.7259574, -0.8504147,
+			               -1.3070512, 0.35835573),
+			math::Matrix2f(-0.17737548, 0.9562721,
+			               -0.62729603, -1.2039231),
+			math::Matrix2f(0.15451986, -1.3154274,
+			               0.87685555, -0.5867292),
+			math::Matrix2f(1.3897481, 0.80420595,
+			               1.701252, 0.29605263);
+	return gradient;
+}();
 
 }//namespace test_data
