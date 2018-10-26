@@ -38,11 +38,18 @@ public:
 
 	_CPU_AND_GPU_CODE_ Matrix2(const T* m) { set_values(m); }
 
+	/**
+	 * \brief Constructor, fill in using xy, i.e. row-major, order!
+	 * \param a00
+	 * \param a01
+	 * \param a10
+	 * \param a11
+	 */
 	_CPU_AND_GPU_CODE_ Matrix2(T a00, T a01, T a10, T a11) {
-		this->yx00 = a00;
-		this->yx01 = a01;
-		this->yx10 = a10;
-		this->yx11 = a11;
+		this->xy00 = a00;
+		this->xy01 = a01;
+		this->xy10 = a10;
+		this->xy11 = a11;
 	}
 
 	_CPU_AND_GPU_CODE_ inline void get_values(T* mp) const { memcpy(mp, this->values, sizeof(T) * 4); }
@@ -194,19 +201,27 @@ public:
 	}
 
 	_CPU_AND_GPU_CODE_ inline Matrix2& operator+=(const Matrix2& mat) {
-		for (int i = 0; i < 4; ++i){
+		for (int i = 0; i < 4; ++i) {
 			this->values[i] += mat.values[i];
 		}
 		return *this;
 	}
 
 	_CPU_AND_GPU_CODE_ inline Matrix2& operator-=(const Matrix2& mat) {
-		for (int i = 0; i < 4; ++i){
+		for (int i = 0; i < 4; ++i) {
 			this->values[i] -= mat.values[i];
 		}
 		return *this;
 	}
 
+	//=====================================================================================
+	//region              Comparison Operators and Functions
+	//=====================================================================================
+
+/*
+ TODO: (following three functions) test whether returning false directly on first comparison failure significantly
+ improves CPU performance or affects GPU performance
+*/
 	_CPU_AND_GPU_CODE_ inline friend bool operator==(const Matrix2& lhs, const Matrix2& rhs) {
 		bool r = lhs.values[0] == rhs.values[0];
 		for (int i = 1; i < 4; i++) {
@@ -222,6 +237,16 @@ public:
 		}
 		return r;
 	}
+
+	// margin-comparison (for floating-point T types) //TODO: use consistent naming,  i.e. tensor.h uses "is_approx"
+	_CPU_AND_GPU_CODE_ bool is_close(const Matrix2<T>& rhs, T margin = 1e-10) {
+		bool r = std::abs<T>(this->values[0] - rhs.values[0]) < margin;
+		for (int i = 1; i < 4; i++) {
+			r &= std::abs<T>(this->values[i] - rhs.values[i]) < margin;
+		}
+		return r;
+	}
+	//endregion ============================================================================
 
 	// Matrix determinant
 	_CPU_AND_GPU_CODE_ inline T det() const {
@@ -241,12 +266,37 @@ public:
 		return true;
 	}
 
+	/**
+	 * \brief CPU-only readable output function, the matrix is printed in row-major order
+	 * \details printed on a single line to be readable when Matrix2<T> is used within an Eigen::Matrix and the whole
+	 * outer matrix is printed
+	 */
 	friend std::ostream& operator<<(std::ostream& os, const Matrix2<T>& dt) {
-		for (int y = 0; y < 2; y++) {
-			os << dt(0, y) << ", " << dt(1, y) << "\n";
-		}
+		os << dt(0, 0) << ", " << dt(0, 1) << " \\ " << dt(1, 0) << ", " << dt(1, 1);
 		return os;
 	}
 };
 
 }//namespace math
+
+namespace Eigen{
+
+template<typename T>
+	struct NumTraits<math::Matrix2<T>>
+		: NumTraits<T> // permits to get the epsilon, dummy_precision, lowest, highest functions
+{
+	typedef math::Matrix2<T> Real;
+	typedef math::Matrix2<T> NonInteger;
+	typedef math::Matrix2<T> Nested;
+	enum {
+		IsComplex = 0,
+		IsInteger = 0,
+		IsSigned = 1,
+		RequireInitialization = 1,
+		ReadCost = 4,
+		AddCost = 4,
+		MulCost = 24
+	};
+};
+
+}//namespace Eigen

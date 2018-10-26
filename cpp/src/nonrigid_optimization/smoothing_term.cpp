@@ -21,6 +21,10 @@
 
 namespace smoothing_term {
 
+
+// TODO: move gradients from smoothing_term and data_term namespace into the math namespace (and rename more appropriately),
+// these are generic math operations
+
 /**
  * \brief Computes gradient of the given 2D vector field
  * \details If the input vector field contains vectors of the form [u v]*, the output
@@ -39,7 +43,7 @@ void gradient(const math::MatrixXv2f& field, math::MatrixXm2f& gradient) {
 
 	gradient = math::MatrixXm2f(row_count,column_count);
 
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (eig::Index i_col = 0; i_col < column_count; i_col++) {
 		math::Vector2f prev_row_vector = field(0, i_col);
 		math::Vector2f current_row_vector = field(1, i_col);
@@ -54,19 +58,19 @@ void gradient(const math::MatrixXv2f& field, math::MatrixXm2f& gradient) {
 		}
 		gradient(i_row, i_col).set_column(1, current_row_vector - prev_row_vector);
 	}
-#pragma omp parallel for
+//#pragma omp parallel for
 	for (eig::Index i_row = 0; i_row < row_count; i_row++) {
 		math::Vector2f prev_col_vector = field(i_row, 0);
 		math::Vector2f current_col_vector = field(i_row, 1);
-		gradient(i_row, 0).set_column(1, current_col_vector - prev_col_vector);
+		gradient(i_row, 0).set_column(0, current_col_vector - prev_col_vector);
 		eig::Index i_col;
 		for (i_col = 1; i_col < column_count - 1; i_col++) {
 			math::Vector2f next_col_vector = field(i_row, i_col + 1);
-			gradient(i_row, i_col).set_column(1, 0.5 * (next_col_vector - prev_col_vector));
+			gradient(i_row, i_col).set_column(0, 0.5 * (next_col_vector - prev_col_vector));
 			prev_col_vector = current_col_vector;
 			current_col_vector = next_col_vector;
 		}
-		gradient(i_row, i_col).set_column(1, current_col_vector - prev_col_vector);
+		gradient(i_row, i_col).set_column(0, current_col_vector - prev_col_vector);
 	}
 }
 
