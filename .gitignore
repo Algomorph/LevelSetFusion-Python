@@ -144,3 +144,4 @@ cmake-build-debug/
 
 # ==== OUTPUT =====
 out2D/
+test_non_rigid_out/
