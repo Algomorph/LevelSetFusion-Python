@@ -23,7 +23,7 @@
 
 
 
-namespace interpolation {
+namespace nonrigid_optimization {
 
 inline float sample_tsdf_value_at(const eig::MatrixXf& tsdf_field, int x, int y) {
 	if (x < 0 || x >= tsdf_field.cols() || y < 0 || y >= tsdf_field.rows()) {
@@ -60,7 +60,7 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 		float live_tsdf_value = warped_live_field(i_element);
 		if (band_union_only) {
 			float canonical_tsdf_value = canonical_field(i_element);
-			if (boolean_ops::is_outside_narrow_band(live_tsdf_value, canonical_tsdf_value)) {
+			if (is_outside_narrow_band(live_tsdf_value, canonical_tsdf_value)) {
 				new_live_field(i_element) = live_tsdf_value;
 				continue;
 			}
@@ -129,4 +129,4 @@ py_interpolate(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& cano
 	return bp::make_tuple(warped_live_field_out, bp::make_tuple(warp_field_u_out, warp_field_v_out));
 }
 
-}//namespace interpolation
+}//namespace nonrigid_optimization

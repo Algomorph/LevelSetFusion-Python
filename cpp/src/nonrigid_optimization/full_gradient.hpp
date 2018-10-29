@@ -24,7 +24,7 @@
 
 namespace eig = Eigen;
 
-namespace energy_gradient {
+namespace nonrigid_optimization {
 
 
 void compute_energy_gradient(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
@@ -33,4 +33,4 @@ void compute_energy_gradient(const eig::MatrixXf& warped_live_field, const eig::
                              bool band_union_only = true);
 
 
-}//namespace energy_gradient
+}//namespace nonrigid_optimization

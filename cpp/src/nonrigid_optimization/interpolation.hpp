@@ -26,7 +26,7 @@
 namespace bp = boost::python;
 namespace eig = Eigen;
 
-namespace interpolation {
+namespace nonrigid_optimization {
 
 eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
                           eig::MatrixXf& warp_field_u, eig::MatrixXf& warp_field_v,
@@ -39,5 +39,5 @@ bp::object py_interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
                           bool substitute_original = false, float truncation_float_threshold = 1e-6);
 
 
-}
+} // namespace nonrigid_optimization
 

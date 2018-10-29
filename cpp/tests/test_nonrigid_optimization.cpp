@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(data_term_test) {
 	float out_data_grad_x, out_data_grad_y, out_energy_contribution;
 	x = 0;
 	y = 0;
-	data_term::compute_local_data_term_gradient(warped_live_field, canonical_field, x, y,
+	nonrigid_optimization::compute_local_data_term_gradient(warped_live_field, canonical_field, x, y,
 	                                            live_gradient_x_field, live_gradient_y_field, out_data_grad_x,
 	                                            out_data_grad_y,
 	                                            out_energy_contribution);
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(interpolation_test01) {
     warped_live_field << 1.0F, -1.0F,
             1.0F, -1.0F;
     //@formatter:on
-	Matrix2f warped_live_field_out = interpolation::interpolate(warped_live_field, canonical_field,
+	Matrix2f warped_live_field_out = nonrigid_optimization::interpolate(warped_live_field, canonical_field,
 	                                                            u_vectors, v_vectors);
 	Matrix2f expected_live_out;
 	expected_live_out << 0.0F, 0.0F, 0.0F, 0.0F;
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(interpolation_test02) {
             0.5F, 1.0F, 1.0F,
             0.5F, 0.5F, -1.0F;
     //@formatter:on
-	Matrix3f warped_live_field_out = interpolation::interpolate(warped_live_field, canonical_field,
+	Matrix3f warped_live_field_out = nonrigid_optimization::interpolate(warped_live_field, canonical_field,
 	                                                            u_vectors, v_vectors, true, false, true);
 
 
@@ -173,7 +173,7 @@ BOOST_AUTO_TEST_CASE(interpolation_test03) {
             1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02,
             1.0000000e+00, 7.5000443e-02, 4.4107438e-07, -9.9999562e-02;
     //@formatter:on
-	MatrixXf warped_live_field_out = interpolation::interpolate(warped_live_field, canonical_field,
+	MatrixXf warped_live_field_out = nonrigid_optimization::interpolate(warped_live_field, canonical_field,
 	                                                            u_vectors, v_vectors, false, false, false);
 
 	MatrixXf expected_live_out(4, 4);
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(interpolation_test04) {
             1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02,
             1.0000000e+00, 7.5000443e-02, 4.4107438e-07, -9.9999562e-02;
     //@formatter:on
-	MatrixXf warped_live_field_out = interpolation::interpolate(warped_live_field, canonical_field,
+	MatrixXf warped_live_field_out = nonrigid_optimization::interpolate(warped_live_field, canonical_field,
 	                                                            u_vectors, v_vectors, false, false, false);
 
 	MatrixXf expected_live_out(4, 4);
@@ -289,8 +289,8 @@ BOOST_AUTO_TEST_CASE(gradient_test04) {
 	math::MatrixXv2f expected_gradient(2, 2);
 	expected_gradient <<
 	                  //@formatter:off
-            math::Vector2f(-0.34999183,0.70888318), math::Vector2f(-0.34999183,0.02178612),
-		    math::Vector2f(-1.03708889,0.70888318), math::Vector2f(-1.03708889,0.02178612);
+            math::Vector2f(-0.34999183f,0.70888318f), math::Vector2f(-0.34999183f,0.02178612f),
+		    math::Vector2f(-1.03708889f,0.70888318f), math::Vector2f(-1.03708889f,0.02178612f);
     //@formatter:on
 
 	math::MatrixXv2f gradient;

@@ -20,14 +20,14 @@ Eigen::MatrixXf matrix_product_float(Eigen::MatrixXf a, Eigen::MatrixXf b) {
 	return a * b;
 }
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(interpolate_overloads, interpolation::py_interpolate, 4, 8)
+BOOST_PYTHON_FUNCTION_OVERLOADS(interpolate_overloads, nonrigid_optimization::py_interpolate, 4, 8)
 
 BOOST_PYTHON_MODULE (level_set_fusion_optimization) {
 	SetupEigenConverters();
 	bp::def("matrix_product_float64", matrix_product_double);
 	bp::def("matrix_product_float32", matrix_product_float);
-	bp::def("data_term_at_location", data_term::py_data_term_at_location);
-	bp::def("interpolate", interpolation::py_interpolate,
+	bp::def("data_term_at_location", nonrigid_optimization::py_data_term_at_location);
+	bp::def("interpolate", nonrigid_optimization::py_interpolate,
 	        interpolate_overloads(
 			        bp::args("warped_live_field", "canonical_field", "warp_field_u", "warp_field_v", "band_union_only",
 			                 "known_values_only", "substitute_original", "truncation_float_threshold"),

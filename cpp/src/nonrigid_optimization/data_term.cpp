@@ -18,7 +18,7 @@
 #include "boolean_operations.hpp"
 #include "../math/typedefs.hpp"
 
-namespace data_term {
+namespace nonrigid_optimization {
 
 
 /***
@@ -65,25 +65,22 @@ inline void compute_data_term_gradient_aux(
 	const eig::Index matrix_size = warped_live_field.size();
 	const eig::Index column_count = warped_live_field.cols();
 	const eig::Index row_count = warped_live_field.rows();
+	data_term_energy = 0.0f;
 
 	data_term_gradient = math::MatrixXv2f(row_count, column_count);
 #pragma omp parallel for
 	for (eig::Index i_element = 0; i_element < matrix_size; i_element++) {
-		// Any MatrixXf in Eigen is column-major
-		// i_element = x * column_count + y
-		ldiv_t division_result = div(i_element, column_count);
-		int y = division_result.rem;
-		int x = division_result.quot;
 		float live_tsdf_value = warped_live_field(i_element);
 		float canonical_tsdf_value = canonical_field(i_element);
 		if (TSkipTruncated) {
-			if (boolean_ops::is_outside_narrow_band(live_tsdf_value, canonical_tsdf_value)) {
+			if (is_outside_narrow_band(live_tsdf_value, canonical_tsdf_value)) {
 				data_term_gradient(i_element) = math::Vector2f(0.0f);
 				continue;
 			}
 		}
 		float diff = live_tsdf_value - canonical_tsdf_value;
 		data_term_gradient(i_element) = scaling_factor * diff * warped_live_field_gradient(i_element);
+		data_term_energy += .5 * diff * diff;
 	}
 }
 
@@ -143,4 +140,4 @@ bp::tuple py_data_term_at_location(eig::MatrixXf warped_live_field, eig::MatrixX
 }
 
 
-}//namespace data_term
+}//namespace nonrigid_optimization

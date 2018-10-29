@@ -16,11 +16,11 @@
 
 //local
 #include "data_term.hpp"
-#include "energy_gradient.hpp"
+#include "full_gradient.hpp"
 #include "boolean_operations.hpp"
 #include "../math/gradients.hpp"
 
-namespace energy_gradient {
+namespace nonrigid_optimization {
 /**
  * \brief Computes energy gradient KillingFusion[1]/SobolevFusion[2]-based optimization on a 2D grid
  * \details
@@ -65,7 +65,7 @@ void compute_energy_gradient(const eig::MatrixXf& warped_live_field, const eig::
 	for (int i_element = 0; i_element < entry_count; i_element++) {
 		float live_tsdf_value = warped_live_field(i_element);
 		float canonical_tsdf_value = canonical_field(i_element);
-		if (band_union_only && boolean_ops::is_outside_narrow_band_tolerance(live_tsdf_value, canonical_tsdf_value)){
+		if (band_union_only && is_outside_narrow_band_tolerance(live_tsdf_value, canonical_tsdf_value)){
 			continue;
 		}
 
@@ -76,7 +76,7 @@ void compute_energy_gradient(const eig::MatrixXf& warped_live_field, const eig::
 		int i_row = division_result.rem;
 		float local_data_gradient_x, local_data_gradient_y, local_data_energy_contribution;
 
-		data_term::compute_local_data_term_gradient(warped_live_field, canonical_field, i_col, i_row,
+		compute_local_data_term_gradient(warped_live_field, canonical_field, i_col, i_row,
 		                                            live_gradient_x_field, live_gradient_y_field,
 		                                            local_data_gradient_x, local_data_gradient_y,
 		                                            local_data_energy_contribution);

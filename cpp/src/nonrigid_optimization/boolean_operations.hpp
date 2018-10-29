@@ -19,7 +19,7 @@
 
 namespace eig = Eigen;
 
-namespace boolean_ops{
+namespace nonrigid_optimization{
     inline bool is_outside_narrow_band_tolerance(float live_tsdf_value, float canonical_tsdf_value, float tolerance = 10e-6f){
         return (1.0f - std::abs(live_tsdf_value) < tolerance && 1.0f - std::abs(canonical_tsdf_value) < tolerance);
     }

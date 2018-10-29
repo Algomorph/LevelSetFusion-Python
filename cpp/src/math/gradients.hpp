@@ -19,6 +19,8 @@
 
 namespace math{
 
+void vector_field_laplace(const math::MatrixXv2f& field, math::MatrixXv2f& gradient);
+void vector_field_negative_laplace(const math::MatrixXv2f& field, math::MatrixXv2f& gradient);
 void vector_field_gradient(const math::MatrixXv2f& field, math::MatrixXm2f& gradient);
 void scalar_field_gradient(const eig::MatrixXf& field,eig::MatrixXf& live_gradient_x, eig::MatrixXf& live_gradient_y);
 void scalar_field_gradient(const eig::MatrixXf& field,math::MatrixXv2f& live_gradient_field);

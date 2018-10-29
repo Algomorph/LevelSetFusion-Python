@@ -122,8 +122,8 @@ add_library(${MODULE_NAME} SHARED
             src/nonrigid_optimization/interpolation.hpp
             src/nonrigid_optimization/interpolation.cpp
             src/nonrigid_optimization/boolean_operations.hpp
-            src/nonrigid_optimization/energy_gradient.cpp
-            src/nonrigid_optimization/energy_gradient.hpp
+            src/nonrigid_optimization/full_gradient.cpp
+            src/nonrigid_optimization/full_gradient.hpp
             src/nonrigid_optimization/smoothing_term.cpp
             src/nonrigid_optimization/smoothing_term.hpp
             src/math/tensors.hpp
@@ -135,7 +135,7 @@ add_library(${MODULE_NAME} SHARED
             src/math/platform_independence.hpp
             src/math/matrix2.hpp src/math/vector3.hpp
             src/math/typedefs.hpp
-            src/math/conversion.hpp src/math/gradients.cpp src/math/gradients.hpp)
+            src/math/conversion.hpp src/math/gradients.cpp src/math/gradients.hpp src/traversal/field_traversal_cpu.hpp)
 target_link_libraries(${MODULE_NAME}
         PUBLIC
         ${Boost_LIBRARIES}

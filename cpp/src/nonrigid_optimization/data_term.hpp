@@ -28,7 +28,7 @@
 namespace bp = boost::python;
 namespace eig = Eigen;
 
-namespace data_term {
+namespace nonrigid_optimization {
 
 void compute_data_term_gradient(
 		math::MatrixXv2f& data_term_gradient, float& data_term_energy,

@@ -19,6 +19,20 @@
 
 namespace math {
 
+template <typename LaplaceOperatorFunctor>
+inline
+void vector_field_laplace_aux(const math::MatrixXv2f& field, math::MatrixXv2f& gradient){
+	eigen_assert(false && "not implemented");
+}
+
+void vector_field_laplace(const math::MatrixXv2f& field, math::MatrixXv2f& gradient){
+	eigen_assert(false && "not implemented");
+}
+
+void vector_field_negative_laplace(const math::MatrixXv2f& field, math::MatrixXv2f& gradient){
+	eigen_assert(false && "not implemented");
+}
+
 /**
  * Compute numerical gradient of given matrix. Uses forward and backward differences at the boundary matrix entries,
  * central difference formula for all other entries.
@@ -130,7 +144,7 @@ void vector_field_gradient(const math::MatrixXv2f& field, math::MatrixXm2f& grad
 
 	gradient = math::MatrixXm2f(row_count,column_count);
 
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (eig::Index i_col = 0; i_col < column_count; i_col++) {
 		math::Vector2f prev_row_vector = field(0, i_col);
 		math::Vector2f current_row_vector = field(1, i_col);
@@ -145,7 +159,7 @@ void vector_field_gradient(const math::MatrixXv2f& field, math::MatrixXm2f& grad
 		}
 		gradient(i_row, i_col).set_column(1, current_row_vector - prev_row_vector);
 	}
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (eig::Index i_row = 0; i_row < row_count; i_row++) {
 		math::Vector2f prev_col_vector = field(i_row, 0);
 		math::Vector2f current_col_vector = field(i_row, 1);

@@ -19,8 +19,8 @@
 #include "../math/typedefs.hpp"
 
 
-namespace smoothing_term {
+namespace nonrigid_optimization {
 
 
 
-}//smoothing_term
+}//nonrigid_optimization

@@ -23,9 +23,7 @@
 
 namespace eig = Eigen;
 
-namespace smoothing_term {
-
-
+namespace nonrigid_optimization {
 
 void
 compute_local_smoothing_term_gradient_tikhonov(
@@ -35,4 +33,4 @@ compute_local_smoothing_term_gradient_tikhonov(
 
 }
 
-}//smoothing_term
+}//nonrigid_optimization
