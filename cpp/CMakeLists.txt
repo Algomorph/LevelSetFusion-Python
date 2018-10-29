@@ -52,11 +52,11 @@ find_package(Python2 COMPONENTS Interpreter Development)
 set(BOOST_COMPONENTS unit_test_framework)
 if (${PYTHON_DESIRED_VERSION} STREQUAL "2.X")
     set(Python_ADDITIONAL_VERSIONS ${PYTHON2_VERSION_MAJOR}.${PYTHON2_VERSION_MINOR})
-    list(APPEND BOOST_COMPONENTS python-py${Python2_VERSION_MAJOR}${Python2_VERSION_MINOR})
+    list(APPEND BOOST_COMPONENTS python${Python2_VERSION_MAJOR}${Python2_VERSION_MINOR})
     set(PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
 else ()
     set(Python_ADDITIONAL_VERSIONS ${PYTHON3_VERSION_MAJOR}.${PYTHON3_VERSION_MINOR})
-    list(APPEND BOOST_COMPONENTS python-py${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR})
+    list(APPEND BOOST_COMPONENTS python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR})
     set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
 endif ()
 
@@ -121,7 +121,7 @@ add_library(${MODULE_NAME} SHARED
             src/nonrigid_optimization/data_term.cpp
             src/nonrigid_optimization/interpolation.hpp
             src/nonrigid_optimization/interpolation.cpp
-            src/nonrigid_optimization/utils.hpp
+            src/nonrigid_optimization/boolean_operations.hpp
             src/nonrigid_optimization/energy_gradient.cpp
             src/nonrigid_optimization/energy_gradient.hpp
             src/nonrigid_optimization/smoothing_term.cpp

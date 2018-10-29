@@ -30,8 +30,17 @@ namespace eig = Eigen;
 
 namespace data_term {
 
+void compute_data_term_gradient(
+		math::MatrixXv2f& data_term_gradient, float& data_term_energy,
+		const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
+		const math::MatrixXv2f& warped_live_field_gradient,
+		float scaling_factor = 10.0f);
 
-
+void compute_data_term_gradient_within_band_union(
+		math::MatrixXv2f& data_term_gradient, float& data_term_energy,
+		const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
+		const math::MatrixXv2f& warped_live_field_gradient,
+		float scaling_factor = 10.0f);
 
 
 void compute_local_data_term_gradient(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,

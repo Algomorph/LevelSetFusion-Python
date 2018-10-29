@@ -19,8 +19,11 @@
 
 namespace eig = Eigen;
 
-namespace utils{
-    inline bool is_outside_narrow_band(float live_tsdf_value, float canonical_tsdf_value){
-        return (1.0f - std::abs(live_tsdf_value) < 10e-6 && 1.0f - std::abs(canonical_tsdf_value) < 10e-6);
+namespace boolean_ops{
+    inline bool is_outside_narrow_band_tolerance(float live_tsdf_value, float canonical_tsdf_value, float tolerance = 10e-6f){
+        return (1.0f - std::abs(live_tsdf_value) < tolerance && 1.0f - std::abs(canonical_tsdf_value) < tolerance);
     }
-}// namespace utils
+    inline bool is_outside_narrow_band(float live_tsdf_value, float canonical_tsdf_value){
+    	return std::abs(live_tsdf_value) == 1.0 && std::abs(canonical_tsdf_value) == 1.0;
+    }
+}// namespace boolean_ops

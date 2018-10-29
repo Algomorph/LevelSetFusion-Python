@@ -13,9 +13,15 @@
 //  See the License for the specific language governing permissions and
 //  limitations under the License.
 //  ================================================================
-#include "interpolation.hpp"
+//stdlib
 #include <cstdlib>
 #include <iostream>
+
+//local
+#include "interpolation.hpp"
+#include "boolean_operations.hpp"
+
+
 
 namespace interpolation {
 
@@ -54,7 +60,7 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 		float live_tsdf_value = warped_live_field(i_element);
 		if (band_union_only) {
 			float canonical_tsdf_value = canonical_field(i_element);
-			if (std::abs(live_tsdf_value) == 1.0 or std::abs(canonical_tsdf_value) == 1.0) {
+			if (boolean_ops::is_outside_narrow_band(live_tsdf_value, canonical_tsdf_value)) {
 				new_live_field(i_element) = live_tsdf_value;
 				continue;
 			}
