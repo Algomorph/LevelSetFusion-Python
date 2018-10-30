@@ -26,11 +26,12 @@ namespace eig = Eigen;
 namespace nonrigid_optimization {
 
 void
-compute_local_smoothing_term_gradient_tikhonov(
-		int i_col, int i_row,
-		float& smoothing_gradient_x, float& smoothing_gradient_y,
-		bool ignore_if_zero = false, bool copy_if_zero = false) {
+compute_tikhonov_regularization_gradient(math::MatrixXv2f& gradient, float& energy, const math::MatrixXv2f& warp_field);
 
-}
+void
+compute_tikhonov_regularization_gradient_within_band_union(math::MatrixXv2f& gradient, float& energy,
+                                                           const math::MatrixXv2f& warp_field,
+                                                           const eig::MatrixX2f& live_field,
+                                                           const eig::MatrixX2f& canonical_field);
 
 }//nonrigid_optimization

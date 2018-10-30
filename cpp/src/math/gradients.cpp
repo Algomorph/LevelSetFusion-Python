@@ -19,18 +19,86 @@
 
 namespace math {
 
-template <typename LaplaceOperatorFunctor>
-inline
-void vector_field_laplace_aux(const math::MatrixXv2f& field, math::MatrixXv2f& gradient){
-	eigen_assert(false && "not implemented");
+struct LaplaceOperatorFunctor {
+	//same as replicating the prev_row_val to the border and doing (nonborder_value - 2*border_value + border_value)
+	inline static math::Vector2f apply_border_operator(math::Vector2f nonborder_value, math::Vector2f border_value) {
+		return nonborder_value - border_value;
+	}
+
+	inline static math::Vector2f
+	apply_row_operator(math::Vector2f next_row_val, math::Vector2f row_val, math::Vector2f prev_row_val) {
+		return next_row_val - 2 * row_val + prev_row_val;
+	}
+
+	inline static math::Vector2f
+	apply_column_operator(math::Vector2f next_col_val, math::Vector2f col_val, math::Vector2f prev_col_val) {
+		return next_col_val + prev_col_val;
+	}
+};
+
+struct NegativeLaplaceOperatorFunctor {
+	//same as replicating the prev_row_val to the border and doing (nonborder_value + 2*border_value - border_value)
+	inline static math::Vector2f apply_border_operator(math::Vector2f nonborder_value, math::Vector2f border_value) {
+		return -nonborder_value + border_value;
+	}
+
+	inline static math::Vector2f
+	apply_row_operator(math::Vector2f next_row_val, math::Vector2f row_val, math::Vector2f prev_row_val) {
+		return -next_row_val + 2 * row_val - prev_row_val;
+	}
+
+	inline static math::Vector2f
+	apply_column_operator(math::Vector2f next_col_val, math::Vector2f col_val, math::Vector2f prev_col_val) {
+		return -next_col_val - prev_col_val;
+	}
+};
+
+template<typename LaplacelikeOperatorFunctor>
+inline void vector_field_laplacian_aux(const math::MatrixXv2f& field, math::MatrixXv2f& laplacian) {
+	eig::Index column_count = field.cols();
+	eig::Index row_count = field.rows();
+	laplacian = math::MatrixXv2f(row_count, column_count);
+
+#pragma omp parallel for
+	for (eig::Index i_col = 0; i_col < column_count; i_col++) {
+		math::Vector2f prev_row_val = field(0, i_col);
+		math::Vector2f row_val = field(1, i_col);
+
+		laplacian(0, i_col) = LaplacelikeOperatorFunctor::apply_border_operator(row_val, prev_row_val);
+		eig::Index i_row;
+		for (i_row = 1; i_row < row_count - 1; i_row++) {
+			math::Vector2f next_row_val = field(i_row + 1, i_col);
+			//previous/next column values will be used later
+			laplacian(i_row, i_col) = LaplacelikeOperatorFunctor::apply_row_operator(next_row_val, row_val,
+			                                                                         prev_row_val);
+			prev_row_val = row_val;
+			row_val = next_row_val;
+		}
+		laplacian(i_row, i_col) = LaplacelikeOperatorFunctor::apply_border_operator(prev_row_val, row_val);
+	}
+#pragma omp parallel for
+	for (eig::Index i_row = 0; i_row < row_count; i_row++) {
+		math::Vector2f prev_col_val = field(i_row, 0);
+		math::Vector2f col_val = field(i_row, 1);
+		laplacian(i_row, 0) += LaplacelikeOperatorFunctor::apply_border_operator(col_val, prev_col_val);
+		eig::Index i_col;
+		for (i_col = 1; i_col < column_count - 1; i_col++) {
+			math::Vector2f next_col_val = field(i_row, i_col + 1);
+			laplacian(i_row, i_col) += LaplacelikeOperatorFunctor::apply_column_operator(next_col_val, col_val,
+			                                                                             prev_col_val);
+			prev_col_val = col_val;
+			col_val = next_col_val;
+		}
+		laplacian(i_row, i_col) += LaplacelikeOperatorFunctor::apply_border_operator(prev_col_val, col_val);
+	}
 }
 
-void vector_field_laplace(const math::MatrixXv2f& field, math::MatrixXv2f& gradient){
-	eigen_assert(false && "not implemented");
+void vector_field_laplacian(const math::MatrixXv2f& field, math::MatrixXv2f& gradient) {
+	vector_field_laplacian_aux<LaplaceOperatorFunctor>(field,gradient);
 }
 
-void vector_field_negative_laplace(const math::MatrixXv2f& field, math::MatrixXv2f& gradient){
-	eigen_assert(false && "not implemented");
+void vector_field_negative_laplacian(const math::MatrixXv2f& field, math::MatrixXv2f& gradient) {
+	vector_field_laplacian_aux<NegativeLaplaceOperatorFunctor>(field,gradient);
 }
 
 /**
@@ -142,7 +210,7 @@ void vector_field_gradient(const math::MatrixXv2f& field, math::MatrixXm2f& grad
 	eig::Index row_count = field.rows();
 	eig::Index column_count = field.cols();
 
-	gradient = math::MatrixXm2f(row_count,column_count);
+	gradient = math::MatrixXm2f(row_count, column_count);
 
 #pragma omp parallel for
 	for (eig::Index i_col = 0; i_col < column_count; i_col++) {
