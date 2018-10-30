@@ -15,12 +15,17 @@
 //  ================================================================
 //stdlib
 
-#define BOOST_TEST_MODULE test_nonrigid_optimization
+#include <iostream>
+
+#define BOOST_TEST_MODULE test_nonrigid_optimization // NB:has to appear before the boost include
 
 //libraries
 #include <boost/test/unit_test.hpp>
 #include <boost/python.hpp>
 #include <Eigen/Eigen>
+
+//local
+#include "../src/math/gradients.hpp"
 
 //test data
 #include "test_data_nonrigid_optimization.hpp"
@@ -188,10 +193,7 @@ BOOST_AUTO_TEST_CASE(interpolation_test03) {
 
 BOOST_AUTO_TEST_CASE(interpolation_test04) {
 	using namespace Eigen;
-	MatrixXf warped_live_field(4, 4), canonical_field(4, 4);
-	MatrixXf u_vectors(4, 4), v_vectors(4, 4);
 
-	math::MatrixXv2f warp_field = math::stack_as_xv2f(u_vectors, v_vectors);
 	MatrixXf warped_live_field_out = nonrigid_optimization::interpolate(
 			test_data::warp_field, test_data::warped_live_field, test_data::canonical_field, false, false, false);
 
@@ -203,6 +205,24 @@ BOOST_AUTO_TEST_CASE(interpolation_test04) {
             1., 0.2261582, 0.17907946, 0.14683424;
     //@formatter:on
 
-
 	BOOST_REQUIRE(warped_live_field_out.isApprox(expected_live_out));
+}
+
+BOOST_AUTO_TEST_CASE(test_data_term_gradient01) {
+	math::MatrixXv2f data_term_gradient, data_term_gradient_band_union_only;
+	float data_term_energy;
+	math::MatrixXv2f warped_live_field_gradient;
+	math::scalar_field_gradient(test_data::warped_live_field, warped_live_field_gradient);
+
+	nonrigid_optimization::compute_data_term_gradient(data_term_gradient, data_term_energy,
+	                                                  test_data::warped_live_field, test_data::canonical_field,
+	                                                  warped_live_field_gradient);
+	BOOST_REQUIRE(math::almost_equal(data_term_gradient, test_data::data_term_gradient, 1e-6));
+	nonrigid_optimization::compute_data_term_gradient_within_band_union(data_term_gradient_band_union_only,
+	                                                                    data_term_energy, test_data::warped_live_field,
+	                                                                    test_data::canonical_field,
+	                                                                    warped_live_field_gradient);
+	BOOST_REQUIRE(math::almost_equal(data_term_gradient_band_union_only,
+			test_data::data_term_gradient_band_union_only, 1e-6));
+
 }

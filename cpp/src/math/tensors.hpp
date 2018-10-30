@@ -48,4 +48,58 @@ MatrixXv2f stack_as_xv2f(const Eigen::MatrixXf& matrix_a, const Eigen::MatrixXf&
 }//namespace math
 
 
+namespace Eigen{
+
+template<> struct NumTraits<math::Vector2<float>>
+		: NumTraits<float> // permits to get the epsilon, dummy_precision, lowest, highest functions
+{
+	typedef math::Vector2<float> Real;
+	typedef math::Vector2<float> NonInteger;
+	typedef math::Vector2<float> Nested;
+	enum {
+		IsComplex = 0,
+		IsInteger = 0,
+		IsSigned = 1,
+		RequireInitialization = 1,
+		ReadCost = 1,
+		AddCost = 2,
+		MulCost = 6
+	};
+};
+
+template<> struct NumTraits<math::Vector2<double>>
+		: NumTraits<double> // permits to get the epsilon, dummy_precision, lowest, highest functions
+{
+	typedef math::Vector2<double> Real;
+	typedef math::Vector2<double> NonInteger;
+	typedef math::Vector2<double> Nested;
+	enum {
+		IsComplex = 0,
+		IsInteger = 0,
+		IsSigned = 1,
+		RequireInitialization = 1,
+		ReadCost = 1,
+		AddCost = 2,
+		MulCost = 6
+	};
+};
+
+template<> struct NumTraits<math::Vector2<int>>
+		: NumTraits<int> // permits to get the epsilon, dummy_precision, lowest, highest functions
+{
+	typedef math::Vector2<int> Real;
+	typedef math::Vector2<int> Integer;
+	typedef math::Vector2<int> Nested;
+	enum {
+		IsComplex = 0,
+		IsInteger = 1,
+		IsSigned = 1,
+		RequireInitialization = 1,
+		ReadCost = 1,
+		AddCost = 2,
+		MulCost = 6
+	};
+};
+
+}// namespacd Eigen
 

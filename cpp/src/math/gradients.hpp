@@ -19,6 +19,8 @@
 
 namespace math{
 
+//TODO: refactor function arguments -- outputs should come before inputs
+
 void vector_field_laplace(const math::MatrixXv2f& field, math::MatrixXv2f& gradient);
 void vector_field_negative_laplace(const math::MatrixXv2f& field, math::MatrixXv2f& gradient);
 void vector_field_gradient(const math::MatrixXv2f& field, math::MatrixXm2f& gradient);

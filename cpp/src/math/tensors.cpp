@@ -29,4 +29,6 @@ MatrixXv2f stack_as_xv2f(const Eigen::MatrixXf& matrix_a, const Eigen::MatrixXf&
 	return out;
 }
 
+
+
 }//end namespace math
