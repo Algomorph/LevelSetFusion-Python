@@ -40,10 +40,10 @@ inline float sample_tsdf_value_replacing_when_out_of_bounds(const eig::MatrixXf&
 	return tsdf_field(y, x);
 }
 
-eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
-                          eig::MatrixXf& warp_field_u, eig::MatrixXf& warp_field_v,
-                          bool band_union_only, bool known_values_only,
-                          bool substitute_original, float truncation_float_threshold) {
+eig::MatrixXf interpolate2(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
+                           eig::MatrixXf& warp_field_u, eig::MatrixXf& warp_field_v,
+                           bool band_union_only, bool known_values_only,
+                           bool substitute_original, float truncation_float_threshold) {
 	int matrix_size = static_cast<int>(warped_live_field.size());
 	const int column_count = static_cast<int>(warped_live_field.cols());
 	const int row_count = static_cast<int>(warped_live_field.rows());
@@ -107,10 +107,29 @@ eig::MatrixXf interpolate(const eig::MatrixXf& warped_live_field, const eig::Mat
 			warp_field_v(i_element) = 0.0f;
 		}
 
-		new_live_field(y, x) = new_value;
+		new_live_field(i_element) = new_value;
 	}
 
 	return new_live_field;
+}
+
+template<bool band_union_only>
+struct InterpolationFunctor{
+	float truncation_threshold;
+	InterpolationFunctor(float truncation_threshold = 10e-6f){
+		this->truncation_threshold = truncation_threshold;
+	}
+	inline float operator()(const float& live_tsdf_value){
+
+
+	}
+};
+
+eig::MatrixXf interpolate(math::MatrixXv2f& warp_field,
+                          const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
+                          float truncation_threshold){
+	eig::MatrixXf new_live_field(warped_live_field.rows(), warped_life_field.cols());
+
 }
 
 bp::object
@@ -118,7 +137,7 @@ py_interpolate(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& cano
                eig::MatrixXf warp_field_v, bool band_union_only, bool known_values_only, bool substitute_original,
                float truncation_float_threshold) {
 
-	eig::MatrixXf new_warped_live_field = interpolate(warped_live_field, canonical_field, warp_field_u, warp_field_v,
+	eig::MatrixXf new_warped_live_field = interpolate2(warped_live_field, canonical_field, warp_field_u, warp_field_v,
 	                                                  band_union_only, known_values_only, substitute_original,
 	                                                  truncation_float_threshold);
 
