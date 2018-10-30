@@ -20,7 +20,7 @@
 //local
 #include "interpolation.hpp"
 #include "boolean_operations.hpp"
-
+#include "../math/typedefs.hpp"
 
 
 namespace nonrigid_optimization {
@@ -40,10 +40,10 @@ inline float sample_tsdf_value_replacing_when_out_of_bounds(const eig::MatrixXf&
 	return tsdf_field(y, x);
 }
 
-eig::MatrixXf interpolate2(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
-                           eig::MatrixXf& warp_field_u, eig::MatrixXf& warp_field_v,
-                           bool band_union_only, bool known_values_only,
-                           bool substitute_original, float truncation_float_threshold) {
+eig::MatrixXf interpolate(math::MatrixXv2f& warp_field,
+                          const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
+                          bool band_union_only, bool known_values_only,
+                          bool substitute_original, float truncation_float_threshold) {
 	int matrix_size = static_cast<int>(warped_live_field.size());
 	const int column_count = static_cast<int>(warped_live_field.cols());
 	const int row_count = static_cast<int>(warped_live_field.rows());
@@ -55,8 +55,9 @@ eig::MatrixXf interpolate2(const eig::MatrixXf& warped_live_field, const eig::Ma
 		// Any MatrixXf in Eigen is column-major
 		// i_element = x * column_count + y
 		div_t division_result = div(i_element, column_count);
-		int y = division_result.rem;
 		int x = division_result.quot;
+		int y = division_result.rem;
+
 		float live_tsdf_value = warped_live_field(i_element);
 		if (band_union_only) {
 			float canonical_tsdf_value = canonical_field(i_element);
@@ -72,8 +73,9 @@ eig::MatrixXf interpolate2(const eig::MatrixXf& warped_live_field, const eig::Ma
 				continue;
 			}
 		}
-		float lookup_x = x + warp_field_u(i_element);
-		float lookup_y = y + warp_field_v(i_element);
+		math::Vector2f local_warp = warp_field(i_element);
+		float lookup_x = x + local_warp.u;
+		float lookup_y = y + local_warp.v;
 		int base_x = static_cast<int>(std::floor(lookup_x));
 		int base_y = static_cast<int>(std::floor(lookup_y));
 		float ratio_x = lookup_x - base_x;
@@ -103,8 +105,7 @@ eig::MatrixXf interpolate2(const eig::MatrixXf& warped_live_field, const eig::Ma
 		float new_value = interpolated_value0 * inverse_ratio_x + interpolated_value1 * ratio_x;
 		if (1.0 - std::abs(new_value) < truncation_float_threshold) {
 			new_value = std::copysign(1.0f, new_value);
-			warp_field_u(i_element) = 0.0f; // probably won't work in python due to conversions, test
-			warp_field_v(i_element) = 0.0f;
+			warp_field(i_element) = math::Vector2f(0.0f);
 		}
 
 		new_live_field(i_element) = new_value;
@@ -113,31 +114,12 @@ eig::MatrixXf interpolate2(const eig::MatrixXf& warped_live_field, const eig::Ma
 	return new_live_field;
 }
 
-template<bool band_union_only>
-struct InterpolationFunctor{
-	float truncation_threshold;
-	InterpolationFunctor(float truncation_threshold = 10e-6f){
-		this->truncation_threshold = truncation_threshold;
-	}
-	inline float operator()(const float& live_tsdf_value){
-
-
-	}
-};
-
-eig::MatrixXf interpolate(math::MatrixXv2f& warp_field,
-                          const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
-                          float truncation_threshold){
-	eig::MatrixXf new_live_field(warped_live_field.rows(), warped_life_field.cols());
-
-}
-
 bp::object
 py_interpolate(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field, eig::MatrixXf warp_field_u,
                eig::MatrixXf warp_field_v, bool band_union_only, bool known_values_only, bool substitute_original,
                float truncation_float_threshold) {
-
-	eig::MatrixXf new_warped_live_field = interpolate2(warped_live_field, canonical_field, warp_field_u, warp_field_v,
+	math::MatrixXv2f warp_field = math::stack_as_xv2f(warp_field_u, warp_field_v);
+	eig::MatrixXf new_warped_live_field = interpolate(warp_field,warped_live_field, canonical_field,
 	                                                  band_union_only, known_values_only, substitute_original,
 	                                                  truncation_float_threshold);
 

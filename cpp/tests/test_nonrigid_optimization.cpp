@@ -108,8 +108,8 @@ BOOST_AUTO_TEST_CASE(interpolation_test01) {
     warped_live_field << 1.0F, -1.0F,
             1.0F, -1.0F;
     //@formatter:on
-	Matrix2f warped_live_field_out = nonrigid_optimization::interpolate(warped_live_field, canonical_field,
-	                                                                    u_vectors, v_vectors);
+	math::MatrixXv2f warp_field = math::stack_as_xv2f(u_vectors, v_vectors);
+	Matrix2f warped_live_field_out = nonrigid_optimization::interpolate(warp_field, warped_live_field, canonical_field);
 	Matrix2f expected_live_out;
 	expected_live_out << 0.0F, 0.0F, 0.0F, 0.0F;
 
@@ -134,8 +134,9 @@ BOOST_AUTO_TEST_CASE(interpolation_test02) {
             0.5F, 1.0F, 1.0F,
             0.5F, 0.5F, -1.0F;
     //@formatter:on
-	Matrix3f warped_live_field_out = nonrigid_optimization::interpolate(warped_live_field, canonical_field,
-	                                                                    u_vectors, v_vectors, true, false, true);
+	math::MatrixXv2f warp_field = math::stack_as_xv2f(u_vectors, v_vectors);
+	Matrix3f warped_live_field_out = nonrigid_optimization::interpolate(warp_field, warped_live_field, canonical_field,
+	                                                                    true, false, true);
 
 
 	Matrix3f expected_live_out;
@@ -170,8 +171,9 @@ BOOST_AUTO_TEST_CASE(interpolation_test03) {
             1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02,
             1.0000000e+00, 7.5000443e-02, 4.4107438e-07, -9.9999562e-02;
     //@formatter:on
-	MatrixXf warped_live_field_out = nonrigid_optimization::interpolate(warped_live_field, canonical_field,
-	                                                                    u_vectors, v_vectors, false, false, false);
+	math::MatrixXv2f warp_field = math::stack_as_xv2f(u_vectors, v_vectors);
+	MatrixXf warped_live_field_out = nonrigid_optimization::interpolate(warp_field, warped_live_field, canonical_field,
+	                                                                    false, false, false);
 
 	MatrixXf expected_live_out(4, 4);
 	//@formatter:off
@@ -188,20 +190,10 @@ BOOST_AUTO_TEST_CASE(interpolation_test04) {
 	using namespace Eigen;
 	MatrixXf warped_live_field(4, 4), canonical_field(4, 4);
 	MatrixXf u_vectors(4, 4), v_vectors(4, 4);
-	//@formatter:off
-    u_vectors << -0., -0., 0.0334751, 0.01388371,
-            -0., 0.04041886, 0.0149368, 0.00573045,
-            -0., 0.06464156, 0.01506416, 0.00579486,
-            -0., 0.06037777, 0.0144603, 0.01164452;
-    v_vectors << -0., -0., 0.019718, 0.02146172,
-            -0., 0.03823357, 0.02406227, 0.02212186,
-            -0., 0.02261183, 0.01864575, 0.02234527,
-            -0., 0.01906347, 0.01756042, 0.02574961;
-    //@formatter:on
 
+	math::MatrixXv2f warp_field = math::stack_as_xv2f(u_vectors, v_vectors);
 	MatrixXf warped_live_field_out = nonrigid_optimization::interpolate(
-			test_data::warped_live_field, test_data::canonical_field,
-			u_vectors, v_vectors, false, false, false);
+			test_data::warp_field, test_data::warped_live_field, test_data::canonical_field, false, false, false);
 
 	MatrixXf expected_live_out(4, 4);
 	//@formatter:off

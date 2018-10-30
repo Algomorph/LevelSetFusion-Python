@@ -27,7 +27,7 @@ namespace eig = Eigen;
 
 namespace test_data{
 
-static math::MatrixXv2f warped_live_field_gradient = []{
+static math::MatrixXv2f warp_field = []{
 	eig::MatrixXf u_vectors(4,4), v_vectors(4,4);
 	u_vectors << -0., -0., 0.0334751, 0.01388371,
 			-0., 0.04041886, 0.0149368, 0.00573045,
