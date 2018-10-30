@@ -45,10 +45,6 @@ endif ()
 
 include_directories(include)
 
-#TODO: revert to old variant of
-find_package(Python3 COMPONENTS Interpreter Development)
-find_package(Python2 COMPONENTS Interpreter Development)
-
 # *** Boost (Boost python version based on python option / availability)
 if(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
     # Provisions for typical Boost compiled on Windows
@@ -62,11 +58,11 @@ endif()
 set(BOOST_COMPONENTS unit_test_framework)
 if (${PYTHON_DESIRED_VERSION} STREQUAL "2.X")
     set(Python_ADDITIONAL_VERSIONS ${PYTHON2_VERSION_MAJOR}.${PYTHON2_VERSION_MINOR})
-    list(APPEND BOOST_COMPONENTS python${Python2_VERSION_MAJOR}${Python2_VERSION_MINOR})
+    list(APPEND BOOST_COMPONENTS python${PYTHON2_VERSION_MAJOR}${PYTHON2_VERSION_MINOR})
     set(PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
 else ()
     set(Python_ADDITIONAL_VERSIONS ${PYTHON3_VERSION_MAJOR}.${PYTHON3_VERSION_MINOR})
-    list(APPEND BOOST_COMPONENTS python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR})
+    list(APPEND BOOST_COMPONENTS python${PYTHON3_VERSION_MAJOR}${PYTHON3_VERSION_MINOR})
     set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
 endif ()
 
@@ -78,18 +74,24 @@ find_package(OpenMP REQUIRED)
 
 #======== PICK PYTHON STUFF========================================
 if (${PYTHON_DESIRED_VERSION} STREQUAL "2.X")
-    SET(PYTHON_INCLUDE_DIRS ${Python2_INCLUDE_DIRS} ${PYTHON2_NUMPY_INCLUDE_DIRS})
-    SET(PYTHON_LIBRARIES ${Python2_LIBRARIES})
-    SET(PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
-    SET(PYTHON_PACKAGES_PATH ${PYTHON2_PACKAGES_PATH})
-    SET(ARCHIVE_OUTPUT_NAME ${MODULE_NAME}_py2)
+    set(PYTHON_INCLUDE_DIRS ${PYTHON2_INCLUDE_DIR} ${PYTHON2_INCLUDE_DIR2} ${PYTHON2_NUMPY_INCLUDE_DIRS})
+    set(PYTHON_NUMPY_INCLUDE_DIRS ${PYTHON2_NUMPY_INCLUDE_DIRS})
+    set(PYTHON_LIBRARIES ${PYTHON2_LIBRARY})
+    set(PYTHON_EXECUTABLE ${PYTHON2_EXECUTABLE})
+    set(PYTHON_PACKAGES_PATH ${PYTHON2_PACKAGES_PATH})
+    set(ARCHIVE_OUTPUT_NAME ${MODULE_NAME}_py2)
 else ()
-    SET(PYTHON_INCLUDE_DIRS ${Python3_INCLUDE_DIRS} ${PYTHON3_NUMPY_INCLUDE_DIRS})
-    SET(PYTHON_LIBRARIES ${Python3_LIBRARIES})
-    SET(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
-    SET(PYTHON_PACKAGES_PATH ${PYTHON3_PACKAGES_PATH})
-    SET(ARCHIVE_OUTPUT_NAME ${MODULE_NAME}_py3)
+    set(PYTHON_INCLUDE_DIRS ${PYTHON3_INCLUDE_DIR} ${PYTHON3_INCLUDE_DIR2} ${PYTHON3_NUMPY_INCLUDE_DIRS})
+    set(PYTHON_NUMPY_INCLUDE_DIRS ${PYTHON3_NUMPY_INCLUDE_DIRS})
+    set(PYTHON_LIBRARIES ${PYTHON3_LIBRARY})
+    set(PYTHON_EXECUTABLE ${PYTHON3_EXECUTABLE})
+    set(PYTHON_PACKAGES_PATH ${PYTHON3_PACKAGES_PATH})
+    set(ARCHIVE_OUTPUT_NAME ${MODULE_NAME}_py3)
 endif ()
+find_package_handle_standard_args(Python DEFAULT_MSG PYTHON_INCLUDE_DIRS PYTHON_NUMPY_INCLUDE_DIRS PYTHON_LIBRARIES PYTHON_EXECUTABLE PYTHON_PACKAGES_PATH)
+if(NOT Python_FOUND)
+    message(SEND_ERROR "Not all requred components of Numpy/Python found.")
+endif()
 
 # Find true site-packages site on this machine, since find_package(PythonLibs) doesn't seem to get the correct one
 # (Adapted from OpenCV3)
@@ -151,6 +153,7 @@ target_link_libraries(${MODULE_NAME}
         PUBLIC
         ${Boost_LIBRARIES}
         ${PYTHON_LIBRARIES})
+
 target_link_libraries(${MODULE_NAME}
         PRIVATE
         OpenMP::OpenMP_CXX)
@@ -164,7 +167,7 @@ else()
 endif()
 
 #message(STATUS "${MODULE_NAME}: [archive output name:]  ${ARCHIVE_OUTPUT_NAME} [archive suffix:] ${${MODULE_NAME}_PY_SUFFIX}")
-#message(STATUS [include dirs:] "${PYTHON_INCLUDE_DIRS}")
+#message(STATUS "[include dirs:] ${PYTHON_INCLUDE_DIRS} [packages path:] ${PYTHON3_PACKAGES_PATH} [libraries:] ${PYTHON_LIBRARIES}")
 
 #======== INSTALLATION MAKE TARGET =====================================================================================
 
