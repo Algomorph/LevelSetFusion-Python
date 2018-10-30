@@ -17,6 +17,7 @@
 #include "data_term.hpp"
 #include "boolean_operations.hpp"
 #include "../math/typedefs.hpp"
+#include "../traversal/field_traversal_cpu.hpp"
 
 namespace nonrigid_optimization {
 
@@ -55,6 +56,44 @@ void compute_local_data_term_gradient(const eig::MatrixXf& warped_live_field, co
 	data_gradient_x = difference * gradient_x * scaling_factor;
 	data_gradient_y = difference * gradient_y * scaling_factor;
 	local_energy_contribution = 0.5F * difference * difference;
+}
+
+
+template<bool TSkipTruncated>
+struct DataTermGradientAndEnergyFunctor{
+	float data_term_energy = 0.0f;
+	float scaling_factor = 10.0f;
+	DataTermGradientAndEnergyFunctor(float scaling_factor=10.0f){
+		this->scaling_factor = scaling_factor;
+	}
+	inline math::Vector2f operator ()(const float& live_tsdf_value,
+			const float& canonical_tsdf_value,
+			const math::Vector2f& local_live_gradient){
+		if (TSkipTruncated) {
+			if (is_outside_narrow_band(live_tsdf_value, canonical_tsdf_value)) {
+				return math::Vector2f(0.0f);
+			}
+		}
+		float diff = live_tsdf_value - canonical_tsdf_value;
+		data_term_energy += .5 * diff * diff;
+		return scaling_factor * diff * local_live_gradient;
+	}
+};
+
+void compute_data_term_gradient2(
+		math::MatrixXv2f& data_term_gradient, float& data_term_energy,
+		const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
+		const math::MatrixXv2f& warped_live_field_gradient, float scaling_factor) {
+	DataTermGradientAndEnergyFunctor<false> functor(scaling_factor);
+	traversal::traverse_triple_2d_field_output_field(data_term_gradient, warped_live_field, canonical_field, warped_live_field_gradient, functor);
+}
+
+void compute_data_term_gradient_within_band_union2(
+		math::MatrixXv2f& data_term_gradient, float& data_term_energy,
+		const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
+		const math::MatrixXv2f& warped_live_field_gradient, float scaling_factor) {
+	DataTermGradientAndEnergyFunctor<true> functor(scaling_factor);
+	traversal::traverse_triple_2d_field_output_field(data_term_gradient, warped_live_field, canonical_field, warped_live_field_gradient, functor);
 }
 
 template<bool TSkipTruncated>

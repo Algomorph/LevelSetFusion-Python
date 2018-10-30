@@ -45,10 +45,20 @@ endif ()
 
 include_directories(include)
 
+#TODO: revert to old variant of
 find_package(Python3 COMPONENTS Interpreter Development)
 find_package(Python2 COMPONENTS Interpreter Development)
 
 # *** Boost (Boost python version based on python option / availability)
+if(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
+    # Provisions for typical Boost compiled on Windows
+    # Most commonly, Boost libraries are compiled statically on windows (change as necesssary)
+    set(Boost_USE_STATIC_LIBS TRUE)
+    set(Boost_USE_STATIC_RUNTIME OFF)
+    set(Boost_USE_MULTITHREADED ON)
+    set(Boost_USE_DEBUG_RUNTIME ON)
+    set(Boost_USE_DEBUG_PYTHON OFF)
+endif()
 set(BOOST_COMPONENTS unit_test_framework)
 if (${PYTHON_DESIRED_VERSION} STREQUAL "2.X")
     set(Python_ADDITIONAL_VERSIONS ${PYTHON2_VERSION_MAJOR}.${PYTHON2_VERSION_MINOR})
@@ -59,6 +69,7 @@ else ()
     list(APPEND BOOST_COMPONENTS python${Python3_VERSION_MAJOR}${Python3_VERSION_MINOR})
     set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
 endif ()
+
 
 find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
 # *** Everything else
@@ -144,6 +155,14 @@ target_link_libraries(${MODULE_NAME}
         PRIVATE
         OpenMP::OpenMP_CXX)
 
+if(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
+    # Provisions for typical Boost compiled on Windows
+    # Unless some extra compile options are used on Windows, the libraries won't have prefixes (change as necesssary)
+    target_compile_definitions(${MODULE_NAME} PUBLIC -DBOOST_ALL_NO_LIB -DBOOST_SYSTEM_NO_DEPRECATED)
+else()
+    target_compile_definitions(${MODULE_NAME} PUBLIC -DBOOST_TEST_DYN_LINK)
+endif()
+
 #message(STATUS "${MODULE_NAME}: [archive output name:]  ${ARCHIVE_OUTPUT_NAME} [archive suffix:] ${${MODULE_NAME}_PY_SUFFIX}")
 #message(STATUS [include dirs:] "${PYTHON_INCLUDE_DIRS}")
 
@@ -156,7 +175,7 @@ set_target_properties(${MODULE_NAME} PROPERTIES
         SUFFIX ${${MODULE_NAME}_PY_SUFFIX})
 
 
-if (MSVC AND NOT PYTHON_DEBUG_LIBRARIES)
+if ((CMAKE_CXX_COMPILER_ID MATCHES MSVC) AND (NOT PYTHON_DEBUG_LIBRARIES))
     set(PYTHON_INSTALL_CONFIGURATIONS CONFIGURATIONS Release)
 else ()
     set(PYTHON_INSTALL_CONFIGURATIONS "")
@@ -178,12 +197,11 @@ install(TARGETS ${MODULE_NAME}
 
 enable_testing()
 
-set(TEST_SOURCES
-    tests/test_nonrigid_optimization.cpp
-    tests/test_data_nonrigid_optimization.hpp )
-
-add_executable(test_nonrigid_optimization ${TEST_SOURCES} )
+add_executable(test_nonrigid_optimization tests/test_nonrigid_optimization.cpp)
+add_executable(test_math tests/test_math.cpp tests/test_data_math.hpp tests/test_data_nonrigid_optimization.hpp)
 
 target_link_libraries(test_nonrigid_optimization ${MODULE_NAME})
+target_link_libraries(test_math ${MODULE_NAME})
 
 add_test(NAME nonrigid_optimization COMMAND test_nonrigid_optimization)
+add_test(NAME math COMMAND test_math)
