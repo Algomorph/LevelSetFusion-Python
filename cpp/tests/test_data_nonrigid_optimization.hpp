@@ -53,7 +53,7 @@ static eig::MatrixXf warped_live_field = [] {
 static eig::MatrixXf canonical_field = [] {
 	eig::MatrixXf canonical_field(4, 4);
 	canonical_field <<
-	        -1.0000000e+00f, 1.0000000e+00f, 3.7499955e-01f, 2.4999955e-01f,
+	                -1.0000000e+00f, 1.0000000e+00f, 3.7499955e-01f, 2.4999955e-01f,
 			-1.0000000e+00f, 3.2499936e-01f, 1.9999936e-01f, 1.4999935e-01f,
 			1.0000000e+00f, 1.7500064e-01f, 1.0000064e-01f, 5.0000645e-02f,
 			1.0000000e+00f, 7.5000443e-02f, 4.4107438e-07f, -9.9999562e-02f;
@@ -61,13 +61,13 @@ static eig::MatrixXf canonical_field = [] {
 }();
 
 static math::MatrixXv2f data_term_gradient = [] {
-	math::MatrixXv2f grad(4,4);
+	math::MatrixXv2f grad(4, 4);
 	grad << math::Vector2f(0.f, 0.f),
 			math::Vector2f(-0.f, -0.f),
 			math::Vector2f(-0.33803707f, -0.17493579f),
 			math::Vector2f(-0.11280416f, -0.1911128f), //row 1
 
-			math::Vector2f(-11.1772728f,  0.f),
+			math::Vector2f(-11.1772728f, 0.f),
 			math::Vector2f(-0.37912705f, -0.38390793f),
 			math::Vector2f(-0.08383488f, -0.1813143f),
 			math::Vector2f(-0.03533841f, -0.18257865f), //row 2
@@ -85,13 +85,13 @@ static math::MatrixXv2f data_term_gradient = [] {
 }();
 
 static math::MatrixXv2f data_term_gradient_band_union_only = [] {
-	math::MatrixXv2f grad(4,4);
+	math::MatrixXv2f grad(4, 4);
 	grad << math::Vector2f(0.f, 0.f),
 			math::Vector2f(-0.f, -0.f),
 			math::Vector2f(-0.33803707f, -0.17493579f),
 			math::Vector2f(-0.11280416f, -0.1911128f), //row 1
 
-			math::Vector2f(-0.0f,  0.f),
+			math::Vector2f(-0.0f, 0.f),
 			math::Vector2f(-0.37912705f, -0.38390793f),
 			math::Vector2f(-0.08383488f, -0.1813143f),
 			math::Vector2f(-0.03533841f, -0.18257865f), //row 2
@@ -107,5 +107,69 @@ static math::MatrixXv2f data_term_gradient_band_union_only = [] {
 			math::Vector2f(-0.10950545f, -0.23967532f); //row4
 	return grad;
 }();
+
+static math::MatrixXv2f warp_field2 = data_term_gradient_band_union_only * 0.1;
+
+static eig::MatrixXf warped_live_field2 = [] {
+	eig::MatrixXf warped_live_field(4, 4);
+	warped_live_field <<
+	                  1.f, 1.f, 0.51970311f, 0.44364204f,
+			1.f, 0.48296618f, 0.35061902f, 0.32914556f,
+			1.f, 0.38141651f, 0.24963467f, 0.22796208f,
+			1.f, 0.26173902f, 0.16667641f, 0.11720487f;
+	return warped_live_field;
+}();
+
+static math::MatrixXv2f tikhonov_gradient = [] {
+	math::MatrixXv2f grad(4, 4);
+	grad << math::Vector2f(-0.f, -0.f),
+			math::Vector2f(0.07171641f, 0.05588437f),
+			math::Vector2f(-0.08174722f, -0.01523803f),
+			math::Vector2f(0.01477672f, -0.00247112f),
+
+			math::Vector2f(0.0379127f, 0.03839079f),
+			math::Vector2f(-0.08161432f, -0.11682735f),
+			math::Vector2f(0.05004386f, 0.01503923f),
+			math::Vector2f(0.01285563f, 0.0012278f),
+
+			math::Vector2f(0.06165301f, 0.01860439f),
+			math::Vector2f(-0.14231894f, -0.00524814f),
+			math::Vector2f(0.04878554f, 0.0154102f),
+			math::Vector2f(0.0114322f, -0.00062794f),
+
+			math::Vector2f(0.05805285f, 0.01735591f),
+			math::Vector2f(-0.10423949f, -0.0198568f),
+			math::Vector2f(0.05253284f, 0.01392651f),
+			math::Vector2f(-0.0098418f, -0.01556983f);
+	return grad;
+}();
+
+static float tikhonov_energy = 0.00955238193f;
+static math::MatrixXv2f tikhonov_gradient_band_union_only = [] {
+	math::MatrixXv2f grad(4, 4);
+	grad << math::Vector2f(0.f, 0.f),
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.08174722f, -0.01523803f),
+			math::Vector2f(0.01477672f, -0.00247112f),
+
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.08161432f, -0.11682735f),
+			math::Vector2f(0.05004386f, 0.01503923f),
+			math::Vector2f(0.01285563f, 0.0012278f),
+
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.14231893f, -0.00524814f),
+			math::Vector2f(0.04878553f, 0.0154102f),
+			math::Vector2f(0.0114322f, -0.00062794f),
+
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.10423949f, -0.0198568f),
+			math::Vector2f(0.05253284f, 0.01392651f),
+			math::Vector2f(-0.0098418f, -0.01556983f);
+	return grad;
+}();
+
+static float tikhonov_energy_band_union_only = 0.001989292759769734f;
+
 
 }// namespace test_data

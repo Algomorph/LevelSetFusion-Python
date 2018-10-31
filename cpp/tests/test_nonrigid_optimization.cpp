@@ -223,6 +223,29 @@ BOOST_AUTO_TEST_CASE(test_data_term_gradient01) {
 	                                                                    test_data::canonical_field,
 	                                                                    warped_live_field_gradient);
 	BOOST_REQUIRE(math::almost_equal(data_term_gradient_band_union_only,
-			test_data::data_term_gradient_band_union_only, 1e-6));
+	                                 test_data::data_term_gradient_band_union_only, 1e-6));
 
+}
+
+BOOST_AUTO_TEST_CASE(test_tikhonov_regularization_gradient01) {
+	math::MatrixXv2f tikhonov_gradient, tikhonov_gradient_band_union_only;
+	float tikhonov_energy;
+
+	nonrigid_optimization::compute_tikhonov_regularization_gradient(
+			tikhonov_gradient, tikhonov_energy, test_data::warp_field2);
+
+	BOOST_REQUIRE(math::almost_equal_verbose(tikhonov_gradient, test_data::tikhonov_gradient, 1e-6));
+	BOOST_REQUIRE_CLOSE(tikhonov_energy, test_data::tikhonov_energy, 1e-6);
+
+	std::cout << tikhonov_energy << std::endl;
+	std::cout << test_data::warp_field2 <<std::endl;
+	std::cout <<  test_data::warped_live_field2 << std::endl;
+	std::cout << test_data::canonical_field << std::endl;
+
+	nonrigid_optimization::compute_tikhonov_regularization_gradient_within_band_union(
+			tikhonov_gradient_band_union_only, tikhonov_energy, test_data::warp_field2, test_data::warped_live_field2,
+			test_data::canonical_field);
+
+	BOOST_REQUIRE(math::almost_equal_verbose(tikhonov_gradient_band_union_only, test_data::tikhonov_gradient_band_union_only, 1e-6));
+	BOOST_REQUIRE_CLOSE(tikhonov_energy, test_data::tikhonov_energy_band_union_only, 1e-4);
 }

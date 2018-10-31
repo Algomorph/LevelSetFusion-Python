@@ -148,7 +148,7 @@ add_library(${MODULE_NAME} SHARED
             src/math/platform_independence.hpp
             src/math/matrix2.hpp src/math/vector3.hpp
             src/math/typedefs.hpp
-            src/math/gradients.cpp src/math/gradients.hpp src/traversal/field_traversal_cpu.hpp)
+            src/math/gradients.cpp src/math/gradients.hpp src/traversal/field_traversal_cpu.hpp src/math/vector_operations.hpp)
 target_link_libraries(${MODULE_NAME}
         PUBLIC
         ${Boost_LIBRARIES}
