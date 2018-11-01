@@ -108,7 +108,6 @@ static math::MatrixXv2f data_term_gradient_band_union_only = [] {
 	return grad;
 }();
 
-static math::MatrixXv2f warp_field2 = data_term_gradient_band_union_only * 0.1;
 
 static eig::MatrixXf warped_live_field2 = [] {
 	eig::MatrixXf warped_live_field(4, 4);
@@ -119,6 +118,10 @@ static eig::MatrixXf warped_live_field2 = [] {
 			1.f, 0.26173902f, 0.16667641f, 0.11720487f;
 	return warped_live_field;
 }();
+
+//======================================================================================================================
+//region use data_term_gradient_band_union_only * 0.1 as a warp field to produce the following gradients & energies
+//======================================================================================================================
 
 static math::MatrixXv2f tikhonov_gradient = [] {
 	math::MatrixXv2f grad(4, 4);
@@ -168,8 +171,8 @@ static math::MatrixXv2f tikhonov_gradient_band_union_only = [] {
 			math::Vector2f(-0.0098418f, -0.01556983f);
 	return grad;
 }();
-
 static float tikhonov_energy_band_union_only = 0.001989292759769734f;
 
+//endregion
 
 }// namespace test_data

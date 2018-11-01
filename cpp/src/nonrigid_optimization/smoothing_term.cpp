@@ -27,12 +27,14 @@ namespace nonrigid_optimization {
 template<bool TSkipTruncated>
 void compute_tikhonov_regularization_gradient_aux(math::MatrixXv2f& gradient, float& energy,
                                                   const math::MatrixXv2f& warp_field,
-                                                  const eig::MatrixX2f* live_field,
-                                                  const eig::MatrixX2f* canonical_field) {
+                                                  const eig::MatrixXf* live_field,
+                                                  const eig::MatrixXf* canonical_field) {
 	eig::Index column_count = warp_field.cols();
 	eig::Index row_count = warp_field.rows();
 	gradient = math::MatrixXv2f(row_count, column_count);
 	energy = 0.0f;
+
+	math::Vector2<float> some_vector(1.0f,3.0f);
 
 	auto is_truncated = [&](eig::Index i_row, eig::Index i_col) {
 		return TSkipTruncated && is_outside_narrow_band((*live_field)(i_row, i_col), (*canonical_field)(i_row, i_col));
@@ -117,8 +119,8 @@ compute_tikhonov_regularization_gradient(math::MatrixXv2f& gradient, float& ener
 void
 compute_tikhonov_regularization_gradient_within_band_union(math::MatrixXv2f& gradient, float& energy,
                                                            const math::MatrixXv2f& warp_field,
-                                                           const eig::MatrixX2f& live_field,
-                                                           const eig::MatrixX2f& canonical_field) {
+                                                           const eig::MatrixXf& live_field,
+                                                           const eig::MatrixXf& canonical_field) {
 	return compute_tikhonov_regularization_gradient_aux<true>(gradient, energy, warp_field, &live_field,
 	                                                           &canonical_field);
 }

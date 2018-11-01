@@ -31,7 +31,7 @@ compute_tikhonov_regularization_gradient(math::MatrixXv2f& gradient, float& ener
 void
 compute_tikhonov_regularization_gradient_within_band_union(math::MatrixXv2f& gradient, float& energy,
                                                            const math::MatrixXv2f& warp_field,
-                                                           const eig::MatrixX2f& live_field,
-                                                           const eig::MatrixX2f& canonical_field);
+                                                           const eig::MatrixXf& live_field,
+                                                           const eig::MatrixXf& canonical_field);
 
 }//nonrigid_optimization
