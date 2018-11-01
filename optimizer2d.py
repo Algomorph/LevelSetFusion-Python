@@ -184,6 +184,7 @@ class Optimizer2D:
         live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
         data_gradient_field = dt.compute_data_term_gradient_vectorized(warped_live_field, canonical_field,
                                                                        live_gradient_x, live_gradient_y)
+        set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, data_gradient_field)
         self.total_data_energy = \
             dt.compute_data_term_energy_contribution(warped_live_field, canonical_field) * self.data_term_weight
         smoothing_gradient_field = st.compute_smoothing_term_gradient_vectorized(warp_field)

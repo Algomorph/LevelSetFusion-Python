@@ -49,6 +49,9 @@ class SmoothingTermTest(TestCase):
         gradient_out = st.compute_smoothing_term_gradient_vectorized(warp_field)
         energy_out = st.compute_smoothing_term_energy(warp_field, live_field, canonical_field)
 
+        # See note at top of file on why expected energies are different for the vectorized/non-vectorized version
+        expected_energy_out = 4.0
+
         self.assertTrue(np.allclose(gradient_out, expected_gradient_out))
         self.assertEqual(energy_out, expected_energy_out)
 
@@ -168,3 +171,38 @@ class SmoothingTermTest(TestCase):
 
         self.assertTrue(np.allclose(smoothing_gradient_out, expected_gradient_out))
         self.assertAlmostEqual(energy_out, expected_energy_out, places=6)
+
+    def test_smoothing_term04(self):
+        # @formatter:off
+        warp_field = np.array(
+            [0, 0,    -0,         -0,           -0.0338037,  -0.0174936,   -0.0112804,  -0.0191113,
+             -0, 0,   -0.0379127, -0.0383908,   -0.00838349, -0.0181314,   -0.00353384, -0.0182579,
+             -0, 0,   -0.061653,  -0.0186044,   -0.00832757, -0.0134227,   -0.00379325, -0.0187587,
+             -0, 0,   -0.0580528, -0.0173559,   -0.00826604, -0.0136066,   -0.0109505,  -0.0239675],
+            dtype=np.float32).reshape(4, 4, 2)
+
+        warped_live_field = np.array(
+            [1, 1,        0.519703, 0.443642,
+             1, 0.482966, 0.350619, 0.329146,
+             1, 0.381416, 0.249635, 0.227962,
+             1, 0.261739, 0.166676, 0.117205], np.float32).reshape(4, 4)
+
+        canonical_field = np.array(
+            [-1, 1,         0.375,        0.25,
+             -1, 0.324999,  0.199999,     0.149999,
+             1,  0.175001,  0.100001,     0.0500006,
+             1,  0.0750004, 4.41074e-07, -0.0999996], np.float32).reshape(4, 4)
+        # @formatter:on
+
+        smoothing_gradient_out = st.compute_smoothing_term_gradient_vectorized(warp_field)
+        set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, smoothing_gradient_out)
+        energy_out = st.compute_smoothing_term_energy(warp_field, warped_live_field, canonical_field)
+
+        print(smoothing_gradient_out)
+        print(energy_out)
+        print()
+
+        smoothing_gradient_out, energy_out = \
+            st.compute_smoothing_term_gradient_direct(warp_field, warped_live_field, canonical_field)
+        print(smoothing_gradient_out)
+        print(energy_out)
