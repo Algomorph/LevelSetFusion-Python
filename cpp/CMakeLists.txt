@@ -130,6 +130,7 @@ add_library(${MODULE_NAME} SHARED
             include/eigen_numpy.hpp
             src/eigen_numpy.cpp
             src/module.cpp
+
             src/nonrigid_optimization/data_term.hpp
             src/nonrigid_optimization/data_term.cpp
             src/nonrigid_optimization/interpolation.hpp
@@ -139,6 +140,11 @@ add_library(${MODULE_NAME} SHARED
             src/nonrigid_optimization/full_gradient.hpp
             src/nonrigid_optimization/smoothing_term.cpp
             src/nonrigid_optimization/smoothing_term.hpp
+            src/nonrigid_optimization/optimizer2d.cpp
+            src/nonrigid_optimization/optimizer2d.hpp
+            src/nonrigid_optimization/sobolev_optimizer.cpp
+            src/nonrigid_optimization/sobolev_optimizer.hpp
+
             src/math/tensors.hpp
             src/math/tensors.cpp
             src/math/math_utils.hpp
@@ -148,7 +154,11 @@ add_library(${MODULE_NAME} SHARED
             src/math/platform_independence.hpp
             src/math/matrix2.hpp src/math/vector3.hpp
             src/math/typedefs.hpp
-            src/math/gradients.cpp src/math/gradients.hpp src/traversal/field_traversal_cpu.hpp src/math/vector_operations.hpp)
+            src/math/gradients.cpp
+            src/math/gradients.hpp
+            src/math/vector_operations.hpp
+
+            src/traversal/field_traversal_cpu.hpp)
 target_link_libraries(${MODULE_NAME}
         PUBLIC
         ${Boost_LIBRARIES}
