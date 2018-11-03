@@ -168,11 +168,6 @@ def compute_smoothing_term_energy(warp_field, warped_live_field=None, canonical_
     warp_gradient_u_x, warp_gradient_u_y = np.gradient(warp_field[:, :, 0])
     warp_gradient_v_x, warp_gradient_v_y = np.gradient(warp_field[:, :, 1])
 
-    # if band_union_only:
-    #     set_zeros_for_values_outside_narrow_band_union_multitarget(warped_live_field, canonical_field,
-    #                                                                (warp_gradient_u_x, warp_gradient_u_y,
-    #                                                                 warp_gradient_v_x, warp_gradient_v_y))
-
     gradient_aggregate = \
         warp_gradient_u_x ** 2 + warp_gradient_v_x ** 2 + warp_gradient_u_y ** 2 + warp_gradient_v_y ** 2
     if band_union_only:
