@@ -40,7 +40,7 @@ void compute_tikhonov_regularization_gradient_aux(math::MatrixXv2f& gradient, fl
 		return TSkipTruncated && is_outside_narrow_band((*live_field)(i_row, i_col), (*canonical_field)(i_row, i_col));
 	};
 
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (eig::Index i_col = 0; i_col < column_count; i_col++) {
 		math::Vector2f prev_row_vector = warp_field(0, i_col);
 		math::Vector2f row_vector = warp_field(1, i_col);
@@ -78,7 +78,7 @@ void compute_tikhonov_regularization_gradient_aux(math::MatrixXv2f& gradient, fl
 			gradient(i_row, i_col) = -prev_row_vector + row_vector;
 		}
 	}
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (eig::Index i_row = 0; i_row < row_count; i_row++) {
 		math::Vector2f prev_col_vector = warp_field(i_row, 0);
 		math::Vector2f col_vector = warp_field(i_row, 1);

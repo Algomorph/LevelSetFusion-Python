@@ -79,7 +79,7 @@ public:
 
 	Optimizer2d() = default;
 
-	virtual void optimize(eig::MatrixXf& live_field, eig::MatrixXf& canonical_field) = 0;
+	virtual void optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) = 0;
 
 protected:
 	static bool are_termination_conditions_reached(int completed_iteration_count, float largest_warp_vector);

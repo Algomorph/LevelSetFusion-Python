@@ -76,4 +76,5 @@ bool Optimizer2d::are_termination_conditions_reached(int completed_iteration_cou
 	        largest_warp_vector < shared_parameters.minimum_iteration_count ||
 	        largest_warp_vector > shared_parameters.maximum_iteration_count);
 }
+
 }//namespace nonrigid_optimization

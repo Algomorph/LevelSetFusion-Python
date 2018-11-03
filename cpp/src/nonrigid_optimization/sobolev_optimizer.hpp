@@ -19,14 +19,17 @@
 #include <Eigen/Eigen>
 #include <boost/property_tree/ptree.hpp>
 
+
 //local
 #include "optimizer2d.hpp"
+#include "../math/tensors.hpp"
 
 namespace pt = boost::property_tree;
 namespace eig = Eigen;
 
 namespace nonrigid_optimization {
 class SobolevOptimizer2d : public Optimizer2d {
+public:
 	class SobolevParameters {
 	public:
 		static SobolevParameters& get_instance() {
@@ -53,11 +56,17 @@ class SobolevOptimizer2d : public Optimizer2d {
 
 		float smoothing_term_weight = 0.2f;
 
-
 	private:
 		SobolevParameters() = default;
 	};
 
+	static SobolevParameters& sobolev_parameters();
+
+	virtual void optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field);
+private:
+	float perform_optimization_iteration_and_return_max_warp(eig::MatrixXf& warped_live_field,
+	                                                         const eig::MatrixXf& canonical_field,
+	                                                         math::MatrixXv2f& warp_field);
 };
 
 }//namespace nonrigid_optimization

@@ -158,7 +158,7 @@ add_library(${MODULE_NAME} SHARED
             src/math/gradients.hpp
             src/math/vector_operations.hpp
 
-            src/traversal/field_traversal_cpu.hpp)
+            src/traversal/field_traversal_cpu.hpp src/math/convolution.hpp src/math/convolution.cpp)
 target_link_libraries(${MODULE_NAME}
         PUBLIC
         ${Boost_LIBRARIES}

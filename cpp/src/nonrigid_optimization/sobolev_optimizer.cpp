@@ -16,26 +16,69 @@
 
 //stdlib
 #include <vector>
+#include <cfloat>
+
 //local
 #include "sobolev_optimizer.hpp"
+#include "data_term.hpp"
+#include "smoothing_term.hpp"
+#include "../math/gradients.hpp"
+#include "../math/convolution.hpp"
 
-
-namespace nonrigid_optimization{
+namespace nonrigid_optimization {
 
 
 void SobolevOptimizer2d::SobolevParameters::set_from_json(pt::ptree root) {
 	this->smoothing_term_weight = root.get<float>("smoothing_term_weight", 0.2);
 	std::vector<float> kernel_values;
-	for(pt::ptree::value_type & value : root.get_child("sobolev_kernel")){
+	for (pt::ptree::value_type& value : root.get_child("sobolev_kernel")) {
 		kernel_values.push_back(value.second.get_value<float>());
 	}
 	this->sobolev_kernel = eig::VectorXf(kernel_values.size());
 	int i_value = 0;
-	for (float element : kernel_values){
+	for (float element : kernel_values) {
 		this->sobolev_kernel(i_value) = element;
 		i_value++;
 	}
 }
 
+SobolevOptimizer2d::SobolevParameters& SobolevOptimizer2d::sobolev_parameters() {
+	return SobolevParameters::get_instance();
+}
 
+
+void SobolevOptimizer2d::optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) {
+	float maximum_warp_length = FLT_MAX;
+
+	eig::MatrixXf warped_live_field = live_field;
+	math::MatrixXv2f warp_field = math::MatrixXv2f::Zero(live_field.rows(), live_field.cols());
+
+	for (int completed_iteration_count = 0;
+	     Optimizer2d::are_termination_conditions_reached(completed_iteration_count, maximum_warp_length);
+	     completed_iteration_count++) {
+		maximum_warp_length =
+				perform_optimization_iteration_and_return_max_warp(warped_live_field, canonical_field, warp_field);
+	}
+}
+
+
+float SobolevOptimizer2d::perform_optimization_iteration_and_return_max_warp(eig::MatrixXf& warped_live_field,
+                                                                             const eig::MatrixXf& canonical_field,
+                                                                             math::MatrixXv2f& warp_field) {
+	math::MatrixXv2f data_term_gradient, smoothing_term_gradient, warped_live_field_gradient;
+	float data_term_energy, smoothing_term_energy;
+
+	math::scalar_field_gradient(warped_live_field, warped_live_field_gradient);
+	compute_data_term_gradient_within_band_union(data_term_gradient, data_term_energy, warped_live_field,
+	                                             canonical_field, warped_live_field_gradient);
+	compute_tikhonov_regularization_gradient_within_band_union(smoothing_term_gradient, smoothing_term_energy,
+	                                                           warp_field, warped_live_field, canonical_field);
+
+	warp_field = (data_term_gradient + smoothing_term_gradient * sobolev_parameters().smoothing_term_weight)
+	             * shared_parameters().gradient_descent_rate;
+
+	math::convolve_with_kernel(warp_field, sobolev_parameters().sobolev_kernel);
+
+
+}
 }//namespace nonrigid_optimization
