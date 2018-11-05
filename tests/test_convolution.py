@@ -28,11 +28,6 @@ class ConvolutionTestCase(TestCase):
         ss.convolve_with_sobolev_smoothing_kernel(vector_field_out, np.flip(kernel))
         expected_output = np.dstack([np.array([[85, 168, 99],
                                                [124, 228, 132],
-                                               [70, 120, 69]], dtype=np.float32)] * 2)
-
-        y_convolved = np.zeros_like(vector_field)
-        for x in range(vector_field.shape[0]):
-            y_convolved[:, x, 0] = np.convolve(vector_field[:, x, 0], kernel, mode='same')
-            y_convolved[:, x, 1] = np.convolve(vector_field[:, x, 1], kernel, mode='same')
+                                               [67, 120, 69]], dtype=np.float32)] * 2)
 
         self.assertTrue(np.allclose(vector_field_out, expected_output))
