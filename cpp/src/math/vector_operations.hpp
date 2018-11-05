@@ -33,7 +33,7 @@ template<typename T> _CPU_AND_GPU_CODE_ inline typename T::value_type dot(const 
 	return r;
 }
 
-// return the length of the provided vector
+// return the length of the provided vector, L2 norm
 template<typename T> _CPU_AND_GPU_CODE_ inline typename T::value_type length(const T &vec) {
 	return sqrt(dot(vec, vec));
 }
@@ -46,7 +46,7 @@ template<typename T> _CPU_AND_GPU_CODE_ inline typename T::value_type sum(const 
 	return r;
 }
 
-// return the sum of the squares of the provided vector's components
+// return the sum of the squares of the provided vector's components, (L2 norm)^2
 template<typename T> _CPU_AND_GPU_CODE_ inline typename T::value_type squared_sum(const T &vec) {
 	typename T::value_type r = 0;
 	for (int i = 0; i < T::size; i++)

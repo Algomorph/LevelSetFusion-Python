@@ -30,6 +30,7 @@ namespace eig = Eigen;
 
 namespace nonrigid_optimization {
 
+//TODO: break this up into multiple functions (as necessary, judge by usage) instead of passing behavior flags
 eig::MatrixXf interpolate(math::MatrixXv2f& warp_field,
                            const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
                            bool band_union_only = false, bool known_values_only = false,

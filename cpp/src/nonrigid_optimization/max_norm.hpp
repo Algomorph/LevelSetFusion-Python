@@ -1,5 +1,5 @@
 //  ================================================================
-//  Created by Gregory Kramida on 11/3/18.
+//  Created by Gregory Kramida on 11/5/18.
 //  Copyright (c) 2018 Gregory Kramida
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -15,15 +15,12 @@
 //  ================================================================
 #pragma once
 
-//librarires
-#include <Eigen/Eigen>
+#include "../math/tensors.hpp"
+#include "../math/typedefs.hpp"
 
-//local
-#include "tensors.hpp"
 
-namespace eig = Eigen;
+namespace nonrigid_optimization{
 
-namespace math{
-	void convolve_with_kernel_preserve_zeros(MatrixXv2f& field, const eig::VectorXf& kernel_inverted);
+void locate_max_norm(float& max_norm, math::Vector2i coordinate, const math::MatrixXv2f& vector_field);
 
-}//namespace math
+}//nonrigid_optimization

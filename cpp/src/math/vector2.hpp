@@ -90,6 +90,14 @@ public:
 		return *this;
 	}
 
+	bool is_zero() const{
+		return this->x == 0.0f && this->y == 0.0f;
+	}
+
+	bool is_close_to_zero(T tolerance = 1e-10){
+		return std::abs<T>(this->x) < tolerance && std::abs<T>(this->y) < tolerance;
+	}
+
 	// indexing operators
 	_CPU_AND_GPU_CODE_ T& operator[](int i) { return this->values[i]; }
 
@@ -217,6 +225,9 @@ public:
 		return (lhs.x != rhs.x) || (lhs.y != rhs.y);
 	}
 
+	//===========================================================
+	//                   Printing
+	//===========================================================
 	friend std::ostream& operator<<(std::ostream& os, const Vector2<T>& dt) {
 		os << dt.x << ", " << dt.y;
 		return os;

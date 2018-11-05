@@ -171,6 +171,6 @@ BOOST_AUTO_TEST_CASE(convolution_test01) {
 	kernel << 3.f,2.f,1.f;
 	field << 85.f, 168.f, 99.f, 124.f,228.f,132.f,67.f,120.f,69.f;
 	math::MatrixXv2f expected_output = math::stack_as_xv2f(field, field);
-	math::convolve_with_kernel(vector_field, kernel);
+	math::convolve_with_kernel_preserve_zeros(vector_field, kernel);
 	BOOST_REQUIRE(math::almost_equal(vector_field, vector_field, 1e-10));
 }

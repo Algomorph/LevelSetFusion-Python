@@ -20,10 +20,11 @@
 namespace math {
 
 inline
-static math::Vector2f buffer_convolve_helper(math::Vector2f* buffer,
-                                             const eig::VectorXf& kernel_1d, int buffer_read_index, int kernel_size,
-                                             const math::Vector2f& original_vector) {
-	if (std::abs(original_vector.x) < 10e-6 && std::abs(original_vector.y) < 10e-6) {
+static math::Vector2f buffer_convolve_helper_preserve_zeros(math::Vector2f* buffer,
+                                                            const eig::VectorXf& kernel_1d, int buffer_read_index,
+                                                            int kernel_size,
+                                                            const math::Vector2f& original_vector) {
+	if (original_vector.is_zero()) {
 		return {0, 0};
 	}
 	int i_kernel_value = 0;
@@ -45,15 +46,15 @@ static math::Vector2f buffer_convolve_helper(math::Vector2f* buffer,
 	return {x, y};
 }
 
-void convolve_with_kernel(MatrixXv2f& field, const eig::VectorXf& kernel_1d) {
+void convolve_with_kernel_preserve_zeros(MatrixXv2f& field, const eig::VectorXf& kernel_1d) {
 	eig::Index row_count = field.rows();
 	eig::Index column_count = field.cols();
 
 	eig::VectorXf kernel_inverted(kernel_1d.size());
 
 	//flip kernel, see def of discrete convolution on Wikipedia
-	for(eig::Index i_kernel_element = 0; i_kernel_element < kernel_1d.size(); i_kernel_element++){
-		kernel_inverted(kernel_1d.size() - i_kernel_element-1) = kernel_1d(i_kernel_element);
+	for (eig::Index i_kernel_element = 0; i_kernel_element < kernel_1d.size(); i_kernel_element++) {
+		kernel_inverted(kernel_1d.size() - i_kernel_element - 1) = kernel_1d(i_kernel_element);
 	}
 
 	int kernel_size = static_cast<int>(kernel_inverted.size());
@@ -63,10 +64,10 @@ void convolve_with_kernel(MatrixXv2f& field, const eig::VectorXf& kernel_1d) {
 	math::Vector2f buffer[kernel_size];
 	MatrixXv2f y_convolved = MatrixXv2f::Zero(field.rows(), field.cols());
 
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (eig::Index i_col = 0; i_col < column_count; i_col++) {
 		int i_buffer_write_index = 0;
-		for (; i_buffer_write_index < kernel_half_size; i_buffer_write_index ++) {
+		for (; i_buffer_write_index < kernel_half_size; i_buffer_write_index++) {
 			buffer[i_buffer_write_index] = math::Vector2f(0.0f); // fill buffer with empty value
 		}
 		eig::Index i_row_to_sample = 0;
@@ -80,17 +81,19 @@ void convolve_with_kernel(MatrixXv2f& field, const eig::VectorXf& kernel_1d) {
 				i_buffer_write_index = i_buffer_read_index) {
 			buffer[i_buffer_write_index] = field(i_row_to_sample, i_col); // fill buffer with next value
 			i_buffer_read_index = (i_buffer_write_index + 1) % kernel_size;
-			y_convolved(i_row_to_write, i_col) = buffer_convolve_helper(buffer, kernel_inverted, i_buffer_read_index,
-			                                                            kernel_size, field(i_row_to_write, i_col));
+			y_convolved(i_row_to_write, i_col) =
+					buffer_convolve_helper_preserve_zeros(buffer, kernel_inverted, i_buffer_read_index,
+					                                      kernel_size, field(i_row_to_write, i_col));
 		}
 		for (; i_row_to_write < row_count; i_row_to_write++, i_buffer_write_index = i_buffer_read_index) {
 			buffer[i_buffer_write_index] = math::Vector2f(0.0f);
 			i_buffer_read_index = (i_buffer_write_index + 1) % kernel_size;
-			y_convolved(i_row_to_write, i_col) = buffer_convolve_helper(buffer, kernel_inverted, i_buffer_read_index,
-			                                                            kernel_size, field(i_row_to_write, i_col));
+			y_convolved(i_row_to_write, i_col) =
+					buffer_convolve_helper_preserve_zeros(buffer, kernel_inverted, i_buffer_read_index,
+					                                      kernel_size, field(i_row_to_write, i_col));
 		}
 	}
-//#pragma omp parallel for
+#pragma omp parallel for
 	for (eig::Index i_row = 0; i_row < row_count; i_row++) {
 		int i_buffer_write_index = 0;
 		for (; i_buffer_write_index < kernel_half_size + 1; i_buffer_write_index++) {
@@ -107,14 +110,16 @@ void convolve_with_kernel(MatrixXv2f& field, const eig::VectorXf& kernel_1d) {
 				i_buffer_write_index = i_buffer_read_index) {
 			buffer[i_buffer_write_index] = field(i_row, i_col_to_sample); // fill buffer with next value
 			i_buffer_read_index = (i_buffer_write_index + 1) % kernel_size;
-			field(i_row, i_col_to_write) = buffer_convolve_helper(buffer, kernel_inverted, i_buffer_read_index, kernel_size,
-			                                                      y_convolved(i_row, i_col_to_write));
+			field(i_row, i_col_to_write) =
+					buffer_convolve_helper_preserve_zeros(buffer, kernel_inverted, i_buffer_read_index,
+					                                      kernel_size, y_convolved(i_row, i_col_to_write));
 		}
 		for (; i_col_to_write < column_count; i_col_to_write++, i_buffer_write_index = i_buffer_read_index) {
 			buffer[i_buffer_write_index] = math::Vector2f(0.0f);
 			i_buffer_read_index = (i_buffer_write_index + 1) % kernel_size;
-			field(i_row, i_col_to_write) = buffer_convolve_helper(buffer, kernel_inverted, i_buffer_read_index, kernel_size,
-			                                                      y_convolved(i_row, i_col_to_write));
+			field(i_row, i_col_to_write) =
+					buffer_convolve_helper_preserve_zeros(buffer, kernel_inverted, i_buffer_read_index,
+					                                      kernel_size, y_convolved(i_row, i_col_to_write));
 		}
 	}
 }

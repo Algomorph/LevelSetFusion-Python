@@ -22,8 +22,11 @@
 #include "sobolev_optimizer.hpp"
 #include "data_term.hpp"
 #include "smoothing_term.hpp"
+#include "interpolation.hpp"
+#include "max_norm.hpp"
 #include "../math/gradients.hpp"
 #include "../math/convolution.hpp"
+
 
 namespace nonrigid_optimization {
 
@@ -67,18 +70,17 @@ float SobolevOptimizer2d::perform_optimization_iteration_and_return_max_warp(eig
                                                                              math::MatrixXv2f& warp_field) {
 	math::MatrixXv2f data_term_gradient, smoothing_term_gradient, warped_live_field_gradient;
 	float data_term_energy, smoothing_term_energy;
-
 	math::scalar_field_gradient(warped_live_field, warped_live_field_gradient);
 	compute_data_term_gradient_within_band_union(data_term_gradient, data_term_energy, warped_live_field,
 	                                             canonical_field, warped_live_field_gradient);
 	compute_tikhonov_regularization_gradient_within_band_union(smoothing_term_gradient, smoothing_term_energy,
 	                                                           warp_field, warped_live_field, canonical_field);
-
 	warp_field = (data_term_gradient + smoothing_term_gradient * sobolev_parameters().smoothing_term_weight)
 	             * shared_parameters().gradient_descent_rate;
-
-	math::convolve_with_kernel(warp_field, sobolev_parameters().sobolev_kernel);
-
-
+	math::convolve_with_kernel_preserve_zeros(warp_field, sobolev_parameters().sobolev_kernel);
+	warped_live_field = interpolate(warp_field,warped_live_field, canonical_field, true);
+	float maximum_warp_length; math::Vector2i maximum_warp_location;
+	locate_max_norm(maximum_warp_length, maximum_warp_location, warp_field);
+	return maximum_warp_length;
 }
 }//namespace nonrigid_optimization
