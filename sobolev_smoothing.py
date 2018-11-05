@@ -26,6 +26,8 @@ sobolev_kernel_1d = np.array([2.995900285895913839e-04,
                               2.995900285895913839e-04])
 
 
+# TODO: these are fairly general convolution operations, no need for "sobolev" in the function or file names
+
 def convolve_with_sobolev_smoothing_kernel_old(gradient_field, kernel=sobolev_kernel_1d):
     x_convolved = np.zeros_like(gradient_field)
     focus_coordinates = get_focus_coordinates()
