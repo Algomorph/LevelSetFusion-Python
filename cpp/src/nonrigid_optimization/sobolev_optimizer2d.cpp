@@ -19,7 +19,7 @@
 #include <cfloat>
 
 //local
-#include "sobolev_optimizer.hpp"
+#include "sobolev_optimizer2d.hpp"
 #include "data_term.hpp"
 #include "smoothing_term.hpp"
 #include "interpolation.hpp"
@@ -29,6 +29,7 @@
 
 
 namespace nonrigid_optimization {
+
 
 
 void SobolevOptimizer2d::SobolevParameters::set_from_json(pt::ptree root) {
@@ -45,23 +46,29 @@ void SobolevOptimizer2d::SobolevParameters::set_from_json(pt::ptree root) {
 	}
 }
 
+Optimizer2d::SharedParameters& SobolevOptimizer2d::shared_parameters(){
+	return Optimizer2d::SharedParameters::get_instance();
+}
+
 SobolevOptimizer2d::SobolevParameters& SobolevOptimizer2d::sobolev_parameters() {
 	return SobolevParameters::get_instance();
 }
 
 
-void SobolevOptimizer2d::optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) {
-	float maximum_warp_length = FLT_MAX;
+eig::MatrixXf SobolevOptimizer2d::optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) {
+	float maximum_warp_length = SobolevOptimizer2d::shared_parameters().maximum_warp_length_upper_threshold-1.0f;
 
 	eig::MatrixXf warped_live_field = live_field;
 	math::MatrixXv2f warp_field = math::MatrixXv2f::Zero(live_field.rows(), live_field.cols());
 
 	for (int completed_iteration_count = 0;
-	     Optimizer2d::are_termination_conditions_reached(completed_iteration_count, maximum_warp_length);
+	     !Optimizer2d::are_termination_conditions_reached(completed_iteration_count, maximum_warp_length);
 	     completed_iteration_count++) {
 		maximum_warp_length =
 				perform_optimization_iteration_and_return_max_warp(warped_live_field, canonical_field, warp_field);
 	}
+
+	return warped_live_field;
 }
 
 
@@ -76,9 +83,9 @@ float SobolevOptimizer2d::perform_optimization_iteration_and_return_max_warp(eig
 	compute_tikhonov_regularization_gradient_within_band_union(smoothing_term_gradient, smoothing_term_energy,
 	                                                           warp_field, warped_live_field, canonical_field);
 	warp_field = (data_term_gradient + smoothing_term_gradient * sobolev_parameters().smoothing_term_weight)
-	             * shared_parameters().gradient_descent_rate;
+	             * -shared_parameters().gradient_descent_rate;
 	math::convolve_with_kernel_preserve_zeros(warp_field, sobolev_parameters().sobolev_kernel);
-	warped_live_field = interpolate(warp_field,warped_live_field, canonical_field, true);
+	warped_live_field = interpolate(warp_field, warped_live_field, canonical_field, true);
 	float maximum_warp_length; math::Vector2i maximum_warp_location;
 	locate_max_norm(maximum_warp_length, maximum_warp_location, warp_field);
 	return maximum_warp_length;

@@ -22,6 +22,8 @@ from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
 from utils.sampling import get_focus_coordinates
 
+# TODO: take care of fromstring deprecation issue throughout file
+
 VIEW_SCALING_FACTOR = 8
 
 IGNORE_OPENCV = False
@@ -85,7 +87,7 @@ def make_warp_vector_plot(warp_video_writer, warp_field, iteration_number=None, 
 
     plt.close()
 
-    plot_image = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+    plot_image = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
     plot_image = plot_image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
     plot_image = plot_image[110:1310, 240:2160]
     bgr = cv2.cvtColor(plot_image, cv2.COLOR_RGB2BGR)
@@ -173,10 +175,6 @@ def warp_field_to_heatmap(warp_field, scale=VIEW_SCALING_FACTOR, use_pixel_label
             cv2.putText(heatmap, str(x // scale), (x + 2, 16), cv2.FONT_HERSHEY_PLAIN, 0.9, (128, 255, 128))
             for y in range(dash_start, image_size, scale):
                 heatmap[y, x] = (128, 255, 128)
-        # cv2.imshow("heatmap", heatmap)
-        # key = cv2.waitKey()
-        # if key == 27:
-        #     sys.exit(0)
     return heatmap
 
 

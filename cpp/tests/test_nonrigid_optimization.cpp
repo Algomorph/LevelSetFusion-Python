@@ -34,10 +34,12 @@
 #include "../src/nonrigid_optimization/data_term.hpp"
 #include "../src/nonrigid_optimization/smoothing_term.hpp"
 #include "../src/nonrigid_optimization/interpolation.hpp"
+#include "../src/nonrigid_optimization/sobolev_optimizer2d.hpp"
 
 namespace tt = boost::test_tools;
 namespace bp = boost::python;
 namespace eig = Eigen;
+namespace no = nonrigid_optimization;
 
 BOOST_AUTO_TEST_CASE(test_test) {
 
@@ -281,6 +283,39 @@ BOOST_AUTO_TEST_CASE(test_tikhonov_regularization_gradient02) {
 			tikhonov_gradient_band_union_only, tikhonov_energy, warp_field, test_data::warped_live_field2,
 			test_data::canonical_field);
 
-	BOOST_REQUIRE(math::almost_equal_verbose(tikhonov_gradient_band_union_only, test_data::tikhonov_gradient_band_union_only, 1e-6));
+	BOOST_REQUIRE(
+			math::almost_equal_verbose(tikhonov_gradient_band_union_only, test_data::tikhonov_gradient_band_union_only,
+			                           1e-6));
 	BOOST_REQUIRE_CLOSE(tikhonov_energy, test_data::tikhonov_energy_band_union_only, 1e-4);
+}
+
+BOOST_AUTO_TEST_CASE(test_sobolev_optimizer01) {
+	eig::Vector3f sobolev_kernel;
+	sobolev_kernel << 0.06742075f, 0.99544406f, 0.06742075f;
+	no::SobolevOptimizer2d::shared_parameters().maximum_iteration_count = 1;
+	no::SobolevOptimizer2d::sobolev_parameters().sobolev_kernel = sobolev_kernel;
+	no::SobolevOptimizer2d optimizer;
+	eig::MatrixXf live_field(4, 4), canonical_field(4, 4);
+	live_field << 1.f, 1.f, 0.49999955f, 0.42499956f,
+			1.f, 0.44999936f, 0.34999937f, 0.32499936f,
+			1.f, 0.35000065f, 0.25000066f, 0.22500065f,
+			1.f, 0.20000044f, 0.15000044f, 0.07500044f;
+	canonical_field << 1.0000000e+00f, 1.0000000e+00f, 3.7499955e-01f, 2.4999955e-01f,
+			1.0000000e+00f, 3.2499936e-01f, 1.9999936e-01f, 1.4999935e-01f,
+			1.0000000e+00f, 1.7500064e-01f, 1.0000064e-01f, 5.0000645e-02f,
+			1.0000000e+00f, 7.5000443e-02f, 4.4107438e-07f, -9.9999562e-02f;
+
+	eig::MatrixXf expected_warped_live_field_out(4, 4);
+	expected_warped_live_field_out <<
+			//@formatter:off
+			1.f, 1.f,         0.49404836f, 0.4321034f,
+			1.f, 0.44113636f, 0.34710377f, 0.32715625f,
+			1.f, 0.3388706f,  0.24753733f, 0.22598255f,
+			1.f, 0.21407352f, 0.16514614f, 0.11396749f;
+	//@formatter: on
+
+	eig::MatrixXf warped_live_field = optimizer.optimize(live_field, canonical_field);
+	std::cout << warped_live_field << std::endl;
+
+	BOOST_REQUIRE(warped_live_field.isApprox(expected_warped_live_field_out));
 }

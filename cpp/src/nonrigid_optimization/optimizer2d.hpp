@@ -79,7 +79,13 @@ public:
 
 	Optimizer2d() = default;
 
-	virtual void optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) = 0;
+	/**
+	 * \brief Perform non-rigid alignment of the live 2D TSDF field to the canonical 2D TSDF field
+	 * \param live_field a scalar TSDF field (presumably obtained from raw depth image row pixel)
+	 * \param canonical_field fused data in original position in a TSDF field representation
+	 * \return warped live field: live field after alignment
+	 */
+	virtual eig::MatrixXf optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) = 0;
 
 protected:
 	static bool are_termination_conditions_reached(int completed_iteration_count, float largest_warp_vector);

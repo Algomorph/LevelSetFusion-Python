@@ -248,7 +248,7 @@ def generate_1d_sobolev_kernel(size=7, strength=0.1, precision=np.float32,
     if return_u_matrices:
         return u_matrices
     else:
-        return u_matrices[1][:, 0]
+        return -u_matrices[1][:, 0]
 
 
 def main():

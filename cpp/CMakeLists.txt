@@ -142,8 +142,8 @@ add_library(${MODULE_NAME} SHARED
             src/nonrigid_optimization/smoothing_term.hpp
             src/nonrigid_optimization/optimizer2d.cpp
             src/nonrigid_optimization/optimizer2d.hpp
-            src/nonrigid_optimization/sobolev_optimizer.cpp
-            src/nonrigid_optimization/sobolev_optimizer.hpp
+            src/nonrigid_optimization/sobolev_optimizer2d.cpp
+            src/nonrigid_optimization/sobolev_optimizer2d.hpp
 
             src/math/tensors.hpp
             src/math/tensors.cpp

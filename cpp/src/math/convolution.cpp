@@ -64,7 +64,7 @@ void convolve_with_kernel_preserve_zeros(MatrixXv2f& field, const eig::VectorXf&
 	math::Vector2f buffer[kernel_size];
 	MatrixXv2f y_convolved = MatrixXv2f::Zero(field.rows(), field.cols());
 
-#pragma omp parallel for
+//#pragma omp parallel for private(buffer)
 	for (eig::Index i_col = 0; i_col < column_count; i_col++) {
 		int i_buffer_write_index = 0;
 		for (; i_buffer_write_index < kernel_half_size; i_buffer_write_index++) {
@@ -93,7 +93,7 @@ void convolve_with_kernel_preserve_zeros(MatrixXv2f& field, const eig::VectorXf&
 					                                      kernel_size, field(i_row_to_write, i_col));
 		}
 	}
-#pragma omp parallel for
+//#pragma omp parallel for private(buffer)
 	for (eig::Index i_row = 0; i_row < row_count; i_row++) {
 		int i_buffer_write_index = 0;
 		for (; i_buffer_write_index < kernel_half_size + 1; i_buffer_write_index++) {

@@ -61,8 +61,9 @@ public:
 	};
 
 	static SobolevParameters& sobolev_parameters();
+	static SharedParameters& shared_parameters();
 
-	virtual void optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field);
+	virtual eig::MatrixXf optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) override;
 private:
 	float perform_optimization_iteration_and_return_max_warp(eig::MatrixXf& warped_live_field,
 	                                                         const eig::MatrixXf& canonical_field,
