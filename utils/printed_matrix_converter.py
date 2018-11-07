@@ -41,16 +41,16 @@ class MatrixInformation:
 
 
 cpp_type_mappings = {
-    "f": float,
-    "v2f": float,
-    "m2f": float,
-    "d": float,
-    "i": int
+    "f": np.float32,
+    "v2f": np.float32,
+    "m2f": np.float32,
+    "d": np.float64,
+    "i": np.int32
 }
 
 cpp_extra_dimension_mappings = {
     "v2f": [2],
-    "m2f": [2,2],
+    "m2f": [2, 2],
 }
 
 
@@ -126,7 +126,9 @@ def main():
         if conversion_mode == ConversionMode.CppToPython:
             output_file.write("import numpy as np" + os.linesep)
             for matrix_info in matrix_infos:
-                output_file.write(matrix_info.name + " = np." + repr(matrix_info.numpy_matrix) + os.linesep)
+                output_file.write(matrix_info.name + " = np. " +
+                                  repr(matrix_info.numpy_matrix).replace("float32", "np.float32")
+                                  .replace("int32", "np.int32") + os.linesep)
         elif conversion_mode == ConversionMode.PythonToCpp:
             raise NotImplementedError("PythonToCpp mode not yet implemented!")
         else:
