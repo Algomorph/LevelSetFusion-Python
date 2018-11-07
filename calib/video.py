@@ -1,7 +1,7 @@
 import cv2
 import os.path
 import numpy as np
-import math
+import math_utils
 from calib.geom import Pose
 
 
@@ -143,7 +143,7 @@ class Video(object):
         est_pts = cv2.projectPoints(object_points, rotation_vector, translation_vector,
                                     intrinsics.intrinsic_mat, intrinsics.distortion_coeffs)[0]
 
-        rms = math.sqrt(((img_pts - est_pts) ** 2).sum() / len(object_points))
+        rms = math_utils.sqrt(((img_pts - est_pts) ** 2).sum() / len(object_points))
         return rms
 
     # TODO: passing in both frame_folder_path and save_image doesn't make sense. Make saving dependent on the former.

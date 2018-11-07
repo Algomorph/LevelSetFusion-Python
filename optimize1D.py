@@ -16,7 +16,7 @@
 #  ================================================================
 
 import numpy as np
-import math
+import math_utils
 import random
 import sys
 
@@ -225,7 +225,7 @@ def interpolate_warped_live(warped_live_field, warp_field):
         warped_location = location + warp_field[location]
         if warped_location < 0 or warped_location > field_size - 1:
             continue  # out of bounds
-        first_sample_at = int(math.floor(warped_location))
+        first_sample_at = int(math_utils.floor(warped_location))
         second_sample_at = first_sample_at + 1
         ratio = warped_location - first_sample_at
         if second_sample_at > field_size - 1:

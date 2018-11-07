@@ -18,11 +18,11 @@
 import numpy as np
 import sys
 import cv2
-import math
+import math_utils
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1
-SQUARE_ROOT_OF_TWO = math.sqrt(2)
+SQUARE_ROOT_OF_TWO = math_utils.sqrt(2)
 
 
 def main():

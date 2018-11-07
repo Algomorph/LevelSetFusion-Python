@@ -21,7 +21,7 @@ import time
 
 import cv2
 import numpy as np
-import math
+import math_utils
 import calib.io as cio
 from calib.app import CalibrationApplication
 from calib.geom import Pose
@@ -541,8 +541,8 @@ class ApplicationUnsynced(CalibrationApplication):
 
                         if pose_count > 0:
                             mean_pose_error = cumulative_pose_error / pose_count
-                            root_mean_square_pt_error = math.sqrt(cumulative_squared_point_error /
-                                                                  point_count)
+                            root_mean_square_pt_error = math_utils.sqrt(cumulative_squared_point_error /
+                                                                        point_count)
                             pose_differences[ix_offset, j_sample] = mean_pose_error
                             projection_rms_mat[ix_offset, j_sample] = root_mean_square_pt_error
 
@@ -556,7 +556,7 @@ class ApplicationUnsynced(CalibrationApplication):
                 if offset_cumulative_pose_counts > min_offset_datapoints:
                     offset_pose_error = offset_cumulative_pose_error / offset_cumulative_pose_counts
                     offset_mean_pose_diffs[ix_offset] = offset_pose_error
-                    rms = math.sqrt(offset_cumulative_pt_squared_error / offset_cumulative_pt_counts)
+                    rms = math_utils.sqrt(offset_cumulative_pt_squared_error / offset_cumulative_pt_counts)
                     offset_pt_rms[ix_offset] = rms
                     if verbose > 1:
                         print("RMS error: {:.3f}; pose error: {:.3f}".format(rms, offset_pose_error), end="")

@@ -16,14 +16,13 @@
 
 # stdlib
 from enum import Enum
-import importlib.machinery
 from inspect import currentframe, getframeinfo
 
 # common libs
 import numpy as np
 import os.path
 
-from sobolev_smoothing import convolve_with_sobolev_smoothing_kernel
+from math_utils.convolution import convolve_with_kernel_preserve_zeros
 import cv2
 
 # local
@@ -227,7 +226,7 @@ class Optimizer2D:
         # ***
 
         if self.sobolev_smoothing_enabled:
-            convolve_with_sobolev_smoothing_kernel(gradient_field, self.sobolev_kernel)
+            convolve_with_kernel_preserve_zeros(gradient_field, self.sobolev_kernel)
 
         np.copyto(warp_field, -gradient_field * self.gradient_descent_rate)
         warp_lengths = np.linalg.norm(warp_field, axis=2)
@@ -322,7 +321,7 @@ class Optimizer2D:
                 gradient_field[y, x] = gradient
 
         if self.sobolev_smoothing_enabled:
-            convolve_with_sobolev_smoothing_kernel(gradient_field, self.sobolev_kernel)
+            convolve_with_kernel_preserve_zeros(gradient_field, self.sobolev_kernel)
 
         max_warp = 0.0
         max_warp_location = -1

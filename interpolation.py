@@ -15,7 +15,7 @@
 #  ================================================================
 
 import numpy as np
-import math
+import math_utils
 from utils.point import Point
 from utils.sampling import sample_at, focus_coordinates_match, sample_flag_at, \
     sample_at_replacement
@@ -50,7 +50,7 @@ def get_and_print_interpolation_data(canonical_field, warped_live_field, warp_fi
             return
 
     warped_location = Point(x, y) + Point(coordinates=warp_field[y, x])
-    base_point = Point(math.floor(warped_location.x), math.floor(warped_location.y))
+    base_point = Point(math_utils.floor(warped_location.x), math_utils.floor(warped_location.y))
     ratios = warped_location - base_point
     inverse_ratios = Point(1.0, 1.0) - ratios
 
@@ -93,7 +93,7 @@ def interpolate_warped_live(canonical_field, warped_live_field, warp_field, grad
                     continue
 
             warped_location = Point(x, y) + Point(coordinates=warp_field[y, x])
-            base_point = Point(math.floor(warped_location.x), math.floor(warped_location.y))
+            base_point = Point(math_utils.floor(warped_location.x), math_utils.floor(warped_location.y))
             ratios = warped_location - base_point
             inverse_ratios = Point(1.0, 1.0) - ratios
 
@@ -133,7 +133,7 @@ def interpolate_warped_live_with_flag_info(warped_live_field, warp_field, update
     for y in range(field_size):
         for x in range(field_size):
             warped_location = Point(x, y) + Point(coordinates=warp_field[y, x])
-            base_point = Point(math.floor(warped_location.x), math.floor(warped_location.y))
+            base_point = Point(math_utils.floor(warped_location.x), math_utils.floor(warped_location.y))
             ratios = warped_location - base_point
             inverse_ratios = Point(1.0, 1.0) - ratios
             original_value = warped_live_field[y, x]
