@@ -228,3 +228,58 @@ BOOST_AUTO_TEST_CASE(convolution_test02) {
 
 	BOOST_REQUIRE(math::almost_equal(vector_field, expected_output, 1e-10));
 }
+
+
+BOOST_AUTO_TEST_CASE(convolution_test03) {
+	math::MatrixXv2f vector_field(4, 4);
+	vector_field <<
+	             math::Vector2f(0.f, 0.f),
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.35937524f, -0.18750024f),
+			math::Vector2f(-0.13125f, -0.17500037f),
+
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.4062504f, -0.4062496f),
+			math::Vector2f(-0.09375f, -0.1874992f),
+			math::Vector2f(-0.04375001f, -0.17499907f),
+
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.65624946f, -0.21874908f),
+			math::Vector2f(-0.09375f, -0.1499992f),
+			math::Vector2f(-0.04375001f, -0.21874908f),
+
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.5312497f, -0.18750025f),
+			math::Vector2f(-0.09374999f, -0.15000032f),
+			math::Vector2f(-0.13125001f, -0.2625004f);
+
+	eig::VectorXf kernel(3);
+	kernel << 0.06742075, 0.99544406, 0.06742075;
+	math::MatrixXv2f expected_output(4, 4);
+	expected_output << math::Vector2f(0.f, 0.f),
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.37325418f, -0.2127664f),
+			math::Vector2f(-0.15753812f, -0.19859032f),
+
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.45495194f, -0.43135524f),
+			math::Vector2f(-0.15728821f, -0.25023925f),
+			math::Vector2f(-0.06344876f, -0.21395193f),
+
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.7203466f, -0.26821017f),
+			math::Vector2f(-0.15751792f, -0.20533602f),
+			math::Vector2f(-0.06224135f, -0.25772366f),
+
+			math::Vector2f(0.f, 0.f),
+			math::Vector2f(-0.57718134f, -0.21122558f),
+			math::Vector2f(-0.14683422f, -0.19089347f),
+			math::Vector2f(-0.13971107f, -0.2855439f);
+
+	math::convolve_with_kernel_preserve_zeros(vector_field, kernel);
+
+	std::cout << vector_field << std::endl;
+	std::cout << expected_output << std::endl;
+
+	BOOST_REQUIRE(math::almost_equal(vector_field, expected_output, 1e-10));
+}
