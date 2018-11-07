@@ -225,3 +225,52 @@ class SmoothingTermTest(TestCase):
         self.assertTrue(np.allclose(smoothing_gradient_out, expected_gradient_out))
         # See note at top of file on why expected energies are different for the vectorized/non-vectorized version
         self.assertAlmostEqual(0.001989291487916489, energy_out)
+
+    def test_smoothing_term05(self):
+        # corresponds to test_tikhonov_regularization_gradient02 for C++
+        grad = np.array([[[0., 0.],
+                          [-0., -0.],
+                          [-0.33803707, -0.17493579],
+                          [-0.11280416, -0.1911128]],  # row 1
+
+                         [[-0.0, 0.],
+                          [-0.37912705, -0.38390793],
+                          [-0.08383488, -0.1813143],
+                          [-0.03533841, -0.18257865]],  # row 2
+
+                         [[-0., 0.],
+                          [-0.61653014, -0.18604389],
+                          [-0.08327565, -0.13422713],
+                          [-0.03793251, -0.18758682]],  # row 3
+
+                         [[-0., 0.],
+                          [-0.58052848, -0.17355914],
+                          [-0.0826604, -0.13606551],
+                          [-0.10950545, -0.23967532]]], dtype=np.float32)
+
+        warp_field = grad * 0.1
+        expected_gradient_out = np.array(
+            [[[-0., -0.],
+              [0.07171641, 0.05588437],
+              [-0.08174722, -0.01523803],
+              [0.01477672, -0.00247112]],
+
+             [[0.0379127, 0.03839079],
+              [-0.08161432, -0.11682735],
+              [0.05004386, 0.01503923],
+              [0.01285563, 0.0012278]],
+
+             [[0.06165301, 0.01860439],
+              [-0.14231894, -0.00524814],
+              [0.04878554, 0.0154102],
+              [0.0114322, -0.00062794]],
+
+             [[0.05805285, 0.01735591],
+              [-0.10423949, -0.0198568],
+              [0.05253284, 0.01392651],
+              [-0.0098418, -0.01556983]]], dtype=np.float32)
+        smoothing_gradient_out = st.compute_smoothing_term_gradient_vectorized(warp_field)
+        energy_out = st.compute_smoothing_term_energy(warp_field, band_union_only=False)
+
+        self.assertTrue(np.allclose(smoothing_gradient_out, expected_gradient_out))
+        self.assertAlmostEqual(energy_out, 0.009552381932735443)

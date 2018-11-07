@@ -84,7 +84,11 @@ float SobolevOptimizer2d::perform_optimization_iteration_and_return_max_warp(eig
 	                                                           warp_field, warped_live_field, canonical_field);
 	warp_field = (data_term_gradient + smoothing_term_gradient * sobolev_parameters().smoothing_term_weight)
 	             * -shared_parameters().gradient_descent_rate;
+	std::cout << "Pre-convo:" << std::endl;
+	std::cout << warp_field << std::endl;
 	math::convolve_with_kernel_preserve_zeros(warp_field, sobolev_parameters().sobolev_kernel);
+	std::cout << "Post-convo:" << std::endl;
+	std::cout << warp_field << std::endl;
 	warped_live_field = interpolate(warp_field, warped_live_field, canonical_field, true);
 	float maximum_warp_length; math::Vector2i maximum_warp_location;
 	locate_max_norm(maximum_warp_length, maximum_warp_location, warp_field);

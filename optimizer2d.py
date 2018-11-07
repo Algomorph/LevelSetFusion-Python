@@ -225,6 +225,7 @@ class Optimizer2D:
               -focus_smoothing_gradient, RESET, sep='', end='')
 
         # ***
+
         if self.sobolev_smoothing_enabled:
             convolve_with_sobolev_smoothing_kernel(gradient_field, self.sobolev_kernel)
 

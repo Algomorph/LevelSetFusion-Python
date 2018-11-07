@@ -102,7 +102,7 @@ class TestNonRigidOptimization(TestCase):
         self.assertTrue(np.allclose(live_field, expected_live_field_out))
         self.assertTrue(np.allclose(warp_field, expected_warps_out))
 
-    def test_nonrigid_optimization03(self):
+    def test_nonrigid_optimization02(self):
         field_size = 4
         live_field_template = np.array([[1., 1., 0.49999955, 0.42499956],
                                         [1., 0.44999936, 0.34999937, 0.32499936],

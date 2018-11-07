@@ -147,7 +147,7 @@ static math::MatrixXv2f tikhonov_gradient = [] {
 	return grad;
 }();
 
-static float tikhonov_energy = 0.00955238193f;
+static float tikhonov_energy = 0.009552381932735443f;
 static math::MatrixXv2f tikhonov_gradient_band_union_only = [] {
 	math::MatrixXv2f grad(4, 4);
 	grad << math::Vector2f(0.f, 0.f),
