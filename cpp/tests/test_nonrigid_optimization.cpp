@@ -230,7 +230,6 @@ BOOST_AUTO_TEST_CASE(test_data_term_gradient01) {
 
 }
 
-
 BOOST_AUTO_TEST_CASE(test_tikhonov_regularization_gradient01) {
 	eig::MatrixXf live_field(2, 2), canonical_field(2, 2);
 	math::MatrixXv2f warp_field(2, 2);

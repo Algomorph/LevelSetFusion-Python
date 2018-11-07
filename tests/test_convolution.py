@@ -31,3 +31,6 @@ class ConvolutionTestCase(TestCase):
                                                [67, 120, 69]], dtype=np.float32)] * 2)
 
         self.assertTrue(np.allclose(vector_field_out, expected_output))
+
+    def test_convolution2(self):
+        pass
