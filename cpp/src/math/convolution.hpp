@@ -25,6 +25,7 @@ namespace eig = Eigen;
 
 namespace math{
 	void convolve_with_kernel_y(MatrixXv2f& field, const eig::VectorXf& kernel_1d);
+	void convolve_with_kernel_x(MatrixXv2f& field, const eig::VectorXf& kernel_1d);
 	void convolve_with_kernel_preserve_zeros(MatrixXv2f& field, const eig::VectorXf& kernel_1d);
 
 }//namespace math

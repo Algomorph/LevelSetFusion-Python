@@ -222,7 +222,7 @@ def main():
         elif conversion_mode == ConversionMode.PythonToCpp:
             output_file.write("#include <Eigen/Eigen>" + os.linesep)
             output_file.write("#include \"../math/tensors.hpp\"" + os.linesep + os.linesep)
-            output_file.write("namespace eig=Eigen;" + os.linesep)
+            output_file.write("namespace eig=Eigen;" + os.linesep + os.linesep)
             element_suffix = ""
             if "f" in matrix_info.matrix_type:
                 element_suffix = "f"

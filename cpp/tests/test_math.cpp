@@ -200,33 +200,31 @@ BOOST_AUTO_TEST_CASE(convolution_test02) {
 
 	eig::VectorXf kernel(3);
 	kernel << 0.06742075, 0.99544406, 0.06742075;
-	math::MatrixXv2f expected_output(4, 4);
-	expected_output << math::Vector2f(0.f, 0.f),
-			math::Vector2f(0.f, 0.f),
-			math::Vector2f(-0.37325418f, -0.2127664f),
-			math::Vector2f(-0.15753812f, -0.19859032f),
+	math::MatrixXv2f expected_output(4,4);
+	expected_output <<
 
-			math::Vector2f(0.f, 0.f),
-			math::Vector2f(-0.45495194f, -0.43135524f),
-			math::Vector2f(-0.15728821f, -0.25023925f),
-			math::Vector2f(-0.06344876f, -0.21395193f),
+	                math::Vector2f(0.0f,0.0f),
+			math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.37140754f,-0.21091977f),
+			math::Vector2f(-0.1575381f,-0.19859035f),
 
-			math::Vector2f(0.f, 0.f),
-			math::Vector2f(-0.7203466f, -0.26821017f),
-			math::Vector2f(-0.15751792f, -0.20533602f),
-			math::Vector2f(-0.06224135f, -0.25772366f),
+			math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.45495197f,-0.43135524f),
+			math::Vector2f(-0.1572882f,-0.25023922f),
+			math::Vector2f(-0.06344876f,-0.21395193f),
 
-			math::Vector2f(0.f, 0.f),
-			math::Vector2f(-0.57718134f, -0.21122558f),
-			math::Vector2f(-0.14683422f, -0.19089347f),
-			math::Vector2f(-0.13971107f, -0.2855439f);
+			math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.7203466f,-0.2682102f),
+			math::Vector2f(-0.15751791f,-0.20533603f),
+			math::Vector2f(-0.06224134f,-0.2577237f),
+
+			math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.57718134f,-0.2112256f),
+			math::Vector2f(-0.14683421f,-0.19089346f),
+			math::Vector2f(-0.13971105f,-0.2855439f);
 
 	math::convolve_with_kernel_preserve_zeros(vector_field, kernel);
-
-	std::cout << vector_field << std::endl;
-	std::cout << expected_output << std::endl;
-
-	BOOST_REQUIRE(math::almost_equal(vector_field, expected_output, 1e-10));
+	BOOST_REQUIRE(math::almost_equal(vector_field, expected_output, 1e-6));
 }
 
 
@@ -256,30 +254,83 @@ BOOST_AUTO_TEST_CASE(convolution_test03) {
 	eig::VectorXf kernel(3);
 	kernel << 0.06742075, 0.99544406, 0.06742075;
 	math::MatrixXv2f expected_output(4, 4);
-	expected_output << math::Vector2f(0.f, 0.f),
-			math::Vector2f(0.f, 0.f),
-			math::Vector2f(-0.37325418f, -0.2127664f),
-			math::Vector2f(-0.15753812f, -0.19859032f),
+	expected_output <<
 
-			math::Vector2f(0.f, 0.f),
-			math::Vector2f(-0.45495194f, -0.43135524f),
-			math::Vector2f(-0.15728821f, -0.25023925f),
-			math::Vector2f(-0.06344876f, -0.21395193f),
+	                math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.02738971f,-0.02738965f),
+			math::Vector2f(-0.36405864f,-0.19928734f),
+			math::Vector2f(-0.13360168f,-0.18600166f),
 
-			math::Vector2f(0.f, 0.f),
-			math::Vector2f(-0.7203466f, -0.26821017f),
-			math::Vector2f(-0.15751792f, -0.20533602f),
-			math::Vector2f(-0.06224135f, -0.25772366f),
+			math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.44864437f,-0.41914698f),
+			math::Vector2f(-0.12387292f,-0.20939942f),
+			math::Vector2f(-0.05534932f,-0.20074867f),
 
-			math::Vector2f(0.f, 0.f),
-			math::Vector2f(-0.57718134f, -0.21122558f),
-			math::Vector2f(-0.14683422f, -0.19089347f),
-			math::Vector2f(-0.13971107f, -0.2855439f);
+			math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.7164666f,-0.25778353f),
+			math::Vector2f(-0.10596427f,-0.1720703f),
+			math::Vector2f(-0.05534932f,-0.24724902f),
 
-	math::convolve_with_kernel_preserve_zeros(vector_field, kernel);
+			math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.57307416f,-0.20139425f),
+			math::Vector2f(-0.09964357f,-0.15942998f),
+			math::Vector2f(-0.1336017f,-0.27605268f);
 
-	std::cout << vector_field << std::endl;
-	std::cout << expected_output << std::endl;
+	math::convolve_with_kernel_y(vector_field, kernel);
 
-	BOOST_REQUIRE(math::almost_equal(vector_field, expected_output, 1e-10));
+	BOOST_REQUIRE(math::almost_equal_verbose(vector_field, expected_output, 1e-6));
+}
+
+
+BOOST_AUTO_TEST_CASE(convolution_test04) {
+	math::MatrixXv2f vector_field(4, 4);
+	vector_field <<
+	             math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.02738971f,-0.02738965f),
+			math::Vector2f(-0.36405864f,-0.19928734f),
+			math::Vector2f(-0.13360168f,-0.18600166f),
+
+			math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.44864437f,-0.41914698f),
+			math::Vector2f(-0.12387292f,-0.20939942f),
+			math::Vector2f(-0.05534932f,-0.20074867f),
+
+			math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.7164666f,-0.25778353f),
+			math::Vector2f(-0.10596427f,-0.1720703f),
+			math::Vector2f(-0.05534932f,-0.24724902f),
+
+			math::Vector2f(0.0f,0.0f),
+			math::Vector2f(-0.57307416f,-0.20139425f),
+			math::Vector2f(-0.09964357f,-0.15942998f),
+			math::Vector2f(-0.1336017f,-0.27605268f);
+
+	eig::VectorXf kernel(3);
+	kernel << 0.06742075, 0.99544406, 0.06742075;
+	math::MatrixXv2f expected_output(4,4);
+	expected_output <<
+
+	                math::Vector2f(-0.00184663f,-0.00184663f),
+			math::Vector2f(-0.05181003f,-0.04070096f),
+			math::Vector2f(-0.37325418f,-0.2127664f),
+			math::Vector2f(-0.1575381f,-0.19859035f),
+
+			math::Vector2f(-0.03024794f,-0.0282592f),
+			math::Vector2f(-0.45495197f,-0.43135524f),
+			math::Vector2f(-0.1572882f,-0.25023922f),
+			math::Vector2f(-0.06344876f,-0.21395193f),
+
+			math::Vector2f(-0.04830472f,-0.01737996f),
+			math::Vector2f(-0.7203466f,-0.2682102f),
+			math::Vector2f(-0.15751792f,-0.20533603f),
+			math::Vector2f(-0.06224134f,-0.2577237f),
+
+			math::Vector2f(-0.03863709f,-0.01357815f),
+			math::Vector2f(-0.57718134f,-0.2112256f),
+			math::Vector2f(-0.14683422f,-0.19089346f),
+			math::Vector2f(-0.13971105f,-0.2855439f);
+
+	math::convolve_with_kernel_x(vector_field, kernel);
+
+	BOOST_REQUIRE(math::almost_equal(vector_field, expected_output, 1e-6));
 }
