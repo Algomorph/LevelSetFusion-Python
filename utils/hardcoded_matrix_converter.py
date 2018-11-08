@@ -197,6 +197,11 @@ def main():
         if matrix_infos:
             matrix_infos[-1].until_line = i_line
         lines = new_lines
+
+        if len(matrix_infos) == 1:
+            print("Found 1 matrix")
+        else:
+            print("Found {:d} matrices".format(len(matrix_infos)))
         for matrix_info in matrix_infos:
             matrix_text = "\n".join(lines[matrix_info.from_line:matrix_info.until_line])
             if conversion_mode == ConversionMode.CppToPython:
@@ -222,47 +227,49 @@ def main():
         elif conversion_mode == ConversionMode.PythonToCpp:
             output_file.write("#include <Eigen/Eigen>" + os.linesep)
             output_file.write("#include \"../math/tensors.hpp\"" + os.linesep + os.linesep)
-            output_file.write("namespace eig=Eigen;" + os.linesep + os.linesep)
-            element_suffix = ""
-            if "f" in matrix_info.matrix_type:
-                element_suffix = "f"
+            output_file.write("namespace eig=Eigen;")
             for matrix_info in matrix_infos:
+                output_file.write(os.linesep + os.linesep)
+                element_suffix = ""
+                if "f" in matrix_info.matrix_type:
+                    element_suffix = "f"
                 output_file.write(matrix_info.matrix_type + " " + matrix_info.name + "("
                                   + str(matrix_info.dimensions[0]) + "," + str(matrix_info.dimensions[1]) + ");" +
                                   os.linesep + matrix_info.name + " << ")
-            nested = True
-            if matrix_info.matrix_type == "math::MatrixXv2f":
-                elements = matrix_info.numpy_matrix.flatten().reshape(-1, 2)
+                nested = True
+                if matrix_info.matrix_type == "math::MatrixXv2f":
+                    elements = matrix_info.numpy_matrix.flatten().reshape(-1, 2)
 
-                def write_element(elem):
-                    return str(
-                        "math::Vector2f(" + str(elem[0]) + element_suffix + "," + str(elem[1]) + element_suffix + ")")
-            elif matrix_info.matrix_type == "math::MatrixXm2f":
-                elements = matrix_info.numpy_matrix.flatten().reshape(-1, 2, 2)
+                    def write_element(elem):
+                        return str(
+                            "math::Vector2f(" + str(elem[0]) + element_suffix + "," + str(
+                                elem[1]) + element_suffix + ")")
+                elif matrix_info.matrix_type == "math::MatrixXm2f":
+                    elements = matrix_info.numpy_matrix.flatten().reshape(-1, 2, 2)
 
-                def write_element(elem):
-                    return str(
-                        "math::Matrix2f(" + str(elem[0, 0]) + element_suffix + "," + str(
-                            elem[0, 1]) + element_suffix + ","
-                        + str(elem[1, 0]) + element_suffix + "," + str(elem[1, 1]) + element_suffix + ")")
-            else:
-                elements = matrix_info.numpy_matrix.flatten()
-                nested = False
+                    def write_element(elem):
+                        return str(
+                            "math::Matrix2f(" + str(elem[0, 0]) + element_suffix + "," + str(
+                                elem[0, 1]) + element_suffix + ","
+                            + str(elem[1, 0]) + element_suffix + "," + str(elem[1, 1]) + element_suffix + ")")
+                else:
+                    elements = matrix_info.numpy_matrix.flatten()
+                    nested = False
 
-                def write_element(elem):
-                    return str(elem) + element_suffix
+                    def write_element(elem):
+                        return str(elem) + element_suffix
 
-            i_element = 0
-            for element in elements[:-1]:
+                i_element = 0
+                for element in elements[:-1]:
+                    if nested and not i_element == 0:
+                        output_file.write(os.linesep)
+                    if i_element % matrix_info.dimensions[1] == 0:
+                        output_file.write(os.linesep)
+                    output_file.write(write_element(element) + ", ")
+                    i_element += 1
                 if nested:
                     output_file.write(os.linesep)
-                if i_element % matrix_info.dimensions[1] == 0:
-                    output_file.write(os.linesep)
-                output_file.write(write_element(element) + ", ")
-                i_element += 1
-            if nested:
-                output_file.write(os.linesep)
-            output_file.write(write_element(elements[-1]) + ";")
+                output_file.write(write_element(elements[-1]) + ";")
 
         else:
             raise ValueError("Unsupported ConversionMode: " + str(conversion_mode))
