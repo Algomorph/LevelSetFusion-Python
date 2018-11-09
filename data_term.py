@@ -350,9 +350,9 @@ def compute_data_term_gradient_vectorized(warped_live_field, canonical_field, li
 
 
 def compute_data_term_energy_contribution(warped_live_field, canonical_field,
-                                          zeroes_for_outside_narrow_band_union=True):
+                                          band_union_only=True):
     diff = warped_live_field - canonical_field
-    if zeroes_for_outside_narrow_band_union:
+    if band_union_only:
         set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, diff)
     data_energy = np.sum(0.5 * diff ** 2)
     return data_energy

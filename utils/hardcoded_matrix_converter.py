@@ -161,7 +161,7 @@ def main():
             matrix_header_replacement_pattern = re.compile(
                 r'^.*(?:(?:math::Matrix)|(?:eig::Matrix)|(?:Eigen::Matrix)|(?:MatrixX))\w+\s+\w+\s*\(\d+,\s+\d+\);')
             matrix_value_pattern = re.compile(
-                r'(?:\s*(?:math::(?:Vector2f|Matrix2f)\()|,\s*)?(-?\d+\.?\d*(?:e[+|-]\d\d)?)f?')
+                r'(?:\s*(?:math::(?:Vector2f|Matrix2f)\()|,\s*)?(-?\d+\.?\d*(?:e[+|-]\d\d)?)f?\s*(?:,|\))')
         elif conversion_mode == ConversionMode.PythonToCpp:
             matrix_header_replacement_pattern = \
                 matrix_header_pattern = re.compile(r'(\w+)\s*=\s*(?:np|numpy)\.array\(')
@@ -203,7 +203,7 @@ def main():
         else:
             print("Found {:d} matrices".format(len(matrix_infos)))
         for matrix_info in matrix_infos:
-            matrix_text = "\n".join(lines[matrix_info.from_line:matrix_info.until_line])
+            matrix_text = "".join(lines[matrix_info.from_line:matrix_info.until_line])
             if conversion_mode == ConversionMode.CppToPython:
                 elements = [matrix_info.element_type(match_result)
                             for match_result in re.findall(matrix_value_pattern, matrix_text)]
@@ -219,11 +219,12 @@ def main():
 
         output_file = open(output_file_path, "w+")
         if conversion_mode == ConversionMode.CppToPython:
-            output_file.write("import numpy as np" + os.linesep)
+            output_file.write("import numpy as np" + os.linesep + os.linesep)
             for matrix_info in matrix_infos:
-                output_file.write(matrix_info.name + " = np. " +
+                output_file.write(matrix_info.name + " = np." +
                                   repr(matrix_info.numpy_matrix).replace("float32", "np.float32")
                                   .replace("int32", "np.int32") + os.linesep)
+
         elif conversion_mode == ConversionMode.PythonToCpp:
             output_file.write("#include <Eigen/Eigen>" + os.linesep)
             output_file.write("#include \"../math/tensors.hpp\"" + os.linesep + os.linesep)

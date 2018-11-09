@@ -118,3 +118,80 @@ class DataTermTest(TestCase):
 
         self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out))
         self.assertAlmostEqual(energy_out, expected_energy_out)
+
+    def test_data_term04(self):
+        # corresponds to test_data_term_gradient01 in C++
+        warped_live_field = np.array([[1., 1., 0.49404836, 0.4321034],
+                                      [1., 0.44113636, 0.34710377, 0.32715625],
+                                      [1., 0.3388706, 0.24753733, 0.22598255],
+                                      [1., 0.21407352, 0.16514614, 0.11396749]], dtype=np.float32)
+        canonical_field = np.array([[-1.0000000e+00, 1.0000000e+00, 3.7499955e-01, 2.4999955e-01],
+                                    [-1.0000000e+00, 3.2499936e-01, 1.9999936e-01, 1.4999935e-01],
+                                    [1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02],
+                                    [1.0000000e+00, 7.5000443e-02, 4.4107438e-07, -9.9999562e-02]], dtype=np.float32)
+
+        expected_gradient_out = np.array([[[0., 0.],
+                                           [-0., -0.],
+                                           [-0.33803707, -0.17493579],
+                                           [-0.11280416, -0.1911128]],
+
+                                          [[-11.177273, 0.],
+                                           [-0.37912706, -0.38390794],
+                                           [-0.08383488, -0.1813143],
+                                           [-0.03533841, -0.18257865]],
+
+                                          [[-0., 0.],
+                                           [-0.6165301, -0.18604389],
+                                           [-0.08327565, -0.13422713],
+                                           [-0.03793251, -0.18758681]],
+
+                                          [[-0., 0.],
+                                           [-0.5805285, -0.17355914],
+                                           [-0.0826604, -0.13606551],
+                                           [-0.10950545, -0.23967531]]], dtype=np.float32)
+        expected_gradient_out_band_union_only = np.array([[[0., 0.],
+                                                           [-0., -0.],
+                                                           [-0.33803707, -0.17493579],
+                                                           [-0.11280416, -0.1911128]],
+
+                                                          [[-0., 0.],
+                                                           [-0.37912706, -0.38390794],
+                                                           [-0.08383488, -0.1813143],
+                                                           [-0.03533841, -0.18257865]],
+
+                                                          [[-0., 0.],
+                                                           [-0.6165301, -0.18604389],
+                                                           [-0.08327565, -0.13422713],
+                                                           [-0.03793251, -0.18758681]],
+
+                                                          [[-0., 0.],
+                                                           [-0.5805285, -0.17355914],
+                                                           [-0.0826604, -0.13606551],
+                                                           [-0.10950545, -0.23967531]]], dtype=np.float32)
+
+        expected_energy_out = 4.142916451210006
+        expected_energy_out_band_union_only = 0.14291645121000718
+
+        live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
+
+        data_gradient_out, energy_out = \
+            dt.compute_data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y,
+                                                 band_union_only=False)
+        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out))
+        self.assertAlmostEqual(energy_out, expected_energy_out)
+        data_gradient_out, energy_out = \
+            dt.compute_data_term_gradient_direct(warped_live_field, canonical_field, live_gradient_x, live_gradient_y,
+                                                 band_union_only=True)
+        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out_band_union_only))
+        self.assertAlmostEqual(energy_out, expected_energy_out_band_union_only)
+
+        data_gradient_out = \
+            dt.compute_data_term_gradient_vectorized(warped_live_field, canonical_field, live_gradient_x,
+                                                     live_gradient_y)
+        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out))
+        set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, data_gradient_out)
+        self.assertTrue(np.allclose(data_gradient_out, expected_gradient_out_band_union_only))
+        energy_out = dt.compute_data_term_energy_contribution(warped_live_field, canonical_field, band_union_only=False)
+        self.assertAlmostEqual(energy_out, expected_energy_out,places=6)
+        energy_out = dt.compute_data_term_energy_contribution(warped_live_field, canonical_field)
+        self.assertAlmostEqual(energy_out, expected_energy_out_band_union_only)
