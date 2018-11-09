@@ -60,15 +60,17 @@ void compute_local_data_term_gradient(const eig::MatrixXf& warped_live_field, co
 
 
 template<bool TSkipTruncated>
-struct DataTermGradientAndEnergyFunctor{
+struct DataTermGradientAndEnergyFunctor {
 	float data_term_energy = 0.0f;
 	float scaling_factor = 10.0f;
-	DataTermGradientAndEnergyFunctor(float scaling_factor=10.0f){
+
+	DataTermGradientAndEnergyFunctor(float scaling_factor = 10.0f) {
 		this->scaling_factor = scaling_factor;
 	}
-	inline math::Vector2f operator ()(const float& live_tsdf_value,
-			const float& canonical_tsdf_value,
-			const math::Vector2f& local_live_gradient){
+
+	inline math::Vector2f operator()(const float& live_tsdf_value,
+	                                 const float& canonical_tsdf_value,
+	                                 const math::Vector2f& local_live_gradient) {
 		if (TSkipTruncated) {
 			if (is_outside_narrow_band(live_tsdf_value, canonical_tsdf_value)) {
 				return math::Vector2f(0.0f);
@@ -79,6 +81,7 @@ struct DataTermGradientAndEnergyFunctor{
 		return scaling_factor * diff * local_live_gradient;
 	}
 };
+
 /**
  * \brief Computes the gradient of the data energy term for KillingFusion/SobolevFusion-based optimization on a 2D grid
  * \details Goes over every location, regardless of whether the TSDF values are within the narrow band (are not truncated)
@@ -99,7 +102,10 @@ void compute_data_term_gradient(
 		const math::MatrixXv2f& warped_live_field_gradient, float scaling_factor) {
 	DataTermGradientAndEnergyFunctor<false> functor(scaling_factor);
 	data_term_gradient = math::MatrixXv2f(warped_live_field.rows(), warped_live_field.cols());
-	traversal::traverse_triple_2d_field_output_field(data_term_gradient, warped_live_field, canonical_field, warped_live_field_gradient, functor);
+	traversal::traverse_triple_2d_field_output_field_singlethreaded(data_term_gradient, warped_live_field,
+	                                                                canonical_field, warped_live_field_gradient,
+	                                                                functor);
+	data_term_energy = functor.data_term_energy;
 }
 
 /**
@@ -118,7 +124,10 @@ void compute_data_term_gradient_within_band_union(
 		const math::MatrixXv2f& warped_live_field_gradient, float scaling_factor) {
 	DataTermGradientAndEnergyFunctor<true> functor(scaling_factor);
 	data_term_gradient = math::MatrixXv2f(warped_live_field.rows(), warped_live_field.cols());
-	traversal::traverse_triple_2d_field_output_field(data_term_gradient, warped_live_field, canonical_field, warped_live_field_gradient, functor);
+	traversal::traverse_triple_2d_field_output_field_singlethreaded(data_term_gradient, warped_live_field,
+	                                                                canonical_field, warped_live_field_gradient,
+	                                                                functor);
+	data_term_energy = functor.data_term_energy;
 }
 
 

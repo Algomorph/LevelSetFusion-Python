@@ -73,8 +73,8 @@ bool Optimizer2d::are_termination_conditions_reached(int completed_iteration_cou
 	static SharedParameters& shared_parameters = Optimizer2d::shared_parameters();
 	return completed_iteration_count >= shared_parameters.minimum_iteration_count &&
 	       (completed_iteration_count >= shared_parameters.maximum_iteration_count ||
-	        largest_warp_vector < shared_parameters.minimum_iteration_count ||
-	        largest_warp_vector > shared_parameters.maximum_iteration_count);
+	        largest_warp_vector < shared_parameters.maximum_warp_length_lower_threshold ||
+	        largest_warp_vector > shared_parameters.maximum_warp_length_upper_threshold);
 }
 
 }//namespace nonrigid_optimization

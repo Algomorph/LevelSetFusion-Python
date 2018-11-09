@@ -24,9 +24,12 @@
 namespace eig = Eigen;
 
 namespace traversal {
+
+
 template<typename TFunctorFieldToField, typename TInField, typename TOutField>
 inline void
-traverse_2d_field_output_field(TOutField& out_field, const TInField& in_field, TFunctorFieldToField functor) {
+traverse_2d_field_output_field_multithreaded(TOutField& out_field, const TInField& in_field,
+                                             TFunctorFieldToField& functor) {
 	const eig::Index matrix_size = in_field.size();
 	const eig::Index column_count = in_field.cols();
 	const eig::Index row_count = in_field.rows();
@@ -40,9 +43,28 @@ traverse_2d_field_output_field(TOutField& out_field, const TInField& in_field, T
 	}
 }
 
+
 template<typename TFunctor2FieldsToField, typename TInFieldA, typename TInFieldB, typename TOutField>
-inline void traverse_dual_2d_field_output_field(TOutField& out_field, const TInFieldA& in_field_a,
-                                                const TInFieldB& in_field_b, TFunctor2FieldsToField functor) {
+inline void traverse_dual_2d_field_output_field_singlethreaded(TOutField& out_field, const TInFieldA& in_field_a,
+                                                               const TInFieldB& in_field_b,
+                                                               TFunctor2FieldsToField& functor) {
+	const eig::Index matrix_size = in_field_a.size();
+	const eig::Index column_count = in_field_a.cols();
+	const eig::Index row_count = in_field_a.rows();
+	eigen_assert((row_count == out_field.rows() && column_count == out_field.cols() &&
+	              (row_count == in_field_b.rows() && column_count == in_field_b.cols())) &&
+	             "Argument matrices do not have the same dimensions.");
+
+	out_field = TOutField(row_count, column_count);
+	for (eig::Index i_element = 0; i_element < matrix_size; i_element++) {
+		out_field(i_element) = functor(in_field_a(i_element), in_field_a(i_element));
+	}
+}
+
+template<typename TFunctor2FieldsToField, typename TInFieldA, typename TInFieldB, typename TOutField>
+inline void traverse_dual_2d_field_output_field_multithreaded(TOutField& out_field, const TInFieldA& in_field_a,
+                                                              const TInFieldB& in_field_b,
+                                                              TFunctor2FieldsToField& functor) {
 	const eig::Index matrix_size = in_field_a.size();
 	const eig::Index column_count = in_field_a.cols();
 	const eig::Index row_count = in_field_a.rows();
@@ -58,9 +80,28 @@ inline void traverse_dual_2d_field_output_field(TOutField& out_field, const TInF
 }
 
 template<typename TFunctor3FieldsToField, typename TInFieldA, typename TInFieldB, typename TInFieldC, typename TOutField>
-inline void traverse_triple_2d_field_output_field(TOutField& out_field, const TInFieldA& in_field_a,
-                                                  const TInFieldB& in_field_b, const TInFieldC& in_field_c,
-                                                  TFunctor3FieldsToField functor) {
+inline void traverse_triple_2d_field_output_field_singlethreaded(TOutField& out_field, const TInFieldA& in_field_a,
+                                                                const TInFieldB& in_field_b,
+                                                                const TInFieldC& in_field_c,
+                                                                TFunctor3FieldsToField& functor) {
+	const eig::Index matrix_size = in_field_a.size();
+	const eig::Index column_count = in_field_a.cols();
+	const eig::Index row_count = in_field_a.rows();
+	eigen_assert((row_count == out_field.rows() && column_count == out_field.cols() &&
+	              (row_count == in_field_b.rows() && column_count == in_field_b.cols())) &&
+	             "Argument matrices do not have the same dimensions.");
+
+	out_field = TOutField(row_count, column_count);
+	for (eig::Index i_element = 0; i_element < matrix_size; i_element++) {
+		out_field(i_element) = functor(in_field_a(i_element), in_field_b(i_element), in_field_c(i_element));
+	}
+}
+
+template<typename TFunctor3FieldsToField, typename TInFieldA, typename TInFieldB, typename TInFieldC, typename TOutField>
+inline void traverse_triple_2d_field_output_field_multithreaded(TOutField& out_field, const TInFieldA& in_field_a,
+                                                                const TInFieldB& in_field_b,
+                                                                const TInFieldC& in_field_c,
+                                                                TFunctor3FieldsToField& functor) {
 	const eig::Index matrix_size = in_field_a.size();
 	const eig::Index column_count = in_field_a.cols();
 	const eig::Index row_count = in_field_a.rows();
@@ -76,10 +117,11 @@ inline void traverse_triple_2d_field_output_field(TOutField& out_field, const TI
 }
 
 template<typename TFunctor3FieldsToField, typename TInFieldA, typename TInFieldB, typename TInFieldC, typename TOutField>
-inline void traverse_triple_2d_field_using_coordinates_output_field(TOutField& out_field, const TInFieldA& in_field_a,
-                                                                    const TInFieldB& in_field_b,
-                                                                    const TInFieldC& in_field_c,
-                                                                    TFunctor3FieldsToField functor) {
+inline void traverse_triple_2d_field_using_coordinates_output_field_multithreaded(
+		TOutField& out_field, const TInFieldA& in_field_a,
+		const TInFieldB& in_field_b,
+		const TInFieldC& in_field_c,
+		TFunctor3FieldsToField& functor) {
 	const int matrix_size = static_cast<int>(in_field_a.size());
 	const int column_count = static_cast<int>(in_field_a.cols());
 	const int row_count = static_cast<int>(in_field_a.rows());

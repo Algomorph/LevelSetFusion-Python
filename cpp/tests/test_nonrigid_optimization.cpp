@@ -216,17 +216,20 @@ BOOST_AUTO_TEST_CASE(test_data_term_gradient01) {
 	float data_term_energy;
 	math::MatrixXv2f warped_live_field_gradient;
 	math::scalar_field_gradient(test_data::warped_live_field, warped_live_field_gradient);
-
+	float expected_energy_out = 4.142916451210006f;
+	float expected_energy_out_band_union_only = 0.14291645121000718f;
 	nonrigid_optimization::compute_data_term_gradient(data_term_gradient, data_term_energy,
 	                                                  test_data::warped_live_field, test_data::canonical_field,
 	                                                  warped_live_field_gradient);
 	BOOST_REQUIRE(math::almost_equal(data_term_gradient, test_data::data_term_gradient, 1e-6));
+	BOOST_REQUIRE_CLOSE(data_term_energy,expected_energy_out,1e-6);
 	nonrigid_optimization::compute_data_term_gradient_within_band_union(data_term_gradient_band_union_only,
 	                                                                    data_term_energy, test_data::warped_live_field,
 	                                                                    test_data::canonical_field,
 	                                                                    warped_live_field_gradient);
 	BOOST_REQUIRE(math::almost_equal(data_term_gradient_band_union_only,
 	                                 test_data::data_term_gradient_band_union_only, 1e-6));
+	BOOST_REQUIRE_CLOSE(data_term_energy,expected_energy_out_band_union_only,1e-6);
 
 }
 
@@ -276,7 +279,7 @@ BOOST_AUTO_TEST_CASE(test_tikhonov_regularization_gradient02) {
 			tikhonov_gradient, tikhonov_energy, warp_field);
 
 	BOOST_REQUIRE(math::almost_equal_verbose(tikhonov_gradient, test_data::tikhonov_gradient, 1e-6));
-	BOOST_REQUIRE_CLOSE(tikhonov_energy, test_data::tikhonov_energy, 1e-6);
+	BOOST_REQUIRE_CLOSE(tikhonov_energy, test_data::tikhonov_energy, 1e-4);
 
 	nonrigid_optimization::compute_tikhonov_regularization_gradient_within_band_union(
 			tikhonov_gradient_band_union_only, tikhonov_energy, warp_field, test_data::warped_live_field2,
@@ -324,6 +327,7 @@ BOOST_AUTO_TEST_CASE(test_sobolev_optimizer02) {
 	eig::Vector3f sobolev_kernel;
 	sobolev_kernel << 0.06742075f, 0.99544406f, 0.06742075f;
 	no::SobolevOptimizer2d::shared_parameters().maximum_iteration_count = 2;
+	no::SobolevOptimizer2d::shared_parameters().maximum_warp_length_lower_threshold = 0.05f;
 	no::SobolevOptimizer2d::sobolev_parameters().sobolev_kernel = sobolev_kernel;
 	no::SobolevOptimizer2d optimizer;
 	eig::MatrixXf live_field(4, 4), canonical_field(4, 4);
@@ -346,7 +350,6 @@ BOOST_AUTO_TEST_CASE(test_sobolev_optimizer02) {
 	//@formatter: on
 
 	eig::MatrixXf warped_live_field = optimizer.optimize(live_field, canonical_field);
-	std::cout << warped_live_field << std::endl;
 
 	BOOST_REQUIRE(warped_live_field.isApprox(expected_warped_live_field_out));
 }

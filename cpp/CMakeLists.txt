@@ -180,13 +180,11 @@ endif()
 #message(STATUS "[include dirs:] ${PYTHON_INCLUDE_DIRS} [packages path:] ${PYTHON3_PACKAGES_PATH} [libraries:] ${PYTHON_LIBRARIES}")
 
 #======== INSTALLATION MAKE TARGET =====================================================================================
-
 set_target_properties(${MODULE_NAME} PROPERTIES
         ARCHIVE_OUTPUT_NAME ${ARCHIVE_OUTPUT_NAME}  # prevent name conflict for python2/3 outputs
         PREFIX ""
         OUTPUT_NAME ${MODULE_NAME}
         SUFFIX ${${MODULE_NAME}_PY_SUFFIX})
-
 
 if ((CMAKE_CXX_COMPILER_ID MATCHES MSVC) AND (NOT PYTHON_DEBUG_LIBRARIES))
     set(PYTHON_INSTALL_CONFIGURATIONS CONFIGURATIONS Release)
