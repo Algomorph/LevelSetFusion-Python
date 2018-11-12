@@ -114,19 +114,18 @@ eig::MatrixXf interpolate(math::MatrixXv2f& warp_field,
 	return new_live_field;
 }
 
-bp::object
-py_interpolate(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field, eig::MatrixXf warp_field_u,
-               eig::MatrixXf warp_field_v, bool band_union_only, bool known_values_only, bool substitute_original,
-               float truncation_float_threshold) {
+bp::object py_interpolate(const eig::MatrixXf& warped_live_field,
+		const eig::MatrixXf& canonical_field, eig::MatrixXf warp_field_u,
+		eig::MatrixXf warp_field_v, bool band_union_only, bool known_values_only,
+		bool substitute_original, float truncation_float_threshold)
+		{
 	math::MatrixXv2f warp_field = math::stack_as_xv2f(warp_field_u, warp_field_v);
-	eig::MatrixXf new_warped_live_field = interpolate(warp_field,warped_live_field, canonical_field,
-	                                                  band_union_only, known_values_only, substitute_original,
-	                                                  truncation_float_threshold);
-
+	eig::MatrixXf new_warped_live_field = interpolate(warp_field, warped_live_field,
+			canonical_field, band_union_only, known_values_only, substitute_original,
+			truncation_float_threshold);
 	bp::object warp_field_u_out(warp_field_u);
 	bp::object warp_field_v_out(warp_field_v);
 	bp::object warped_live_field_out(new_warped_live_field);
-
 	return bp::make_tuple(warped_live_field_out, bp::make_tuple(warp_field_u_out, warp_field_v_out));
 }
 

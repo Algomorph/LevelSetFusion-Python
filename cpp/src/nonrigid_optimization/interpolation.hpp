@@ -36,10 +36,10 @@ eig::MatrixXf interpolate(math::MatrixXv2f& warp_field,
                            bool band_union_only = false, bool known_values_only = false,
                            bool substitute_original = false, float truncation_float_threshold = 1e-6);
 
-bp::object py_interpolate(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
-                          eig::MatrixXf warp_field_u, eig::MatrixXf warp_field_v,
-                          bool band_union_only = false, bool known_values_only = false,
-                          bool substitute_original = false, float truncation_float_threshold = 1e-6);
+bp::object py_interpolate(const eig::MatrixXf& warped_live_field,
+		const eig::MatrixXf& canonical_field, eig::MatrixXf warp_field_u,
+		eig::MatrixXf warp_field_v, bool band_union_only = false, bool known_values_only = false,
+		bool substitute_original = false, float truncation_float_threshold = 1e-6);
 
 
 } // namespace nonrigid_optimization

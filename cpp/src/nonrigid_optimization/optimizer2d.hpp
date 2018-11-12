@@ -78,6 +78,7 @@ public:
 	static SharedParameters& shared_parameters();
 
 	Optimizer2d() = default;
+	virtual ~Optimizer2d() = default;
 
 	/**
 	 * \brief Perform non-rigid alignment of the live 2D TSDF field to the canonical 2D TSDF field

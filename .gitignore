@@ -147,4 +147,8 @@ input/
 output/
 out2D/
 test_non_rigid_out/
+
 build/
+cpp/.cproject
+cpp/.project
+cpp/.settings/
