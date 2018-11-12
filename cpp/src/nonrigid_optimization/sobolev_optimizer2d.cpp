@@ -46,6 +46,15 @@ void SobolevOptimizer2d::SobolevParameters::set_from_json(pt::ptree root) {
 	}
 }
 
+eig::VectorXf SobolevOptimizer2d::SobolevParameters::get_sobolev_kernel(){
+	return eig::VectorXf(this->sobolev_kernel);
+}
+
+void SobolevOptimizer2d::SobolevParameters::set_sobolev_kernel(eig::VectorXf sobolev_kernel){
+	this->sobolev_kernel = sobolev_kernel;
+}
+
+
 Optimizer2d::SharedParameters& SobolevOptimizer2d::shared_parameters(){
 	return Optimizer2d::SharedParameters::get_instance();
 }

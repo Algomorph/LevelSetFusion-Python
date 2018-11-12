@@ -4,6 +4,7 @@
 //libraries
 #include <Eigen/Eigen>
 #include <boost/python.hpp>
+#include <boost/shared_ptr.hpp>
 
 //local
 #include <eigen_numpy.hpp>
@@ -12,6 +13,10 @@
 #include "nonrigid_optimization/sobolev_optimizer2d.hpp"
 
 namespace bp = boost::python;
+namespace nro = nonrigid_optimization;
+
+typedef nro::SobolevOptimizer2d::SobolevParameters SobolevParameters;
+typedef nro::Optimizer2d::SharedParameters SharedParameters;
 
 Eigen::MatrixXd matrix_product_double(Eigen::MatrixXd a, Eigen::MatrixXd b) {
 	return a * b;
@@ -21,12 +26,22 @@ Eigen::MatrixXf matrix_product_float(Eigen::MatrixXf a, Eigen::MatrixXf b) {
 	return a * b;
 }
 
+struct NullDeleter{
+	void operator()(const void*){}
+};
+
+boost::shared_ptr<SobolevParameters> get_shared_sobolev_parameters(){
+	return boost::shared_ptr<SobolevParameters>(
+			&SobolevParameters::get_instance(), NullDeleter());
+}
+
+boost::shared_ptr<SharedParameters> get_shared_shared_parameters(){
+	return boost::shared_ptr<SharedParameters>(&SharedParameters::get_instance(), NullDeleter());
+}
+
 BOOST_PYTHON_FUNCTION_OVERLOADS(interpolate_overloads, nonrigid_optimization::py_interpolate, 4, 8)
 
 BOOST_PYTHON_MODULE (level_set_fusion_optimization) {
-
-	namespace nro = nonrigid_optimization;
-
 	SetupEigenConverters();
 
 	// functions
@@ -44,8 +59,66 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization) {
 			        " :param band_union_only when set to True, skips processing locations for which both"
 			        " warped_live_field and canonical_field contain the values +1 or -1 (truncated sdf values)")
 			        );
+	// =============================================================================================
+	// region === MATH TYPES =======================================================================
+	// =============================================================================================
+	bp::class_<math::Vector2i>("Vector2i", bp::init<float, float>())
+				.def(bp::init<float>())
+				.def_readwrite("x",&math::Vector2i::x)
+				.def_readwrite("y",&math::Vector2i::y)
+				.def_readwrite("u",&math::Vector2i::u)
+				.def_readwrite("v",&math::Vector2i::v)
+				;
 
-	// classes
+	bp::class_<math::Vector2f>("Vector2f", bp::init<float, float>())
+			.def(bp::init<float>())
+			.def_readwrite("x",&math::Vector2f::x)
+			.def_readwrite("y",&math::Vector2f::y)
+			.def_readwrite("u",&math::Vector2f::u)
+			.def_readwrite("v",&math::Vector2f::v)
+			;
+
+	// endregion ===================================================================================
+	// =============================================================================================
+	// region === PARAMETER SINGLETON TYPES ========================================================
+	// =============================================================================================
+
+	bp::class_<SobolevParameters, boost::shared_ptr<SobolevParameters>, boost::noncopyable>(
+			"SobolevParameters", bp::no_init)
+			.def("get_instance", &get_shared_sobolev_parameters)
+			.staticmethod("get_instance")
+			//.def_readwrite("sobolev_kernel", &SobolevParameters::sobolev_kernel)
+			.def("get_sobolev_kernel", &SobolevParameters::get_sobolev_kernel)
+			.def("set_sobolev_kernel", &SobolevParameters::set_sobolev_kernel)
+			.def_readwrite("smoothing_term_weight", &SobolevParameters::smoothing_term_weight);
+
+	bp::class_<SharedParameters, boost::shared_ptr<SharedParameters>, boost::noncopyable>(
+			"SharedParameters", bp::no_init)
+			.def("get_instance", &get_shared_shared_parameters)
+			.staticmethod("get_instance")
+
+			.def_readwrite("gradient_descent_rate", &SharedParameters::gradient_descent_rate)
+
+			//termination condition parameters
+			.def_readwrite("maximum_warp_length_lower_threashold",
+					&SharedParameters::maximum_warp_length_lower_threshold)
+			.def_readwrite("maximum_warp_length_upper_threashold",
+								&SharedParameters::maximum_warp_length_upper_threshold)
+			.def_readwrite("maximum_iteration_count", &SharedParameters::maximum_iteration_count)
+			.def_readwrite("minimum_iteration_count", &SharedParameters::minimum_iteration_count)
+
+			//logging
+			.def_readwrite("enable_focus_spot_analytics", &SharedParameters::enable_focus_spot_analytics)
+			.def_readwrite("enable_energy_and_min_vector_logging", &SharedParameters::enable_energy_and_min_vector_logging)
+			.def_readwrite("enable_live_sdf_progression_logging", &SharedParameters::enable_live_sdf_progression_logging)
+			.def_readwrite("enable_gradient_logging", &SharedParameters::enable_gradient_logging)
+			.def_readwrite("enable_gradient_component_logging", &SharedParameters::enable_gradient_component_logging)
+
+			//focus spot
+			//TODO: math::Vector<X> C++-->numpy converter is needed for this
+			.def_readwrite("focus_spot", &SharedParameters::focus_spot);
+	// endregion ===================================================================================
+
 	bp::class_<nro::SobolevOptimizer2d>("SobolevOptimizer2d", bp::init<>())
 	        .def("optimize", &nro::SobolevOptimizer2d::optimize);
 

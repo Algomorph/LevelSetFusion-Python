@@ -54,6 +54,9 @@ public:
 			return sobolev_kernel;
 		}();
 
+		eig::VectorXf get_sobolev_kernel();
+		void set_sobolev_kernel(eig::VectorXf);
+
 		float smoothing_term_weight = 0.2f;
 
 	private:
