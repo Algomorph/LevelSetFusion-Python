@@ -120,7 +120,7 @@ def record_convergence_status_log(log, file_path):
 
 
 def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.BASIC,
-                           out_path="out2D/Snoopy MultiTest"):
+                           out_path="out2D/Snoopy MultiTest", input_case_file=None):
     save_initial_and_final_fields = True
     optimizer_choice = OptimizerChoice.CPP
     field_size = 128
@@ -129,8 +129,17 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
 
     offset = [-64, -64, 128]
     line_range = (214, 400)
-    frames = list(range(0, 715, 5))
-    line_set = line_range[0] + ((line_range[1] - line_range[0]) * np.random.rand(len(frames))).astype(np.int32)
+
+    if input_case_file:
+        frame_and_row_set = np.genfromtxt(input_case_file, delimiter=",", dtype=np.int32)
+        canonical_frame_and_row_set = np.concatenate((frame_and_row_set[:, 0].reshape(-1,1), frame_and_row_set[:, 2].reshape(-1,1)), axis=1)
+        print(canonical_frame_and_row_set)
+    else:
+        frame_set = list(range(0, 715, 5))
+        pixel_row_set = line_range[0] + ((line_range[1] - line_range[0]) * np.random.rand(len(frame_set))).astype(
+            np.int32)
+        canonical_frame_and_row_set = zip(frame_set, pixel_row_set)
+
     view_scaling_factor = 1024 // field_size
 
     convergence_status_log = []
@@ -150,11 +159,12 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
     optimizer = None if rebuild_optimizer else build_optimizer(optimizer_choice, out_path, field_size,
                                                                view_scaling_factor=8, max_iterations=100)
 
-    for canonical_frame_index, pixel_row_index in zip(frames, line_set):
+    for canonical_frame_index, pixel_row_index in canonical_frame_and_row_set:
         if i_sample < start_from_sample:
             i_sample += 1
             continue
         live_frame_index = canonical_frame_index + 1
+
         canonical_frame_path = frame_path_format_string.format(canonical_frame_index)
         live_frame_path = frame_path_format_string.format(live_frame_index)
         out_subpath = os.path.join(out_path, "snoopy frames {:0>6d}-{:0>6d} line {:0>3d}"

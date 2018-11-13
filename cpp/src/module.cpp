@@ -118,6 +118,7 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 			&SharedParameters::enable_live_sdf_progression_logging)
 			.def_readwrite("enable_gradient_logging", &SharedParameters::enable_gradient_logging)
 			.def_readwrite("enable_gradient_component_logging", &SharedParameters::enable_gradient_component_logging)
+			.def_readwrite("enable_warp_statistics_logging", &SharedParameters::enable_warp_statistics_logging)
 
 	//focus spot
 	//TODO: math::Vector<X> C++-->numpy converter is needed for this
@@ -128,14 +129,14 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 	// region === Logging ==========================================================================
 	// =============================================================================================
 	bp::class_<nro::ConvergenceStatus>("ConvergenceStatus", bp::init<>())
-			.def(bp::init<int,float,bool,bool,bool>())
+			.def(bp::init<int, float, bool, bool, bool>())
 			.def_readwrite("iteration_count", &nro::ConvergenceStatus::iteration_count)
 			.def_readwrite("max_warp_length", &nro::ConvergenceStatus::max_warp_length)
 			.def_readwrite("iteration_limit_reached", &nro::ConvergenceStatus::iteration_limit_reached)
 			.def_readwrite("largest_warp_below_minimum_threshold",
-					&nro::ConvergenceStatus::largest_warp_below_minimum_threshold)
+			&nro::ConvergenceStatus::largest_warp_below_minimum_threshold)
 			.def_readwrite("largest_warp_above_maximum_threshold",
-					&nro::ConvergenceStatus::largest_warp_above_maximum_threshold)
+			&nro::ConvergenceStatus::largest_warp_above_maximum_threshold)
 			;
 
 	// endregion ===================================================================================

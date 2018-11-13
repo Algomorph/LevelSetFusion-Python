@@ -112,7 +112,8 @@ def main():
                         help="Method to use for the data term, should be in {basic, thresholded_fdm}")
     parser.add_argument("-o", "--output_path", type=str, default="out2D/Snoopy MultiTest",
                         help="output path for multiple_tests mode")
-    parser.add_argument("-cfp", "--cases_file_path", type=str, default=None, help="input cases file path for multiple_tests_mode")
+    parser.add_argument("-cfp", "--case_file_path", type=str, default=None,
+                        help="input cases file path for multiple_tests_mode")
 
     arguments = parser.parse_args()
     mode = Mode.SINGLE_TEST
@@ -139,7 +140,7 @@ def main():
     if mode == Mode.SINGLE_TEST:
         perform_single_test()
     if mode == Mode.MULTIPLE_TESTS:
-        perform_multiple_tests(arguments.start_from, data_term_method, arguments.output_path)
+        perform_multiple_tests(arguments.start_from, data_term_method, arguments.output_path, arguments.case_file_path)
 
     return EXIT_CODE_SUCCESS
 

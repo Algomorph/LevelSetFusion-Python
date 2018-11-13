@@ -63,11 +63,16 @@ public:
 		int minimum_iteration_count = 1;
 
 		// logging
-		bool enable_focus_spot_analytics = false;
+		// optimization-wide
 		bool enable_convergence_status_logging = false;
+		//interiteration
+		bool enable_focus_spot_analytics = false;
+		bool enable_gradient_component_logging = false;
+		//iteration-wise
 		bool enable_live_sdf_progression_logging = false;
 		bool enable_gradient_logging = false;
-		bool enable_gradient_component_logging = false;
+		bool enable_warp_statistics_logging = false;
+
 		math::Vector2i focus_spot = math::Vector2i(0, 0);
 
 
