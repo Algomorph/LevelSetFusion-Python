@@ -30,8 +30,6 @@
 
 namespace nonrigid_optimization {
 
-
-
 void SobolevOptimizer2d::SobolevParameters::set_from_json(pt::ptree root) {
 	this->smoothing_term_weight = root.get<float>("smoothing_term_weight", 0.2);
 	std::vector<float> kernel_values;
@@ -65,18 +63,26 @@ SobolevOptimizer2d::SobolevParameters& SobolevOptimizer2d::sobolev_parameters() 
 
 
 eig::MatrixXf SobolevOptimizer2d::optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) {
-	float maximum_warp_length = SobolevOptimizer2d::shared_parameters().maximum_warp_length_upper_threshold-1.0f;
-
 	eig::MatrixXf warped_live_field = live_field;
 	math::MatrixXv2f warp_field = math::MatrixXv2f::Zero(live_field.rows(), live_field.cols());
 
-	for (int completed_iteration_count = 0;
+	float maximum_warp_length = SobolevOptimizer2d::shared_parameters().maximum_warp_length_upper_threshold-1.0f;
+	int completed_iteration_count;
+	for (completed_iteration_count = 0;
 	     !Optimizer2d::are_termination_conditions_reached(completed_iteration_count, maximum_warp_length);
 	     completed_iteration_count++) {
 		maximum_warp_length =
 				perform_optimization_iteration_and_return_max_warp(warped_live_field, canonical_field, warp_field);
 	}
 
+	if(SobolevOptimizer2d::shared_parameters().enable_convergence_status_logging){
+		this->convergence_status = {
+				completed_iteration_count,
+				maximum_warp_length,
+				completed_iteration_count >= shared_parameters().maximum_iteration_count,
+				maximum_warp_length < shared_parameters().maximum_warp_length_lower_threshold,
+				maximum_warp_length > shared_parameters().maximum_warp_length_upper_threshold};
+	}
 	return warped_live_field;
 }
 
@@ -84,6 +90,7 @@ eig::MatrixXf SobolevOptimizer2d::optimize(const eig::MatrixXf& live_field, cons
 float SobolevOptimizer2d::perform_optimization_iteration_and_return_max_warp(eig::MatrixXf& warped_live_field,
                                                                              const eig::MatrixXf& canonical_field,
                                                                              math::MatrixXv2f& warp_field) {
+
 	math::MatrixXv2f data_term_gradient, smoothing_term_gradient, warped_live_field_gradient;
 	float data_term_energy, smoothing_term_energy;
 	math::scalar_field_gradient(warped_live_field, warped_live_field_gradient);
@@ -99,4 +106,9 @@ float SobolevOptimizer2d::perform_optimization_iteration_and_return_max_warp(eig
 	locate_max_norm(maximum_warp_length, maximum_warp_location, warp_field);
 	return maximum_warp_length;
 }
+
+ConvergenceStatus SobolevOptimizer2d::get_convergence_status(){
+	return this->convergence_status;
+}
+
 }//namespace nonrigid_optimization

@@ -152,6 +152,8 @@ add_library(${MODULE_NAME} SHARED
             src/nonrigid_optimization/optimizer2d.hpp
             src/nonrigid_optimization/sobolev_optimizer2d.cpp
             src/nonrigid_optimization/sobolev_optimizer2d.hpp
+            src/nonrigid_optimization/logging.cpp
+            src/nonrigid_optimization/logging.hpp
 
             src/math/tensors.hpp
             src/math/tensors.cpp

@@ -242,7 +242,7 @@ struct EigenTransformFromPython {
 
 	static void construct(PyObject* obj_ptr,
 	                      bp::converter::rvalue_from_python_stage1_data* data) {
-		return EigenMatrixFromPython<typename TransformType::MatrixType>::construct(obj_ptr, data);
+		EigenMatrixFromPython<typename TransformType::MatrixType>::construct(obj_ptr, data);
 	}
 };
 

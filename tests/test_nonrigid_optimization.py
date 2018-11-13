@@ -16,7 +16,7 @@
 from unittest import TestCase
 
 from data_term import DataTermMethod
-from optimizer2d import Optimizer2D, ComputeMethod, AdaptiveLearningRateMethod
+from optimizer2d import Optimizer2d, ComputeMethod, AdaptiveLearningRateMethod
 import numpy as np
 
 from smoothing_term import SmoothingTermMethod
@@ -25,7 +25,7 @@ from sobolev_filter import generate_1d_sobolev_kernel
 
 def make_optimizer(compute_method, field_size, max_iterations=1):
     view_scaling_factor = 1024 // field_size
-    optimizer = Optimizer2D(out_path="test_non_rigid_out",
+    optimizer = Optimizer2d(out_path="test_non_rigid_out",
                             field_size=field_size,
                             default_value=1,
 

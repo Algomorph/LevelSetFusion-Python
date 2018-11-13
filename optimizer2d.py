@@ -40,15 +40,7 @@ from level_set_term import level_set_term_at_location
 import smoothing_term as st
 
 # C++ extension
-
 import level_set_fusion_optimization as cpp_extension
-
-
-# cpp_extension = \
-#     importlib.machinery.ExtensionFileLoader(
-#         "level_set_fusion_optimization",
-#         "../cpp/cmake-build-release/" +
-#         "level_set_fusion_optimization.cpython-35m-x86_64-linux-gnu.so").load_module()
 
 
 class AdaptiveLearningRateMethod(Enum):
@@ -72,6 +64,7 @@ class OptimizationLog:
         self.smoothing_energies = []
         self.level_set_energies = []
         self.max_warps = []
+        self.convergence_status = cpp_extension.ConvergenceStatus()
 
 
 class ComputeMethod(Enum):
@@ -79,7 +72,7 @@ class ComputeMethod(Enum):
     VECTORIZED = 1
 
 
-class Optimizer2D:
+class Optimizer2d:
     def __init__(self, out_path="out2D",
                  field_size=128,
                  # TODO writers should be initialized only after the field size becomes known during optimization and
@@ -110,6 +103,7 @@ class Optimizer2D:
                  enable_component_fields=False,
                  view_scaling_factor=8):
 
+        self.field_size = field_size
         self.out_path = out_path
         if not os.path.exists(out_path):
             os.makedirs(out_path)
@@ -142,7 +136,13 @@ class Optimizer2D:
         self.adaptive_learning_rate_method = adaptive_learning_rate_method
         self.default_value = default_value
 
+        """
+        TODO: plotting and logging should be a separate concern performed by a different, decoupled, and 
+        completely independent class
+        """
+
         # visualization flags & parameters
+        self.enable_convergence_status_logging = True
         self.enable_3d_plot = False
         self.enable_warp_quiverplot = True
         self.enable_gradient_quiverplot = True
@@ -150,9 +150,8 @@ class Optimizer2D:
         self.view_scaling_factor = view_scaling_factor
 
         # statistical aggregates
-        self.focus_neighborhood_log = \
-            self.__generate_initial_focus_neighborhood_log(field_size)
-        self.log = OptimizationLog()
+        self.focus_neighborhood_log = None
+        self.log = None
 
         # video writers
         self.live_video_writer2D = None
@@ -164,10 +163,11 @@ class Optimizer2D:
         self.warp_video_writer2D = None
         self.gradient_video_writer2D = None
 
+        # TODO: writers & other things depending on a single optimization run need to be initialized in the beginning
+        # of the optimization routine (and torn down at the end of it, instead of in the object destructor)
         # initializations
         self.edasg_field = None
         self.__initialize_writers(field_size)
-        self.last_run_iteration_count = 0
 
     @staticmethod
     def __run_checks(warped_live_field, canonical_field, warp_field):
@@ -252,7 +252,15 @@ class Optimizer2D:
         warp_field[:, :, 0] = out_u_vectors
         warp_field[:, :, 1] = out_v_vectors
 
-        return maximum_warp_length, Point(maximum_warp_length_at[1],maximum_warp_length_at[0])
+        return maximum_warp_length, Point(maximum_warp_length_at[1], maximum_warp_length_at[0])
+
+    def __log_convergence_status(self, iteration_count, max_warp_length, iteration_limit_reached,
+                                 largest_warp_below_minimum_threshold, largest_warp_above_maximum_threshold):
+        self.log.convergence_status.iteration_count = iteration_count
+        self.log.convergence_status.max_warp_length = max_warp_length
+        self.log.convergence_status.iteration_limit_reached = iteration_limit_reached
+        self.log.convergence_status.largest_warp_below_minimum_threshold = largest_warp_below_minimum_threshold
+        self.log.convergence_status.largest_warp_above_maximum_threshold = largest_warp_above_maximum_threshold
 
     def __optimization_iteration_direct(self, warped_live_field, canonical_field, warp_field, gradient_field,
                                         data_component_field=None, smoothing_component_field=None,
@@ -353,8 +361,15 @@ class Optimizer2D:
 
         return max_warp, max_warp_location,
 
-    def optimize(self, live_field, canonical_field, warp_field):
+    def optimize(self, live_field, canonical_field):
+
+        self.focus_neighborhood_log = \
+            self.__generate_initial_focus_neighborhood_log(self.field_size)
+        self.log = OptimizationLog()
+        warp_field = np.zeros((self.field_size, self.field_size, 2), dtype=np.float32)
+
         max_warp = np.inf
+        max_warp_location = (0, 0)
         iteration_number = 0
         gradient_field = np.zeros_like(warp_field)
 
@@ -418,7 +433,16 @@ class Optimizer2D:
                                                  canonical_field)
 
             iteration_number += 1
-        self.last_run_iteration_count = iteration_number
+
+        if self.enable_convergence_status_logging:
+            self.__log_convergence_status(iteration_number, max_warp, iteration_number >= self.max_iterations,
+                                          max_warp < self.maximum_warp_length_lower_threshold,
+                                          max_warp > self.maximum_warp_length_upper_threshold)
+
+        return live_field
+
+    def get_convergence_status(self):
+        return self.log.convergence_status
 
     def __del__(self):
         if self.live_video_writer3D is not None:

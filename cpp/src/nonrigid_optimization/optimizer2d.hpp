@@ -64,7 +64,7 @@ public:
 
 		// logging
 		bool enable_focus_spot_analytics = false;
-		bool enable_energy_and_min_vector_logging = false;
+		bool enable_convergence_status_logging = false;
 		bool enable_live_sdf_progression_logging = false;
 		bool enable_gradient_logging = false;
 		bool enable_gradient_component_logging = false;

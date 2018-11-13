@@ -30,7 +30,7 @@ from dataset import datasets, DataToUse
 from smoothing_term import SmoothingTermMethod
 from snoopy_multiframe_experiment import perform_multiple_tests
 from tsdf_field_generation import generate_initial_orthographic_2d_tsdf_fields
-from optimizer2d import Optimizer2D, AdaptiveLearningRateMethod, ComputeMethod
+from optimizer2d import Optimizer2d, AdaptiveLearningRateMethod, ComputeMethod
 from sobolev_filter import generate_1d_sobolev_kernel
 from utils.vizualization import visualize_and_save_initial_fields, visualize_final_fields
 
@@ -61,7 +61,7 @@ def perform_single_test():
     if visualize_and_save_initial_and_final_fields:
         visualize_and_save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor)
 
-    optimizer = Optimizer2D(out_path=out_path,
+    optimizer = Optimizer2d(out_path=out_path,
                             field_size=field_size,
                             default_value=default_value,
 
@@ -111,7 +111,8 @@ def main():
     parser.add_argument("-dtm", "--data_term_method", type=str, default="basic",
                         help="Method to use for the data term, should be in {basic, thresholded_fdm}")
     parser.add_argument("-o", "--output_path", type=str, default="out2D/Snoopy MultiTest",
-                        help="output path for multiple tests mode")
+                        help="output path for multiple_tests mode")
+    parser.add_argument("-cfp", "--cases_file_path", type=str, default=None, help="input cases file path for multiple_tests_mode")
 
     arguments = parser.parse_args()
     mode = Mode.SINGLE_TEST

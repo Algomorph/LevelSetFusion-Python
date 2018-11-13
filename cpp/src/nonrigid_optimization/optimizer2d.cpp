@@ -24,7 +24,7 @@ void Optimizer2d::SharedParameters::set_from_json(pt::ptree root) {
 	this->maximum_iteration_count = root.get<int>("maximum_iteration_count", 100);
 	this->minimum_iteration_count = root.get<int>("minimum_iteration_count", 1);
 
-	this->enable_energy_and_min_vector_logging = root.get<bool>("enable_energy_and_min_vector_logging", false);
+	this->enable_convergence_status_logging = root.get<bool>("enable_energy_and_min_vector_logging", false);
 	this->enable_focus_spot_analytics = root.get<bool>("enable_focus_spot_analytics", false);
 	this->enable_live_sdf_progression_logging = root.get<bool>("enable_live_sdf_progression_logging", false);
 	this->enable_gradient_logging = root.get<bool>("enable_gradient_logging", false);
@@ -54,7 +54,7 @@ void Optimizer2d::SharedParameters::set_from_values(float gradient_descent_rate,
 	this->maximum_iteration_count = maximum_iteration_count;
 	this->minimum_iteration_count = minimum_iteration_count;
 
-	this->enable_energy_and_min_vector_logging = enable_energy_and_min_vector_logging;
+	this->enable_convergence_status_logging = enable_energy_and_min_vector_logging;
 	this->enable_focus_spot_analytics = enable_focus_spot_analytics;
 	this->enable_live_sdf_progression_logging = enable_live_sdf_progression_logging;
 	this->enable_gradient_logging = enable_gradient_logging;

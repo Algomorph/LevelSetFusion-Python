@@ -19,10 +19,10 @@
 #include <Eigen/Eigen>
 #include <boost/property_tree/ptree.hpp>
 
-
 //local
 #include "optimizer2d.hpp"
 #include "../math/tensors.hpp"
+#include "logging.hpp"
 
 namespace pt = boost::property_tree;
 namespace eig = Eigen;
@@ -67,14 +67,13 @@ public:
 	static SharedParameters& shared_parameters();
 
 	virtual eig::MatrixXf optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) override;
+	ConvergenceStatus get_convergence_status();
 
 private:
 	float perform_optimization_iteration_and_return_max_warp(eig::MatrixXf& warped_live_field,
 	                                                         const eig::MatrixXf& canonical_field,
 	                                                         math::MatrixXv2f& warp_field);
+	ConvergenceStatus convergence_status;
 };
 
 }//namespace nonrigid_optimization
-
-
-
