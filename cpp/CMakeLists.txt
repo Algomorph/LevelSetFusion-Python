@@ -155,6 +155,8 @@ add_library(${MODULE_NAME} SHARED
             src/nonrigid_optimization/logging.cpp
             src/nonrigid_optimization/logging.hpp
 
+			src/traversal/field_traversal_cpu.hpp
+            
             src/math/tensors.hpp
             src/math/tensors.cpp
             src/math/math_utils.hpp
@@ -162,13 +164,17 @@ add_library(${MODULE_NAME} SHARED
             src/math/matrix_base.hpp
             src/math/vector2.hpp
             src/math/platform_independence.hpp
-            src/math/matrix2.hpp src/math/vector3.hpp
+            src/math/matrix2.hpp 
+            src/math/vector3.hpp
             src/math/typedefs.hpp
             src/math/gradients.cpp
             src/math/gradients.hpp
             src/math/vector_operations.hpp
-
-            src/traversal/field_traversal_cpu.hpp src/math/convolution.hpp src/math/convolution.cpp src/nonrigid_optimization/max_norm.hpp src/nonrigid_optimization/max_norm.cpp)
+            src/math/statistics.cpp
+            src/math/statistics.hpp
+            src/math/convolution.hpp 
+            src/math/convolution.cpp 
+            )
 target_link_libraries(${MODULE_NAME}
         PUBLIC
         ${Boost_LIBRARIES}

@@ -139,6 +139,15 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 			&nro::ConvergenceStatus::largest_warp_above_maximum_threshold)
 			;
 
+	bp::class_<nro::IterationWarpStatistics>("WarpStatistics", bp::init<>())
+			.def(bp::init<double,float,double,double>())
+			.def_readwrite("ratio_of_warps_above_minimum_threshold", &nro::IterationWarpStatistics::ratio_of_warps_above_minimum_threshold)
+			.def_readwrite("max_warp_length", &nro::IterationWarpStatistics::max_warp_length)
+			.def_readwrite("average_warp_length", &nro::IterationWarpStatistics::average_warp_length)
+			.def_readwrite("standard_deviation_of_warp_length",&nro::IterationWarpStatistics::standard_deviation_of_warp_length)
+			.def("to_array", &nro::IterationWarpStatistics::to_array)
+			;
+
 	// endregion ===================================================================================
 
 	// =============================================================================================

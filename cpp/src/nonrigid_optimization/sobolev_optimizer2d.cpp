@@ -17,13 +17,14 @@
 //stdlib
 #include <vector>
 #include <cfloat>
+#include <cassert>
 
 //local
 #include "sobolev_optimizer2d.hpp"
 #include "data_term.hpp"
 #include "smoothing_term.hpp"
 #include "interpolation.hpp"
-#include "max_norm.hpp"
+#include "../math/statistics.hpp"
 #include "../math/gradients.hpp"
 #include "../math/convolution.hpp"
 
@@ -73,6 +74,15 @@ eig::MatrixXf SobolevOptimizer2d::optimize(const eig::MatrixXf& live_field, cons
 	     completed_iteration_count++) {
 		maximum_warp_length =
 				perform_optimization_iteration_and_return_max_warp(warped_live_field, canonical_field, warp_field);
+		if(SobolevOptimizer2d::shared_parameters().enable_warp_statistics_logging){
+//			double ratio_of_warps_above_minimum_threshold = 0.0;
+//				float max_warp_length = 0.0f;
+//				double average_warp_length = 0.0;
+//				double standard_deviation_of_warp_length = 0.0;
+			//TODO
+			assert(false && "Not Implemented");
+			//warp_statistics.push_back({maximum_warp_length});
+		}
 	}
 
 	if(SobolevOptimizer2d::shared_parameters().enable_convergence_status_logging){
@@ -103,7 +113,7 @@ float SobolevOptimizer2d::perform_optimization_iteration_and_return_max_warp(eig
 	math::convolve_with_kernel_preserve_zeros(warp_field, sobolev_parameters().sobolev_kernel);
 	warped_live_field = interpolate(warp_field, warped_live_field, canonical_field, true);
 	float maximum_warp_length; math::Vector2i maximum_warp_location;
-	locate_max_norm(maximum_warp_length, maximum_warp_location, warp_field);
+	math::locate_max_norm(maximum_warp_length, maximum_warp_location, warp_field);
 	return maximum_warp_length;
 }
 

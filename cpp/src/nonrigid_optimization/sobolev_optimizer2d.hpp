@@ -15,6 +15,9 @@
 //  ================================================================
 #pragma once
 
+//stdlib
+#include <vector>
+
 //libraries
 #include <Eigen/Eigen>
 #include <boost/property_tree/ptree.hpp>
@@ -63,6 +66,7 @@ public:
 		SobolevParameters() = default;
 	};
 
+	// *** parameters ***
 	static SobolevParameters& sobolev_parameters();
 	static SharedParameters& shared_parameters();
 
@@ -73,7 +77,9 @@ private:
 	float perform_optimization_iteration_and_return_max_warp(eig::MatrixXf& warped_live_field,
 	                                                         const eig::MatrixXf& canonical_field,
 	                                                         math::MatrixXv2f& warp_field);
+	// *** Logging ***
 	ConvergenceStatus convergence_status;
+	std::vector<IterationWarpStatistics> warp_statistics;
 };
 
 }//namespace nonrigid_optimization
