@@ -112,6 +112,17 @@ def main():
                         help="Method to use for the data term, should be in {basic, thresholded_fdm}")
     parser.add_argument("-o", "--output_path", type=str, default="out2D/Snoopy MultiTest",
                         help="output path for multiple_tests mode")
+    parser.add_argument("-c", "--calibration", type=str,
+                        default=
+                        "/media/algomorph/Data/Reconstruction/real_data/"
+                        "KillingFusion Snoopy/snoopy_calib.txt",
+                        help="Path to the camera calibration file to use for the multiple_tests mode"
+                        )
+    parser.add_argument("-f", "--frames", type=str,
+                        default="/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames",
+                        help="Path to the frames for the multiple_tests mode. Frame image files should have names "
+                             "that follow depth_{:0>6d}.png pattern, i.e. depth_000000.png"
+                        )
     parser.add_argument("-cfp", "--case_file_path", type=str, default=None,
                         help="input cases file path for multiple_tests_mode")
 
@@ -140,7 +151,8 @@ def main():
     if mode == Mode.SINGLE_TEST:
         perform_single_test()
     if mode == Mode.MULTIPLE_TESTS:
-        perform_multiple_tests(arguments.start_from, data_term_method, arguments.output_path, arguments.case_file_path)
+        perform_multiple_tests(arguments.start_from, data_term_method, arguments.output_path, arguments.case_file_path,
+                               calibration_path=arguments.calibration, frame_path_format_string=arguments.frames)
 
     return EXIT_CODE_SUCCESS
 

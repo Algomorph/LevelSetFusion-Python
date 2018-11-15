@@ -89,17 +89,17 @@ class TestNonRigidOptimization(TestCase):
                                         [0.05771814, 0.02112256],
                                         [0.01468342, 0.01908935],
                                         [0.01397111, 0.02855439]]], dtype=np.float32)
-        warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
+        # warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
         optimizer = make_optimizer(ComputeMethod.DIRECT, field_size, 1)
-        optimizer.optimize(live_field, canonical_field, warp_field)
+        optimizer.optimize(live_field, canonical_field)
         self.assertTrue(np.allclose(live_field, expected_live_field_out))
-        self.assertTrue(np.allclose(warp_field, expected_warps_out))
+        # self.assertTrue(np.allclose(warp_field, expected_warps_out))
         live_field = live_field_template.copy()
         warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
         optimizer = make_optimizer(ComputeMethod.VECTORIZED, field_size, 1)
-        optimizer.optimize(live_field, canonical_field, warp_field)
+        optimizer.optimize(live_field, canonical_field)
         self.assertTrue(np.allclose(live_field, expected_live_field_out))
-        self.assertTrue(np.allclose(warp_field, expected_warps_out))
+        # self.assertTrue(np.allclose(warp_field, expected_warps_out))
 
     def test_nonrigid_optimization02(self):
         field_size = 4

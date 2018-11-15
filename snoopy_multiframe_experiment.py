@@ -115,7 +115,7 @@ def log_convergence_status(log, convergence_status, canonical_frame_index, live_
 def plot_warp_statistics(out_path, warp_statistics):
     if not os.path.exists(out_path):
         os.makedirs(out_path)
-    #fig, ax1 = plt.subplots(figsize=(10.2, 4.8))
+    # fig, ax1 = plt.subplots(figsize=(10.2, 4.8))
     print(repr(warp_statistics))
 
 
@@ -130,7 +130,11 @@ def record_convergence_status_log(log, file_path):
 
 
 def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.BASIC,
-                           out_path="out2D/Snoopy MultiTest", input_case_file=None):
+                           out_path="out2D/Snoopy MultiTest", input_case_file=None,
+                           calibration_path=
+                           "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
+                           frame_path=
+                           "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/"):
     # CANDIDATES FOR ARGS
     save_initial_and_final_fields = False
     optimizer_choice = OptimizerChoice.CPP
@@ -162,9 +166,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
     save_log_every_n_runs = 5
 
     # dataset location
-    calibration_path = "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt"
-    frame_path_format_string = "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_{" \
-                               ":0>6d}.png"
+    frame_path_format_string = frame_path + "depth_{:0>6d}.png";
 
     if start_from_sample == 0 and os.path.exists(os.path.join(out_path, "output_log.txt")):
         os.unlink(os.path.join(out_path, "output_log.txt"))

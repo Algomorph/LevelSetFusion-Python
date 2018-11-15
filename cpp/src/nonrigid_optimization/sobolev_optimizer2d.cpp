@@ -63,7 +63,7 @@ SobolevOptimizer2d::SobolevParameters& SobolevOptimizer2d::sobolev_parameters() 
 }
 
 
-eig::MatrixXf SobolevOptimizer2d::optimize2(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) {
+eig::MatrixXf SobolevOptimizer2d::optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) {
 	eig::MatrixXf warped_live_field = live_field;
 	math::MatrixXv2f warp_field = math::MatrixXv2f::Zero(live_field.rows(), live_field.cols());
 
