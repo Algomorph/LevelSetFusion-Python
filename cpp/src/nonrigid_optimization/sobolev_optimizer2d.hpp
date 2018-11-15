@@ -72,6 +72,7 @@ public:
 
 	virtual eig::MatrixXf optimize(const eig::MatrixXf& live_field, const eig::MatrixXf& canonical_field) override;
 	ConvergenceStatus get_convergence_status();
+	eig::MatrixXf get_warp_statistics_as_matrix();
 
 private:
 	float perform_optimization_iteration_and_return_max_warp(eig::MatrixXf& warped_live_field,
@@ -80,6 +81,8 @@ private:
 	// *** Logging ***
 	ConvergenceStatus convergence_status;
 	std::vector<IterationWarpStatistics> warp_statistics;
+
+	void clean_out_logs();
 };
 
 }//namespace nonrigid_optimization

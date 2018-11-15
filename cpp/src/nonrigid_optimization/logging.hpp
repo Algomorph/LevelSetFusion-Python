@@ -43,13 +43,13 @@ struct ConvergenceStatus {
  * (in warp-threshold-based optimizations)
  */
 struct IterationWarpStatistics {
-	double ratio_of_warps_above_minimum_threshold = 0.0;
+	float ratio_of_warps_above_minimum_threshold = 0.0;
 	float max_warp_length = 0.0f;
-	double average_warp_length = 0.0;
-	double standard_deviation_of_warp_length = 0.0;
+	float mean_warp_length = 0.0;
+	float standard_deviation_of_warp_length = 0.0;
 	IterationWarpStatistics() = default;
-	IterationWarpStatistics(double ratio_of_warps_above_minimum_threshold, float max_warp_length,
-			double average_warp_length, double standard_deviation_of_warp_length);
-	eig::Vector4d to_array();
+	IterationWarpStatistics(float ratio_of_warps_above_minimum_threshold, float max_warp_length,
+			float average_warp_length, float standard_deviation_of_warp_length);
+	eig::Vector4f to_array();
 };
 } //namespace nonrigid_optimization

@@ -140,12 +140,15 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 			;
 
 	bp::class_<nro::IterationWarpStatistics>("WarpStatistics", bp::init<>())
-			.def(bp::init<double,float,double,double>())
-			.def_readwrite("ratio_of_warps_above_minimum_threshold", &nro::IterationWarpStatistics::ratio_of_warps_above_minimum_threshold)
+			.def(bp::init<float,float,float,float>())
+			.def_readwrite("ratio_of_warps_above_minimum_threshold",
+					&nro::IterationWarpStatistics::ratio_of_warps_above_minimum_threshold)
 			.def_readwrite("max_warp_length", &nro::IterationWarpStatistics::max_warp_length)
-			.def_readwrite("average_warp_length", &nro::IterationWarpStatistics::average_warp_length)
-			.def_readwrite("standard_deviation_of_warp_length",&nro::IterationWarpStatistics::standard_deviation_of_warp_length)
+			.def_readwrite("average_warp_length", &nro::IterationWarpStatistics::mean_warp_length)
+			.def_readwrite("standard_deviation_of_warp_length",
+					&nro::IterationWarpStatistics::standard_deviation_of_warp_length)
 			.def("to_array", &nro::IterationWarpStatistics::to_array)
+			.def_readwrite("standard_deviation_of_warp_length", &nro::IterationWarpStatistics::standard_deviation_of_warp_length)
 			;
 
 	// endregion ===================================================================================
@@ -157,6 +160,7 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 	bp::class_<nro::SobolevOptimizer2d>("SobolevOptimizer2d", bp::init<>())
 			.def("optimize", &nro::SobolevOptimizer2d::optimize)
 			.def("get_convergence_status", &nro::SobolevOptimizer2d::get_convergence_status)
+			.def("get_warp_statistics_as_matrix", &nro::SobolevOptimizer2d::get_warp_statistics_as_matrix)
 			;
 	// endregion
 }

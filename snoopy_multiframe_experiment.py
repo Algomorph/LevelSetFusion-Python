@@ -43,7 +43,8 @@ class OptimizerChoice(Enum):
     CPP = 3
 
 
-def build_optimizer(optimizer_choice, out_path, field_size, view_scaling_factor=8, max_iterations=100):
+def build_optimizer(optimizer_choice, out_path, field_size, view_scaling_factor=8, max_iterations=100,
+                    enable_warp_statistics_logging=False):
     """
     :type optimizer_choice: OptimizerChoice
     :param optimizer_choice: choice of optimizer
@@ -88,6 +89,8 @@ def build_optimizer(optimizer_choice, out_path, field_size, view_scaling_factor=
         shared_parameters.maximum_warp_length_upper_threshold = 10000
         shared_parameters.enable_convergence_status_logging = True
 
+        shared_parameters.enable_warp_statistics_logging = enable_warp_statistics_logging
+
         sobolev_parameters = cpp_module.SobolevParameters.get_instance()
         sobolev_parameters.set_sobolev_kernel(generate_1d_sobolev_kernel(size=7, strength=0.1))
         sobolev_parameters.smoothing_term_weight = 0.2
@@ -109,6 +112,13 @@ def log_convergence_status(log, convergence_status, canonical_frame_index, live_
                 convergence_status.largest_warp_above_maximum_threshold])
 
 
+def plot_warp_statistics(out_path, warp_statistics):
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+    #fig, ax1 = plt.subplots(figsize=(10.2, 4.8))
+    print(repr(warp_statistics))
+
+
 def record_convergence_status_log(log, file_path):
     df = pd.DataFrame(log, columns=["canonical frame index", "live frame index", "pixel row index",
                                     "iteration count",
@@ -121,8 +131,11 @@ def record_convergence_status_log(log, file_path):
 
 def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.BASIC,
                            out_path="out2D/Snoopy MultiTest", input_case_file=None):
-    save_initial_and_final_fields = True
+    # CANDIDATES FOR ARGS
+    save_initial_and_final_fields = False
     optimizer_choice = OptimizerChoice.CPP
+    enable_warp_statistics_logging = True
+
     field_size = 128
     default_value = 1
     rebuild_optimizer = OptimizerChoice != OptimizerChoice.CPP
@@ -132,7 +145,8 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
 
     if input_case_file:
         frame_and_row_set = np.genfromtxt(input_case_file, delimiter=",", dtype=np.int32)
-        canonical_frame_and_row_set = np.concatenate((frame_and_row_set[:, 0].reshape(-1,1), frame_and_row_set[:, 2].reshape(-1,1)), axis=1)
+        canonical_frame_and_row_set = np.concatenate(
+            (frame_and_row_set[:, 0].reshape(-1, 1), frame_and_row_set[:, 2].reshape(-1, 1)), axis=1)
         print(canonical_frame_and_row_set)
     else:
         frame_set = list(range(0, 715, 5))
@@ -144,6 +158,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
 
     convergence_status_log = []
     convergence_status_log_file_path = os.path.join(out_path, "convergence_status_log.csv")
+
     save_log_every_n_runs = 5
 
     # dataset location
@@ -156,8 +171,9 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
 
     i_sample = 0
 
-    optimizer = None if rebuild_optimizer else build_optimizer(optimizer_choice, out_path, field_size,
-                                                               view_scaling_factor=8, max_iterations=100)
+    optimizer = None if rebuild_optimizer else \
+        build_optimizer(optimizer_choice, out_path, field_size, view_scaling_factor=8, max_iterations=100,
+                        enable_warp_statistics_logging=enable_warp_statistics_logging)
 
     for canonical_frame_index, pixel_row_index in canonical_frame_and_row_set:
         if i_sample < start_from_sample:
@@ -181,14 +197,22 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
 
         if rebuild_optimizer:
             optimizer = build_optimizer(optimizer_choice, out_subpath, field_size, view_scaling_factor=8,
-                                        max_iterations=400)
+                                        max_iterations=400,
+                                        enable_warp_statistics_logging=enable_warp_statistics_logging)
 
-        optimizer.optimize(live_field, canonical_field)
+        live_field = optimizer.optimize(live_field, canonical_field)
+
+        # ===================== LOG AFTER-RUN RESULTS ==================================================================
 
         if optimizer_choice != OptimizerChoice.CPP:
             # call python-specific logging routines
             optimizer.plot_logged_sdf_and_warp_magnitudes()
             optimizer.plot_logged_energies_and_max_warps()
+        else:
+            # call C++-specific logging routines
+            if enable_warp_statistics_logging:
+                warp_statistics = optimizer.get_warp_statistics_as_matrix()
+                plot_warp_statistics(out_subpath, warp_statistics)
 
         log_convergence_status(convergence_status_log, optimizer.get_convergence_status(),
                                canonical_frame_index, live_frame_index, pixel_row_index)

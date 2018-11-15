@@ -317,7 +317,7 @@ BOOST_AUTO_TEST_CASE(test_sobolev_optimizer01) {
 			1.0f, 0.21407352f, 0.16514614f, 0.11396749f;
 	//@formatter: on
 
-	eig::MatrixXf warped_live_field = optimizer.optimize(live_field, canonical_field);
+	eig::MatrixXf warped_live_field = optimizer.optimize2(live_field, canonical_field);
 
 	BOOST_REQUIRE(warped_live_field.isApprox(expected_warped_live_field_out));
 }
@@ -349,7 +349,7 @@ BOOST_AUTO_TEST_CASE(test_sobolev_optimizer02) {
 			1.0f, 0.2261582f,  0.17907946f, 0.14683424f;
 	//@formatter: on
 
-	eig::MatrixXf warped_live_field = optimizer.optimize(live_field, canonical_field);
+	eig::MatrixXf warped_live_field = optimizer.optimize2(live_field, canonical_field);
 
 	BOOST_REQUIRE(warped_live_field.isApprox(expected_warped_live_field_out));
 }

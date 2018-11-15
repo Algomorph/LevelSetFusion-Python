@@ -30,17 +30,17 @@ ConvergenceStatus::ConvergenceStatus(int iteration_count, float max_vector_lengt
 				largest_warp_above_maximum_threshold(largest_vector_above_maximum_threshold) {
 }
 
-IterationWarpStatistics::IterationWarpStatistics(double ratio_of_warps_above_minimum_threshold, float max_warp_length,
-		double average_warp_length, double standard_deviation_of_warp_length)
+IterationWarpStatistics::IterationWarpStatistics(float ratio_of_warps_above_minimum_threshold, float max_warp_length,
+		float average_warp_length, float standard_deviation_of_warp_length)
 :
 		ratio_of_warps_above_minimum_threshold(ratio_of_warps_above_minimum_threshold),
-				max_warp_length(max_warp_length), average_warp_length(average_warp_length),
+				max_warp_length(max_warp_length), mean_warp_length(average_warp_length),
 				standard_deviation_of_warp_length(standard_deviation_of_warp_length) {
 }
 
-eig::Vector4d IterationWarpStatistics::to_array() {
-	eig::Vector4d out;
-	out << this->ratio_of_warps_above_minimum_threshold, this->max_warp_length, this->average_warp_length,
+eig::Vector4f IterationWarpStatistics::to_array() {
+	eig::Vector4f out;
+	out << this->ratio_of_warps_above_minimum_threshold, this->max_warp_length, this->mean_warp_length,
 			this->standard_deviation_of_warp_length;
 	return out;
 }

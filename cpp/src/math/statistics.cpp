@@ -96,6 +96,7 @@ void mean_and_std_vector_length(float& mean, float& standard_deviation, const Ma
 		float length = math::length(vector_field(i_element));
 		total_length += static_cast<double>(length);
 	}
+
 	mean = static_cast<float>(total_length / static_cast<double>(total_count));
 	double total_squared_deviation = 0.0;
 	for(eig::Index i_element = 0; i_element < vector_field.size(); i_element++){
@@ -107,5 +108,3 @@ void mean_and_std_vector_length(float& mean, float& standard_deviation, const Ma
 }
 
 }//namespace math
-
-
