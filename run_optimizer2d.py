@@ -88,7 +88,7 @@ def perform_single_test():
                             view_scaling_factor=view_scaling_factor)
 
     start_time = time.time()
-    optimizer.optimize(live_field, canonical_field, warp_field)
+    optimizer.optimize(live_field, canonical_field)
     end_time = time.time()
     print("Total optimization runtime: {:f}".format(end_time - start_time))
     optimizer.plot_logged_sdf_and_warp_magnitudes()
@@ -152,7 +152,7 @@ def main():
         perform_single_test()
     if mode == Mode.MULTIPLE_TESTS:
         perform_multiple_tests(arguments.start_from, data_term_method, arguments.output_path, arguments.case_file_path,
-                               calibration_path=arguments.calibration, frame_path_format_string=arguments.frames)
+                               calibration_path=arguments.calibration, frame_path=arguments.frames)
 
     return EXIT_CODE_SUCCESS
 

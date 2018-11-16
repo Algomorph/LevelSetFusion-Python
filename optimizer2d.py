@@ -436,9 +436,9 @@ class Optimizer2d:
 
         if self.enable_convergence_status_logging:
             self.log.convergence_status = cpp_extension.ConvergenceStatus(
-                iteration_number, max_warp, iteration_number >= self.max_iterations,
-                max_warp < self.maximum_warp_length_lower_threshold,
-                max_warp > self.maximum_warp_length_upper_threshold)
+                iteration_number, float(max_warp), iteration_number >= self.max_iterations,
+                bool(max_warp < self.maximum_warp_length_lower_threshold),
+                bool(max_warp > self.maximum_warp_length_upper_threshold))
 
         return live_field
 

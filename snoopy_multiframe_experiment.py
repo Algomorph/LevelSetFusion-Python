@@ -151,7 +151,6 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
         frame_and_row_set = np.genfromtxt(input_case_file, delimiter=",", dtype=np.int32)
         canonical_frame_and_row_set = np.concatenate(
             (frame_and_row_set[:, 0].reshape(-1, 1), frame_and_row_set[:, 2].reshape(-1, 1)), axis=1)
-        print(canonical_frame_and_row_set)
     else:
         frame_set = list(range(0, 715, 5))
         pixel_row_set = line_range[0] + ((line_range[1] - line_range[0]) * np.random.rand(len(frame_set))).astype(
@@ -166,7 +165,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
     save_log_every_n_runs = 5
 
     # dataset location
-    frame_path_format_string = frame_path + "depth_{:0>6d}.png";
+    frame_path_format_string = frame_path + os.path.sep + "depth_{:0>6d}.png";
 
     if start_from_sample == 0 and os.path.exists(os.path.join(out_path, "output_log.txt")):
         os.unlink(os.path.join(out_path, "output_log.txt"))
