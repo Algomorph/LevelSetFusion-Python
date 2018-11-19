@@ -239,11 +239,10 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                 live_frame_path = frame_path_format_string.format(live_frame_index)
                 live_mask_path = mask_path_format_string.format(live_frame_index)
                 while is_image_row_empty(canonical_frame_path, canonical_mask_path, pixel_row_index, use_masks) or \
-                    is_image_row_empty(live_frame_path, live_mask_path, pixel_row_index, use_masks):
+                        is_image_row_empty(live_frame_path, live_mask_path, pixel_row_index, use_masks):
                     pixel_row_index = line_range[0] + (line_range[1] - line_range[0]) * np.random.rand()
                 new_pixel_row_set.append(pixel_row_index)
             canonical_frame_and_row_set = zip(frame_set, pixel_row_set)
-
 
     view_scaling_factor = 1024 // field_size
 
@@ -305,7 +304,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
             save_initial_fields(canonical_field, live_field, out_subpath, view_scaling_factor)
 
         print("{:s} OPTIMIZATION BETWEEN FRAMES {:0>6d} AND {:0>6d} ON LINE {:0>3d}{:s}"
-              .format(BOLD_LIGHT_CYAN, canonical_frame_index, live_frame_index, pixel_row_index, RESET))
+              .format(BOLD_LIGHT_CYAN, canonical_frame_index, live_frame_index, pixel_row_index, RESET), end="")
 
         if rebuild_optimizer:
             optimizer = build_optimizer(optimizer_choice, out_subpath, field_size, view_scaling_factor=8,
@@ -328,6 +327,12 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                 root_subpath = os.path.join(out_path, "warp_statistics_frames_{:0>6d}-{:0>6d}_row_{:0>3d}.png"
                                             .format(canonical_frame_index, live_frame_index, pixel_row_index))
                 plot_warp_statistics(out_subpath, warp_statistics, extra_path=root_subpath)
+
+        converged = not optimizer.get_convergence_status().iteration_limit_reached
+        if converged:
+            print(": CONVERGED")
+        else:
+            print(": NOT CONVERGED")
 
         log_convergence_status(convergence_status_log, optimizer.get_convergence_status(),
                                canonical_frame_index, live_frame_index, pixel_row_index)
