@@ -31,7 +31,8 @@ namespace pt = boost::property_tree;
 namespace eig = Eigen;
 
 namespace nonrigid_optimization {
-class SobolevOptimizer2d : public Optimizer2d {
+class SobolevOptimizer2d:
+		public Optimizer2d {
 public:
 	class SobolevParameters {
 	public:
@@ -48,12 +49,12 @@ public:
 		eig::VectorXf sobolev_kernel = [] {
 			eig::VectorXf sobolev_kernel(7);
 			sobolev_kernel << 2.995900285895913839e-04f,
-					4.410949535667896271e-03f,
-					6.571318954229354858e-02f,
-					9.956527948379516602e-01f,
-					6.571318954229354858e-02f,
-					4.410949535667896271e-03f,
-					2.995900285895913839e-04f;
+			4.410949535667896271e-03f,
+			6.571318954229354858e-02f,
+			9.956527948379516602e-01f,
+			6.571318954229354858e-02f,
+			4.410949535667896271e-03f,
+			2.995900285895913839e-04f;
 			return sobolev_kernel;
 		}();
 
@@ -76,8 +77,7 @@ public:
 
 private:
 	float perform_optimization_iteration_and_return_max_warp(eig::MatrixXf& warped_live_field,
-	                                                         const eig::MatrixXf& canonical_field,
-	                                                         math::MatrixXv2f& warp_field);
+			math::Vector2i& max_warp_location, const eig::MatrixXf& canonical_field, math::MatrixXv2f& warp_field);
 	// *** Logging ***
 	ConvergenceStatus convergence_status;
 	std::vector<IterationWarpStatistics> warp_statistics;
@@ -85,4 +85,4 @@ private:
 	void clean_out_logs();
 };
 
-}//namespace nonrigid_optimization
+} //namespace nonrigid_optimization

@@ -27,7 +27,7 @@ import cv2
 
 # local
 from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union, voxel_is_outside_narrow_band_union
-from utils.vizualization import make_3d_plots, make_warp_vector_plot, warp_field_to_heatmap, \
+from utils.visualization import make_3d_plots, make_vector_field_plot, warp_field_to_heatmap, \
     sdf_field_to_image, visualize_and_save_sdf_and_warp_magnitude_progression, \
     visualzie_and_save_energy_and_max_warp_progression
 from utils.point import Point
@@ -201,11 +201,11 @@ class Optimizer2d:
                   "passed level_set_component_field is not None, {:s} : {:d}".format(frame_info.filename,
                                                                                      frame_info.lineno))
 
-        gradient_field = self.data_term_weight * data_gradient_field + \
-                         self.smoothing_term_weight * smoothing_gradient_field
+        self.gradient_field = self.data_term_weight * data_gradient_field + \
+                              self.smoothing_term_weight * smoothing_gradient_field
 
         if band_union_only:
-            set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, gradient_field)
+            set_zeros_for_values_outside_narrow_band_union(warped_live_field, canonical_field, self.gradient_field)
 
         # *** Print information at focus voxel
         focus_x, focus_y = get_focus_coordinates()
@@ -226,9 +226,9 @@ class Optimizer2d:
         # ***
 
         if self.sobolev_smoothing_enabled:
-            convolve_with_kernel_preserve_zeros(gradient_field, self.sobolev_kernel)
+            convolve_with_kernel_preserve_zeros(self.gradient_field, self.sobolev_kernel)
 
-        np.copyto(warp_field, -gradient_field * self.gradient_descent_rate)
+        np.copyto(warp_field, -self.gradient_field * self.gradient_descent_rate)
         warp_lengths = np.linalg.norm(warp_field, axis=2)
         maximum_warp_length_at = np.unravel_index(np.argmax(warp_lengths), warp_lengths.shape)
         maximum_warp_length = warp_lengths[maximum_warp_length_at]
@@ -254,15 +254,7 @@ class Optimizer2d:
 
         return maximum_warp_length, Point(maximum_warp_length_at[1], maximum_warp_length_at[0])
 
-    def __log_convergence_status(self, iteration_count, max_warp_length, iteration_limit_reached,
-                                 largest_warp_below_minimum_threshold, largest_warp_above_maximum_threshold):
-        self.log.convergence_status.iteration_count = iteration_count
-        self.log.convergence_status.max_warp_length = max_warp_length
-        self.log.convergence_status.iteration_limit_reached = iteration_limit_reached
-        self.log.convergence_status.largest_warp_below_minimum_threshold = largest_warp_below_minimum_threshold
-        self.log.convergence_status.largest_warp_above_maximum_threshold = largest_warp_above_maximum_threshold
-
-    def __optimization_iteration_direct(self, warped_live_field, canonical_field, warp_field, gradient_field,
+    def __optimization_iteration_direct(self, warped_live_field, canonical_field, warp_field,
                                         data_component_field=None, smoothing_component_field=None,
                                         level_set_component_field=None, band_union_only=True):
 
@@ -326,10 +318,10 @@ class Optimizer2d:
                     print(" Smoothing grad (scaled): ", BOLD_GREEN,
                           -scaled_smoothing_gradient, RESET, sep='', end='')
 
-                gradient_field[y, x] = gradient
+                self.gradient_field[y, x] = gradient
 
         if self.sobolev_smoothing_enabled:
-            convolve_with_kernel_preserve_zeros(gradient_field, self.sobolev_kernel)
+            convolve_with_kernel_preserve_zeros(self.gradient_field, self.sobolev_kernel)
 
         max_warp = 0.0
         max_warp_location = -1
@@ -337,7 +329,7 @@ class Optimizer2d:
         # update the warp field based on the gradient
         for y in range(0, field_size):
             for x in range(0, field_size):
-                warp_field[y, x] = -gradient_field[y, x] * self.gradient_descent_rate
+                warp_field[y, x] = -self.gradient_field[y, x] * self.gradient_descent_rate
                 if focus_coordinates_match(x, y):
                     print(" Warp: ", BOLD_GREEN, warp_field[y, x], RESET, " Warp length: ", BOLD_GREEN,
                           np.linalg.norm(warp_field[y, x]), RESET, sep='')
@@ -350,14 +342,10 @@ class Optimizer2d:
                     log.warp_magnitudes.append(warp_length)
                     log.sdf_values.append(warped_live_field[y, x])
 
-        interpolate_warped_live(canonical_field, warped_live_field, warp_field, gradient_field,
+        interpolate_warped_live(canonical_field, warped_live_field, warp_field, self.gradient_field,
                                 band_union_only=False, known_values_only=False, substitute_original=False)
 
-        # log energy aggregates
-        self.log.max_warps.append(max_warp)
-        self.log.data_energies.append(self.total_data_energy)
-        self.log.smoothing_energies.append(self.total_smoothing_energy)
-        self.log.level_set_energies.append(self.total_level_set_energy)
+
 
         return max_warp, max_warp_location,
 
@@ -371,7 +359,7 @@ class Optimizer2d:
         max_warp = np.inf
         max_warp_location = (0, 0)
         iteration_number = 0
-        gradient_field = np.zeros_like(warp_field)
+        self.gradient_field = np.zeros_like(warp_field)
 
         self.__run_checks(live_field, canonical_field, warp_field)
 
@@ -409,7 +397,7 @@ class Optimizer2d:
 
             if self.compute_method == ComputeMethod.DIRECT:
                 max_warp, max_warp_location = \
-                    self.__optimization_iteration_direct(live_field, canonical_field, warp_field, gradient_field,
+                    self.__optimization_iteration_direct(live_field, canonical_field, warp_field,
                                                          data_component_field, smoothing_component_field,
                                                          level_set_component_field)
             elif self.compute_method == ComputeMethod.VECTORIZED:
@@ -417,7 +405,13 @@ class Optimizer2d:
                     self.__optimization_iteration_vectorized(live_field, canonical_field, warp_field,
                                                              data_component_field, smoothing_component_field,
                                                              level_set_component_field)
+            # log energy aggregates
+            self.log.max_warps.append(max_warp)
+            self.log.data_energies.append(self.total_data_energy)
+            self.log.smoothing_energies.append(self.total_smoothing_energy)
+            self.log.level_set_energies.append(self.total_level_set_energy)
 
+            # print end-of-iteration output
             level_set_energy_string = ""
             if self.level_set_term_enabled:
                 level_set_energy_string = "; level set energy: {:5f}".format(self.total_level_set_energy)
@@ -428,15 +422,18 @@ class Optimizer2d:
                   "; total energy:", self.total_data_energy + self.total_smoothing_energy + self.total_level_set_energy,
                   "; max warp:", max_warp, "@", max_warp_location, sep="")
 
-            self.__make_iteration_visualizations(iteration_number, warp_field, gradient_field, data_component_field,
-                                                 smoothing_component_field, level_set_component_field, live_field,
-                                                 canonical_field)
+            self.__make_iteration_visualizations(iteration_number, warp_field, self.gradient_field,
+                                                 data_component_field, smoothing_component_field,
+                                                 level_set_component_field, live_field, canonical_field)
 
             iteration_number += 1
 
+        # log end-of-optimization stats
         if self.enable_convergence_status_logging:
             self.log.convergence_status = cpp_extension.ConvergenceStatus(
-                iteration_number, float(max_warp), iteration_number >= self.max_iterations,
+                iteration_number, float(max_warp),
+                cpp_extension.Vector2i(int(max_warp_location.x), int(max_warp_location.y)),
+                iteration_number >= self.max_iterations,
                 bool(max_warp < self.maximum_warp_length_lower_threshold),
                 bool(max_warp > self.maximum_warp_length_upper_threshold))
 
@@ -520,21 +517,21 @@ class Optimizer2d:
                                         smoothing_component_field, level_set_component_field, live_field,
                                         canonical_field):
         if self.warp_video_writer2D is not None:
-            make_warp_vector_plot(self.warp_video_writer2D, warp_field,
-                                  scale=10.0, iteration_number=iteration_number,
-                                  vectors_name="Warp vectors (scaled x10)")
+            make_vector_field_plot(self.warp_video_writer2D, warp_field,
+                                   scale=10.0, iteration_number=iteration_number,
+                                   vectors_name="Warp vectors (scaled x10)")
         if self.gradient_video_writer2D is not None:
-            make_warp_vector_plot(self.gradient_video_writer2D, -gradient_field, iteration_number=iteration_number,
-                                  vectors_name="Gradient vectors (negated)")
+            make_vector_field_plot(self.gradient_video_writer2D, -gradient_field, iteration_number=iteration_number,
+                                   vectors_name="Gradient vectors (negated)")
         if self.data_gradient_video_writer2D is not None:
-            make_warp_vector_plot(self.data_gradient_video_writer2D, -data_component_field,
-                                  iteration_number=iteration_number, vectors_name="Data gradients (negated)")
+            make_vector_field_plot(self.data_gradient_video_writer2D, -data_component_field,
+                                   iteration_number=iteration_number, vectors_name="Data gradients (negated)")
         if self.smoothing_gradient_video_writer2D is not None:
-            make_warp_vector_plot(self.smoothing_gradient_video_writer2D, -smoothing_component_field,
-                                  iteration_number=iteration_number, vectors_name="Smoothing gradients (negated)")
+            make_vector_field_plot(self.smoothing_gradient_video_writer2D, -smoothing_component_field,
+                                   iteration_number=iteration_number, vectors_name="Smoothing gradients (negated)")
         if self.level_set_gradient_video_writer2D is not None:
-            make_warp_vector_plot(self.level_set_gradient_video_writer2D, -level_set_component_field,
-                                  iteration_number=iteration_number, vectors_name="Level set gradients (negated)")
+            make_vector_field_plot(self.level_set_gradient_video_writer2D, -level_set_component_field,
+                                   iteration_number=iteration_number, vectors_name="Level set gradients (negated)")
 
         if self.live_video_writer2D is not None:
             self.live_video_writer2D.write(sdf_field_to_image(live_field, self.view_scaling_factor))

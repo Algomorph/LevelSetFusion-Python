@@ -65,8 +65,8 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 	// =============================================================================================
 	// region === MATH TYPES =======================================================================
 	// =============================================================================================
-	bp::class_<math::Vector2i>("Vector2i", bp::init<float, float>())
-			.def(bp::init<float>())
+	bp::class_<math::Vector2i>("Vector2i", bp::init<int, int>())
+			.def(bp::init<int>())
 			.def_readwrite("x", &math::Vector2i::x)
 			.def_readwrite("y", &math::Vector2i::y)
 			.def_readwrite("u", &math::Vector2i::u)
@@ -129,9 +129,10 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 	// region === Logging ==========================================================================
 	// =============================================================================================
 	bp::class_<nro::ConvergenceStatus>("ConvergenceStatus", bp::init<>())
-			.def(bp::init<int, float, bool, bool, bool>())
+			.def(bp::init<int, float, math::Vector2i, bool, bool, bool>())
 			.def_readwrite("iteration_count", &nro::ConvergenceStatus::iteration_count)
 			.def_readwrite("max_warp_length", &nro::ConvergenceStatus::max_warp_length)
+			.def_readwrite("max_warp_location", &nro::ConvergenceStatus::max_warp_location)
 			.def_readwrite("iteration_limit_reached", &nro::ConvergenceStatus::iteration_limit_reached)
 			.def_readwrite("largest_warp_below_minimum_threshold",
 			&nro::ConvergenceStatus::largest_warp_below_minimum_threshold)
@@ -140,15 +141,15 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 			;
 
 	bp::class_<nro::IterationWarpStatistics>("WarpStatistics", bp::init<>())
-			.def(bp::init<float,float,float,float>())
+			.def(bp::init<float,float,float,float,math::Vector2i>())
 			.def_readwrite("ratio_of_warps_above_minimum_threshold",
 					&nro::IterationWarpStatistics::ratio_of_warps_above_minimum_threshold)
 			.def_readwrite("max_warp_length", &nro::IterationWarpStatistics::max_warp_length)
 			.def_readwrite("average_warp_length", &nro::IterationWarpStatistics::mean_warp_length)
 			.def_readwrite("standard_deviation_of_warp_length",
 					&nro::IterationWarpStatistics::standard_deviation_of_warp_length)
+			.def_readwrite("max_warp_location", &nro::IterationWarpStatistics::max_warp_location)
 			.def("to_array", &nro::IterationWarpStatistics::to_array)
-			.def_readwrite("standard_deviation_of_warp_length", &nro::IterationWarpStatistics::standard_deviation_of_warp_length)
 			;
 
 	// endregion ===================================================================================

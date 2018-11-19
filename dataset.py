@@ -79,6 +79,38 @@ class ImageBasedDataset(Dataset):
         return live_field, canonical_field
 
 
+class MaskedImageBasedDataset(Dataset):
+    def __init__(self, calibration_file_path, first_frame_path, first_mask_path, second_frame_path, second_mask_path,
+                 image_pixel_row, field_size, offset):
+        super(ImageBasedDataset).__init__()
+        self.calibration_file_path = calibration_file_path
+        self.first_frame_path = first_frame_path
+        self.first_mask_path = first_mask_path
+        self.second_frame_path = second_frame_path
+        self.second_mask_path = second_mask_path
+        self.image_pixel_row = image_pixel_row
+        self.field_size = field_size
+        self.offset = offset
+
+    def generate_2d_sdf_fields(self, default_value=1):
+        rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
+        depth_camera = rig.depth_camera
+        depth_image0 = cv2.imread(self.first_frame_path, cv2.IMREAD_UNCHANGED)
+        mask_image0 = cv2.imread(self.first_mask_path, cv2.IMREAD_UNCHANGED)
+        depth_image0[mask_image0 == 0] = 0
+        canonical_field = generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, self.image_pixel_row,
+                                                                  default_value=default_value,
+                                                                  field_size=self.field_size,
+                                                                  array_offset=self.offset)
+        depth_image1 = cv2.imread(self.second_frame_path, cv2.IMREAD_UNCHANGED)
+        mask_image1 = cv2.imread(self.second_mask_path, cv2.IMREAD_UNCHANGED)
+        depth_image1[mask_image1 == 0] = 0
+        live_field = generate_2d_tsdf_field_from_depth_image(depth_image1, depth_camera, self.image_pixel_row,
+                                                             default_value=default_value, field_size=self.field_size,
+                                                             array_offset=self.offset)
+        return live_field, canonical_field
+
+
 datasets = {
 
     DataToUse.SYNTHETIC3D_SUZANNE_AWAY: ImageBasedDataset(

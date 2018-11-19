@@ -28,11 +28,11 @@ import numpy as np
 from data_term import DataTermMethod
 from dataset import datasets, DataToUse
 from smoothing_term import SmoothingTermMethod
-from snoopy_multiframe_experiment import perform_multiple_tests
+from snoopy_multiframe_experiment import perform_multiple_tests, OptimizerChoice
 from tsdf_field_generation import generate_initial_orthographic_2d_tsdf_fields
 from optimizer2d import Optimizer2d, AdaptiveLearningRateMethod, ComputeMethod
 from sobolev_filter import generate_1d_sobolev_kernel
-from utils.vizualization import visualize_and_save_initial_fields, visualize_final_fields
+from utils.visualization import visualize_and_save_initial_fields, visualize_final_fields
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1
@@ -125,6 +125,9 @@ def main():
                         )
     parser.add_argument("-cfp", "--case_file_path", type=str, default=None,
                         help="input cases file path for multiple_tests_mode")
+    parser.add_argument("-oc", "--optimizer_choice", type=str, default="CPP",
+                        help="optimizer choice (currently, multiple_tests mode only!), "
+                             "must be in {CPP, PYTHON_DIRECT, PYTHON_VECTORIZED}")
 
     arguments = parser.parse_args()
     mode = Mode.SINGLE_TEST
@@ -151,7 +154,9 @@ def main():
     if mode == Mode.SINGLE_TEST:
         perform_single_test()
     if mode == Mode.MULTIPLE_TESTS:
-        perform_multiple_tests(arguments.start_from, data_term_method, arguments.output_path, arguments.case_file_path,
+        perform_multiple_tests(arguments.start_from, data_term_method,
+                               OptimizerChoice.__dict__[arguments.optimizer_choice],
+                               arguments.output_path, arguments.case_file_path,
                                calibration_path=arguments.calibration, frame_path=arguments.frames)
 
     return EXIT_CODE_SUCCESS

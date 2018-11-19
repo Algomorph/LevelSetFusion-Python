@@ -21,27 +21,31 @@
 #include "logging.hpp"
 
 namespace nonrigid_optimization {
-ConvergenceStatus::ConvergenceStatus(int iteration_count, float max_vector_length, bool iteration_limit_reached,
+ConvergenceStatus::ConvergenceStatus(int iteration_count, float max_warp_length,
+		math::Vector2i max_warp_location, bool iteration_limit_reached,
 		bool largest_vector_below_minimum_threshold, bool largest_vector_above_maximum_threshold)
 :
-		iteration_count(iteration_count), max_warp_length(max_vector_length),
+		iteration_count(iteration_count), max_warp_length(max_warp_length),
+		max_warp_location(max_warp_location),
 				iteration_limit_reached(iteration_limit_reached),
 				largest_warp_below_minimum_threshold(largest_vector_below_minimum_threshold),
 				largest_warp_above_maximum_threshold(largest_vector_above_maximum_threshold) {
 }
 
 IterationWarpStatistics::IterationWarpStatistics(float ratio_of_warps_above_minimum_threshold, float max_warp_length,
-		float average_warp_length, float standard_deviation_of_warp_length)
+		float average_warp_length, float standard_deviation_of_warp_length, math::Vector2i max_warp_location)
 :
 		ratio_of_warps_above_minimum_threshold(ratio_of_warps_above_minimum_threshold),
 				max_warp_length(max_warp_length), mean_warp_length(average_warp_length),
-				standard_deviation_of_warp_length(standard_deviation_of_warp_length) {
+				standard_deviation_of_warp_length(standard_deviation_of_warp_length),
+				max_warp_location(max_warp_location) {
 }
 
-eig::Vector4f IterationWarpStatistics::to_array() {
-	eig::Vector4f out;
+eig::VectorXf IterationWarpStatistics::to_array() {
+	eig::VectorXf out(6);
 	out << this->ratio_of_warps_above_minimum_threshold, this->max_warp_length, this->mean_warp_length,
-			this->standard_deviation_of_warp_length;
+			this->standard_deviation_of_warp_length, static_cast<float>(this->max_warp_location.x),
+			static_cast<float>(this->max_warp_location.y);
 	return out;
 }
 

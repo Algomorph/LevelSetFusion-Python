@@ -49,8 +49,28 @@ def exit_func(event):
         sys.exit(0)
 
 
-def make_warp_vector_plot(warp_video_writer, warp_field, iteration_number=None, sparsity_factor=1,
-                          use_magnitude_for_color=True, scale=1.0, vectors_name="Warp vectors"):
+def rescale_depth_to_8bit(depth_image):
+    return ((depth_image.astype(np.float64) - 500) * 255 / 4000).astype(np.uint8)
+
+
+def highlight_row_on_gray(gray_image, ix_row):
+    bgr = cv2.cvtColor(gray_image, cv2.COLOR_GRAY2BGR)
+    image_with_highlight = np.zeros_like(bgr)
+    image_with_highlight[:, :, 0] = 255
+    # wash out the b and r channels
+    image_with_highlight[:, :, 1] = bgr[:, :, 1] + 0.25 * (255 - bgr[:, :, 1])
+    image_with_highlight[:, :, 2] = bgr[:, :, 2] + 0.75 * (255 - bgr[:, :, 2])
+    image_with_highlight[ix_row, :, 0] = bgr[ix_row, :, 0]
+    image_with_highlight[ix_row, :, 1] = bgr[ix_row, :, 1]
+    image_with_highlight[ix_row, :, 2] = bgr[ix_row, :, 2]
+    return image_with_highlight
+
+
+# TODO: all vizualization functions that currently accept an OpenCV writer and write image should instead simply
+# produce an image, which should be written, if necessary, by another routine
+
+def make_vector_field_plot(vector_field_video_writer, warp_field, iteration_number=None, sparsity_factor=1,
+                           use_magnitude_for_color=True, scale=1.0, vectors_name="Warp vectors"):
     fig = plt.figure(figsize=(23.6, 14))
     ax = fig.gca()
     if iteration_number is not None:
@@ -85,22 +105,21 @@ def make_warp_vector_plot(warp_video_writer, warp_field, iteration_number=None, 
               scale=1.0 / scale, angles='xy', scale_units='xy')
     fig.canvas.draw()
 
-    plt.close()
+    plt.close(fig)
 
     plot_image = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
     plot_image = plot_image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
     plot_image = plot_image[110:1310, 240:2160]
     bgr = cv2.cvtColor(plot_image, cv2.COLOR_RGB2BGR)
-    warp_video_writer.write(bgr)
+    vector_field_video_writer.write(bgr)
 
 
-def make_3d_plots(live_video_writer_3d, canonical_field, warped_live_field, warp_field):
+def make_3d_plots(live_video_writer_3d, canonical_field, warped_live_field):
     """
     Makes a 3D plot of the live sdf, with the SDF value plotted along the (vertical) Z axis
     :param live_video_writer_3d:
     :param canonical_field:
     :param warped_live_field:
-    :param warp_field:
     :return:
     """
     # plot warped live field
@@ -142,11 +161,10 @@ def make_3d_plots(live_video_writer_3d, canonical_field, warped_live_field, warp
     fig.colorbar(surf, shrink=0.5, aspect=5)
     fig.canvas.draw()
 
-    plt.clf()
-    plt.close()
     plot_image = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
     plot_image = plot_image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
     plot_image = plot_image[150:870, 200:1430]
+    plt.close(fig)
     live_video_writer_3d.write(plot_image)
 
 
@@ -242,8 +260,7 @@ def visualize_and_save_sdf_and_warp_magnitude_progression(focus_coordinates, foc
     filename = "warp_magnitudes_for_pt_{:d}_{:d}_neighborhood.png".format(focus_coordinates[0],
                                                                           focus_coordinates[1])
     plt.savefig(os.path.join(out_path, filename))
-    plt.clf()
-    plt.close()
+    plt.close('all')
 
 
 def visualzie_and_save_energy_and_max_warp_progression(log, out_path):
@@ -258,13 +275,12 @@ def visualzie_and_save_energy_and_max_warp_progression(log, out_path):
     filename = "energy_stackplot.png"
     plt.savefig(os.path.join(out_path, filename))
     plt.clf()
-    plt.close()
     plt.figure(figsize=(18.6, 11.2))
     plt.plot(log.max_warps, "k")
     filename = "max_warp_plot.png"
     plt.savefig(os.path.join(out_path, filename))
     plt.clf()
-    plt.close()
+    plt.close('all')
 
 
 def visualize_and_save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor=8):
@@ -300,8 +316,6 @@ def save_initial_fields(canonical_field, live_field, out_path, view_scaling_fact
     live_visualized_unscaled = sdf_field_to_image(live_field, scale=1)
     cv2.imwrite(os.path.join(out_path, "unscaled_initial_live.png"), live_visualized_unscaled)
     cv2.imwrite(os.path.join(out_path, "initial_live.png"), live_visualized)
-
-    cv2.destroyAllWindows()
 
 
 def visualize_final_fields(canonical_field, live_field, view_scaling_factor):
