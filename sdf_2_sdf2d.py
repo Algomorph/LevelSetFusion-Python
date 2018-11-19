@@ -27,6 +27,7 @@ from interpolation import interpolate_warped_live, get_and_print_interpolation_d
 from level_set_term import level_set_term_at_location
 import smoothing_term as st
 from transformation import twist_vector_to_matrix
+from sdf_gradient_resp_to_twist import sdf_gradient_resp_to_twist
 
 
 class VoxelLog:
@@ -143,7 +144,7 @@ class Sdf2Sdf2d:
 
                     if ref_sdf < -1 or cur_sdf < -1:
                         continue
-                    cur_gradient = self.sdf_gradient_resp_to_twist(live_field, j, i, twist)
+                    cur_gradient = sdf_gradient_resp_to_twist(live_field, j, i, twist)
                     matrix_A += np.dot(cur_gradient.T, cur_gradient)
                     vector_b += (ref_sdf - cur_sdf + np.dot(cur_gradient, twist)) * cur_gradient.T
                     error += (ref_sdf * ref_weight - cur_sdf * cur_weight) ** 2
