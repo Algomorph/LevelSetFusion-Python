@@ -45,6 +45,5 @@ class MyTestCase(TestCase):
                                                          -expected_sdf_gradient_first_term[0][i, j]]),
                                                expected_sdf_gradient_second_term)
                 sdf_gradient = sdf_gradient_resp_to_twist(live_field, j, i, twist_vector)
-                print(expected_sdf_gradient, sdf_gradient)
 
-        self.assertTrue(np.allclose(expected_sdf_gradient, sdf_gradient))
+                self.assertTrue(np.allclose(expected_sdf_gradient, sdf_gradient))

@@ -71,10 +71,8 @@ class Sdf2Sdf2d:
         if not os.path.exists(out_path):
             os.makedirs(out_path)
 
-        # energies
-        self.total_data_energy = 0.
-        self.total_smoothing_energy = 0.
-        self.total_level_set_energy = 0.
+        # energy
+        self.total_energy = 0.
 
         # self.compute_method = compute_method
 
@@ -133,7 +131,7 @@ class Sdf2Sdf2d:
             for i in range(canonical_field.shape[1]):
                 for j in range(canonical_field.shape[0]):
                     ref_sdf = canonical_field[j, i]
-                    if ref_sdf < -eta :
+                    if ref_sdf < -eta:
                         ref_weight = 0
                     # apply twist to live_field
                     cur_idx = np.delete(np.dot(twist_vector_to_matrix(twist), np.array([[i], [j], [1]])), 2)
@@ -151,7 +149,8 @@ class Sdf2Sdf2d:
 
             twist_star = np.dot(np.linalg.inv(matrix_A), vector_b)  # optimal solution
             twist += .5 * np.subtract(twist_star, twist)
-            make_warp_vector_plot(live_field, iteration_number=15)
+
+        make_warp_vector_plot(self.warp_video_writer2D, live_field, iteration_number=15)
             # print("error(/E_geom): ", error, "at iteration ", iter)
             # print("twist vector is \n", twist)
         return final_live_field, twist, error
