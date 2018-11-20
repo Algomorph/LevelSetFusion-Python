@@ -34,8 +34,8 @@ from optimizer2d import Optimizer2d, AdaptiveLearningRateMethod, ComputeMethod
 from sobolev_filter import generate_1d_sobolev_kernel
 from utils.printing import *
 from utils.visualization import save_initial_fields, save_final_fields, rescale_depth_to_8bit, highlight_row_on_gray
-
 import level_set_fusion_optimization as cpp_module
+import utils.sampling as sampling
 
 
 class OptimizerChoice(Enum):
@@ -203,8 +203,8 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
     save_initial_and_final_fields = input_case_file is not None
     enable_warp_statistics_logging = input_case_file is not None
     save_frame_images = input_case_file is not None
-    use_masks = False
-    check_empty_row = False
+    use_masks = True
+    check_empty_row = True
 
     field_size = 128
 
@@ -221,18 +221,23 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
     line_range = (214, 400)
 
     if input_case_file:
-        frame_and_row_set = np.genfromtxt(input_case_file, delimiter=",", dtype=np.int32)
-        canonical_frame_and_row_set = np.concatenate(
-            (frame_and_row_set[:, 0].reshape(-1, 1), frame_and_row_set[:, 2].reshape(-1, 1)), axis=1)
+        frame_row_and_focus_set = np.genfromtxt(input_case_file, delimiter=",", dtype=np.int32)
+        # drop column headers
+        frame_row_and_focus_set = frame_row_and_focus_set[1:]
+        # drop live frame indexes
+        frame_row_and_focus_set = np.concatenate(
+            (frame_row_and_focus_set[:, 0].reshape(-1, 1), frame_row_and_focus_set[:, 2].reshape(-1, 1),
+             frame_row_and_focus_set[:, 3:]), axis=1)
     else:
         frame_set = list(range(0, 715, 5))
         pixel_row_set = line_range[0] + ((line_range[1] - line_range[0]) * np.random.rand(len(frame_set))).astype(
             np.int32)
-        canonical_frame_and_row_set = zip(frame_set, pixel_row_set)
+        focus_coordinates = np.array([0, 0] * len(frame_set))
+        frame_row_and_focus_set = zip(frame_set, pixel_row_set, focus_coordinates)
         if check_empty_row:
             # replace empty rows
             new_pixel_row_set = []
-            for canonical_frame_index, pixel_row_index in canonical_frame_and_row_set:
+            for canonical_frame_index, pixel_row_index in frame_row_and_focus_set:
                 live_frame_index = canonical_frame_index + 1
                 canonical_frame_path = frame_path_format_string.format(canonical_frame_index)
                 canonical_mask_path = mask_path_format_string.format(canonical_frame_index)
@@ -242,7 +247,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                         is_image_row_empty(live_frame_path, live_mask_path, pixel_row_index, use_masks):
                     pixel_row_index = line_range[0] + (line_range[1] - line_range[0]) * np.random.rand()
                 new_pixel_row_set.append(pixel_row_index)
-            canonical_frame_and_row_set = zip(frame_set, pixel_row_set)
+            frame_row_and_focus_set = zip(frame_set, pixel_row_set, focus_coordinates)
 
     view_scaling_factor = 1024 // field_size
 
@@ -265,10 +270,12 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                         data_term_method=data_term_method)
 
     # run the optimizers
-    for canonical_frame_index, pixel_row_index in canonical_frame_and_row_set:
+    for canonical_frame_index, pixel_row_index, focus_x, focus_y in frame_row_and_focus_set:
         if i_sample < start_from_sample:
             i_sample += 1
             continue
+
+        sampling.set_focus_coordinates(focus_x, focus_y)
 
         live_frame_index = canonical_frame_index + 1
         out_subpath = os.path.join(out_path, "snoopy frames {:0>6d}-{:0>6d} line {:0>3d}"
@@ -289,7 +296,6 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
             highlight_row_and_save_image(live_frame_path, "live_frame_rh.png", pixel_row_index)
 
         # Generate SDF fields
-
         if use_masks:
             dataset = MaskedImageBasedDataset(calibration_path, canonical_frame_path, canonical_mask_path,
                                               live_frame_path, live_mask_path, pixel_row_index,

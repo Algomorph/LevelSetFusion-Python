@@ -13,9 +13,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #  ================================================================
-FOCUS_COORDINATES = (0, 0)
 import numpy as np
-
+FOCUS_COORDINATES = (0, 0)
 
 
 def set_focus_coordinates(x, y):
