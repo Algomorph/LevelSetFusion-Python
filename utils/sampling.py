@@ -18,6 +18,7 @@ FOCUS_COORDINATES = (0, 0)
 
 
 def set_focus_coordinates(x, y):
+    global FOCUS_COORDINATES
     FOCUS_COORDINATES = (x, y)
 
 

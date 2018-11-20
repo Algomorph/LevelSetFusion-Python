@@ -28,7 +28,7 @@ import numpy as np
 from data_term import DataTermMethod
 from dataset import datasets, DataToUse
 from smoothing_term import SmoothingTermMethod
-from snoopy_multiframe_experiment import perform_multiple_tests, OptimizerChoice
+from multiframe_experiment import perform_multiple_tests, OptimizerChoice
 from tsdf_field_generation import generate_initial_orthographic_2d_tsdf_fields
 from optimizer2d import Optimizer2d, AdaptiveLearningRateMethod, ComputeMethod
 from sobolev_filter import generate_1d_sobolev_kernel

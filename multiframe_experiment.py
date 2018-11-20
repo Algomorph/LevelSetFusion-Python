@@ -19,6 +19,7 @@ import os
 import os.path
 import gc
 from enum import Enum
+import re
 
 # libraries
 import cv2
@@ -192,6 +193,26 @@ def is_image_row_empty(image_path, mask_path, ix_row, check_masked):
         return is_unmasked_image_row_empty(image_path, ix_row)
 
 
+class FrameFilenameFormat(Enum):
+    FIVE_DIGIT = 0
+    SIX_DIGIT = 1
+
+
+def check_frame_count_and_format(frames_path):
+    five_digit_pattern = re.compile(r"^depth\_\d{5}[.]png$")
+    six_digit_pattern = re.compile(r"^depth\_\d{6}[.]png$")
+    five_digit_counter = 0
+    six_digit_counter = 0
+    for filename in os.listdir(frames_path):
+        if re.findall(five_digit_pattern, filename):
+            five_digit_counter += 1
+        elif re.findall(six_digit_pattern, filename):
+            six_digit_counter += 1
+    frame_count = max(five_digit_counter, six_digit_counter)
+    format = FrameFilenameFormat.FIVE_DIGIT if five_digit_counter > six_digit_counter else FrameFilenameFormat.SIX_DIGIT
+    return frame_count, format
+
+
 def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.BASIC,
                            optimizer_choice=OptimizerChoice.CPP,
                            out_path="out2D/Snoopy MultiTest", input_case_file=None,
@@ -212,8 +233,13 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
     max_iterations = 400 if optimizer_choice == OptimizerChoice.CPP else 100
 
     # dataset location
-    frame_path_format_string = frame_path + os.path.sep + "depth_{:0>6d}.png"
-    mask_path_format_string = frame_path + os.path.sep + "mask_{:0>6d}.png"
+    frame_count, frame_filename_format = check_frame_count_and_format(frame_path)
+    if frame_filename_format == FrameFilenameFormat.SIX_DIGIT:
+        frame_path_format_string = frame_path + os.path.sep + "depth_{:0>6d}.png"
+        mask_path_format_string = frame_path + os.path.sep + "mask_{:0>6d}.png"
+    else:  # has to be FIVE_DIGIT
+        frame_path_format_string = frame_path + os.path.sep + "depth_{:0>5d}.png"
+        mask_path_format_string = frame_path + os.path.sep + "mask_{:0>5d}.png"
 
     # region ================ Generation of lists of frames & pixel rows to work with ==================================
 
@@ -227,17 +253,18 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
         # drop live frame indexes
         frame_row_and_focus_set = np.concatenate(
             (frame_row_and_focus_set[:, 0].reshape(-1, 1), frame_row_and_focus_set[:, 2].reshape(-1, 1),
-             frame_row_and_focus_set[:, 3:]), axis=1)
+             frame_row_and_focus_set[:, 3:5]), axis=1)
     else:
-        frame_set = list(range(0, 715, 5))
+        frame_set = list(range(0, frame_count - 1, 5))
         pixel_row_set = line_range[0] + ((line_range[1] - line_range[0]) * np.random.rand(len(frame_set))).astype(
             np.int32)
-        focus_coordinates = np.array([0, 0] * len(frame_set))
-        frame_row_and_focus_set = zip(frame_set, pixel_row_set, focus_coordinates)
+        focus_x = np.zeros((len(frame_set), 1,))
+        focus_y = np.zeros((len(frame_set), 1,))
+        frame_row_and_focus_set = zip(frame_set, pixel_row_set, focus_x, focus_y)
         if check_empty_row:
             # replace empty rows
             new_pixel_row_set = []
-            for canonical_frame_index, pixel_row_index in frame_row_and_focus_set:
+            for canonical_frame_index, pixel_row_index, _, _ in frame_row_and_focus_set:
                 live_frame_index = canonical_frame_index + 1
                 canonical_frame_path = frame_path_format_string.format(canonical_frame_index)
                 canonical_mask_path = mask_path_format_string.format(canonical_frame_index)
@@ -247,7 +274,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                         is_image_row_empty(live_frame_path, live_mask_path, pixel_row_index, use_masks):
                     pixel_row_index = line_range[0] + (line_range[1] - line_range[0]) * np.random.rand()
                 new_pixel_row_set.append(pixel_row_index)
-            frame_row_and_focus_set = zip(frame_set, pixel_row_set, focus_coordinates)
+            frame_row_and_focus_set = zip(frame_set, pixel_row_set, focus_x, focus_y)
 
     view_scaling_factor = 1024 // field_size
 
@@ -334,13 +361,18 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                                             .format(canonical_frame_index, live_frame_index, pixel_row_index))
                 plot_warp_statistics(out_subpath, warp_statistics, extra_path=root_subpath)
 
-        converged = not optimizer.get_convergence_status().iteration_limit_reached
-        if converged:
-            print(": CONVERGED")
-        else:
-            print(": NOT CONVERGED")
+        convergence_status = optimizer.get_convergence_status()
+        if not convergence_status.iteration_limit_reached:
+            if convergence_status.largest_warp_above_maximum_threshold:
+                print(": DIVERGED", end="")
+            else:
+                print(": CONVERGED", end="")
 
-        log_convergence_status(convergence_status_log, optimizer.get_convergence_status(),
+        else:
+            print(": NOT CONVERGED", end="")
+        print("IN", convergence_status.iteration_count, "ITERATIONS")
+
+        log_convergence_status(convergence_status_log, convergence_status,
                                canonical_frame_index, live_frame_index, pixel_row_index)
 
         if save_initial_and_final_fields:
