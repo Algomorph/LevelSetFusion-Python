@@ -14,6 +14,8 @@
 #  limitations under the License.
 #  ================================================================
 
+# contains code for experimenting on multiple frames / cases and logging/recording corresponding results
+
 # stdlib
 import os
 import os.path
@@ -28,79 +30,12 @@ from matplotlib import pyplot as plt
 import pandas as pd
 
 # local
+from build_optimizer import OptimizerChoice, build_optimizer
 from data_term import DataTermMethod
-from dataset import ImageBasedDataset, MaskedImageBasedDataset
-from smoothing_term import SmoothingTermMethod
-from optimizer2d import Optimizer2d, AdaptiveLearningRateMethod, ComputeMethod
-from sobolev_filter import generate_1d_sobolev_kernel
+from dataset import ImageBasedSingleFrameDataset, MaskedImageBasedSingleFrameDataset
 from utils.printing import *
 from utils.visualization import save_initial_fields, save_final_fields, rescale_depth_to_8bit, highlight_row_on_gray
-import level_set_fusion_optimization as cpp_module
 import utils.sampling as sampling
-
-
-class OptimizerChoice(Enum):
-    PYTHON_DIRECT = 0
-    PYTHON_VECTORIZED = 1
-    CPP = 3
-
-
-def build_optimizer(optimizer_choice, out_path, field_size, view_scaling_factor=8, max_iterations=100,
-                    enable_warp_statistics_logging=False, convergence_threshold=0.1,
-                    data_term_method=DataTermMethod.BASIC):
-    """
-    :type optimizer_choice: OptimizerChoice
-    :param optimizer_choice: choice of optimizer
-    :param max_iterations: maximum iteration count
-    :return: an optimizer constructed using the passed arguments
-    """
-    if optimizer_choice == OptimizerChoice.PYTHON_DIRECT or optimizer_choice == OptimizerChoice.PYTHON_VECTORIZED:
-        compute_method = (ComputeMethod.DIRECT
-                          if optimizer_choice == OptimizerChoice.PYTHON_DIRECT
-                          else ComputeMethod.VECTORIZED)
-        optimizer = Optimizer2d(out_path=out_path,
-                                field_size=field_size,
-
-                                compute_method=compute_method,
-
-                                level_set_term_enabled=False,
-                                sobolev_smoothing_enabled=True,
-
-                                data_term_method=data_term_method,
-                                smoothing_term_method=SmoothingTermMethod.TIKHONOV,
-                                adaptive_learning_rate_method=AdaptiveLearningRateMethod.NONE,
-
-                                data_term_weight=1.0,
-                                smoothing_term_weight=0.2,
-                                isomorphic_enforcement_factor=0.1,
-                                level_set_term_weight=0.2,
-
-                                maximum_warp_length_lower_threshold=convergence_threshold,
-                                max_iterations=max_iterations,
-                                min_iterations=5,
-
-                                sobolev_kernel=generate_1d_sobolev_kernel(size=7, strength=0.1),
-
-                                enable_component_fields=True,
-                                view_scaling_factor=view_scaling_factor)
-    elif optimizer_choice == OptimizerChoice.CPP:
-
-        shared_parameters = cpp_module.SharedParameters.get_instance()
-        shared_parameters.maximum_iteration_count = max_iterations
-        shared_parameters.minimum_iteration_count = 5
-        shared_parameters.maximum_warp_length_lower_threshold = convergence_threshold
-        shared_parameters.maximum_warp_length_upper_threshold = 10000
-        shared_parameters.enable_convergence_status_logging = True
-        shared_parameters.enable_warp_statistics_logging = enable_warp_statistics_logging
-
-        sobolev_parameters = cpp_module.SobolevParameters.get_instance()
-        sobolev_parameters.set_sobolev_kernel(generate_1d_sobolev_kernel(size=7, strength=0.1))
-        sobolev_parameters.smoothing_term_weight = 0.2
-
-        optimizer = cpp_module.SobolevOptimizer2d()
-    else:
-        raise ValueError("Unrecognized optimizer choice: %s" % str(optimizer_choice))
-    return optimizer
 
 
 def log_convergence_status(log, convergence_status, canonical_frame_index, live_frame_index, pixel_row_index):
@@ -324,12 +259,12 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
 
         # Generate SDF fields
         if use_masks:
-            dataset = MaskedImageBasedDataset(calibration_path, canonical_frame_path, canonical_mask_path,
-                                              live_frame_path, live_mask_path, pixel_row_index,
-                                              field_size, offset)
+            dataset = MaskedImageBasedSingleFrameDataset(calibration_path, canonical_frame_path, canonical_mask_path,
+                                                         live_frame_path, live_mask_path, pixel_row_index,
+                                                         field_size, offset)
         else:
-            dataset = ImageBasedDataset(calibration_path, canonical_frame_path, live_frame_path, pixel_row_index,
-                                        field_size, offset)
+            dataset = ImageBasedSingleFrameDataset(calibration_path, canonical_frame_path, live_frame_path, pixel_row_index,
+                                                   field_size, offset)
 
         live_field, canonical_field = dataset.generate_2d_sdf_fields()
 

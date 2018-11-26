@@ -15,87 +15,21 @@
 #  limitations under the License.
 #  ================================================================
 
+# script that runs two different kinds of experiments -- single-frame (for analyzing single cases in detail)
+# and multi-frame) for running the same experiment on multiple data and looking at aggregate statistics
+
 # stdlib
 import sys
 from enum import Enum
 import argparse
-import time
-
-# libraries
-import numpy as np
 
 # local
 from data_term import DataTermMethod
-from dataset import datasets, DataToUse
-from smoothing_term import SmoothingTermMethod
 from multiframe_experiment import perform_multiple_tests, OptimizerChoice
-from tsdf_field_generation import generate_initial_orthographic_2d_tsdf_fields
-from optimizer2d import Optimizer2d, AdaptiveLearningRateMethod, ComputeMethod
-from sobolev_filter import generate_1d_sobolev_kernel
-from utils.visualization import visualize_and_save_initial_fields, visualize_final_fields
+from singleframe_experiment import perform_single_test
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1
-
-
-def perform_single_test():
-    visualize_and_save_initial_and_final_fields = False
-    field_size = 128
-    default_value = 1
-    out_path = "out2D"
-    data_to_use = DataToUse.SIMPLE_TEST_CASE01
-
-    if data_to_use == DataToUse.GENEREATED2D:
-        live_field, canonical_field = \
-            generate_initial_orthographic_2d_tsdf_fields(field_size=field_size,
-                                                         live_smoothing_kernel_size=0,
-                                                         canonical_smoothing_kernel_size=0,
-                                                         default_value=default_value)
-    else:
-        live_field, canonical_field = datasets[data_to_use].generate_2d_sdf_fields(default_value)
-        field_size = datasets[data_to_use].field_size
-
-    warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
-    view_scaling_factor = 1024 // field_size
-
-    if visualize_and_save_initial_and_final_fields:
-        visualize_and_save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor)
-
-    optimizer = Optimizer2d(out_path=out_path,
-                            field_size=field_size,
-                            default_value=default_value,
-
-                            compute_method=ComputeMethod.VECTORIZED,
-
-                            level_set_term_enabled=False,
-                            sobolev_smoothing_enabled=True,
-
-                            data_term_method=DataTermMethod.BASIC,
-                            smoothing_term_method=SmoothingTermMethod.TIKHONOV,
-                            adaptive_learning_rate_method=AdaptiveLearningRateMethod.NONE,
-
-                            data_term_weight=1.0,
-                            smoothing_term_weight=0.2,
-                            isomorphic_enforcement_factor=0.1,
-                            level_set_term_weight=0.2,
-
-                            maximum_warp_length_lower_threshold=0.05,
-                            max_iterations=100,
-
-                            sobolev_kernel=generate_1d_sobolev_kernel(size=7 if field_size > 7 else 3, strength=0.1),
-
-                            enable_component_fields=True,
-                            view_scaling_factor=view_scaling_factor)
-
-    start_time = time.time()
-    optimizer.optimize(live_field, canonical_field)
-    end_time = time.time()
-    print("Total optimization runtime: {:f}".format(end_time - start_time))
-    optimizer.plot_logged_sdf_and_warp_magnitudes()
-    optimizer.plot_logged_energies_and_max_warps()
-
-    if visualize_and_save_initial_and_final_fields:
-        visualize_final_fields(canonical_field, live_field, view_scaling_factor)
 
 
 class Mode(Enum):
@@ -121,8 +55,7 @@ def main():
     parser.add_argument("-f", "--frames", type=str,
                         default="/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames",
                         help="Path to the frames for the multiple_tests mode. Frame image files should have names "
-                             "that follow depth_{:0>6d}.png pattern, i.e. depth_000000.png"
-                        )
+                             "that follow depth_{:0>6d}.png pattern, i.e. depth_000000.png")
     parser.add_argument("-cfp", "--case_file_path", type=str, default=None,
                         help="input cases file path for multiple_tests_mode")
     parser.add_argument("-oc", "--optimizer_choice", type=str, default="CPP",
