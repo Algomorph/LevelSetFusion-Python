@@ -123,7 +123,7 @@ datasets = {
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/input/depth_00000.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/input/depth_00001.png",
-        200, 128, np.array([-64, -64, 0])
+        200, 128, np.array([-64, -64, 64])
     ),
     DataToUse.REAL3D_SNOOPY_SET01: ImageBasedSingleFrameDataset(
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",

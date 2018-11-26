@@ -305,14 +305,14 @@ def save_initial_fields(canonical_field, live_field, out_path, view_scaling_fact
     if not os.path.exists(out_path):
         os.makedirs(out_path)
     canonical_visualized = sdf_field_to_image(canonical_field, scale=view_scaling_factor)
-    canonical_visualized = mark_focus_coordinate_on_sdf_image(canonical_visualized)
+    canonical_visualized = mark_focus_coordinate_on_sdf_image(canonical_visualized, scale=view_scaling_factor)
     canonical_visualized_unscaled = sdf_field_to_image(canonical_field, scale=1)
 
     cv2.imwrite(os.path.join(out_path, 'unscaled_initial_canonical.png'), canonical_visualized_unscaled)
     cv2.imwrite(os.path.join(out_path, 'initial_canonical.png'), canonical_visualized)
 
     live_visualized = sdf_field_to_image(live_field, scale=view_scaling_factor)
-    live_visualized = mark_focus_coordinate_on_sdf_image(live_visualized)
+    live_visualized = mark_focus_coordinate_on_sdf_image(live_visualized, scale=view_scaling_factor)
     live_visualized_unscaled = sdf_field_to_image(live_field, scale=1)
     cv2.imwrite(os.path.join(out_path, "unscaled_initial_live.png"), live_visualized_unscaled)
     cv2.imwrite(os.path.join(out_path, "initial_live.png"), live_visualized)

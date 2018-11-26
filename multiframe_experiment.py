@@ -63,6 +63,26 @@ def record_convergence_status_log(log, file_path):
     df.to_csv(file_path)
 
 
+def record_cases_files(log, out_directory):
+    df = pd.DataFrame(log, columns=["canonical frame index", "live frame index", "pixel row index",
+                                    "iteration count",
+                                    "max warp length",
+                                    "max warp x",
+                                    "max warp y",
+                                    "iteration limit reached",
+                                    "largest warp below minimum threshold",
+                                    "largest warp above maximum threshold"])
+    cases_df = df.drop(columns=["iteration count", "max warp length", "iteration limit reached",
+                                "largest warp below minimum threshold", "largest warp above maximum threshold"])
+
+    bad_cases_df = cases_df[df["iteration limit reached"] == True]  # TODO: PyCharm bug
+    good_cases_df = cases_df[df["iteration limit reached"] == False]
+
+    cases_df.to_csv(os.path.join(out_directory, "cases.csv"), index=False)
+    bad_cases_df.to_csv(os.path.join(out_directory, "bad_cases.csv"), index=False)
+    good_cases_df.to_csv(os.path.join(out_directory, "good_cases.csv"), index=False)
+
+
 def plot_warp_statistics(out_path, warp_statistics, convergence_threshold=0.1, extra_path=None):
     if not os.path.exists(out_path):
         os.makedirs(out_path)
@@ -154,15 +174,14 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                            calibration_path=
                            "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
                            frame_path=
-                           "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/"):
+                           "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/",
+                           z_offset=128):
     # CANDIDATES FOR ARGS
     save_initial_and_final_fields = input_case_file is not None
     enable_warp_statistics_logging = input_case_file is not None
     save_frame_images = input_case_file is not None
     use_masks = True
     check_empty_row = True
-
-    field_size = 128
 
     rebuild_optimizer = optimizer_choice != OptimizerChoice.CPP
     max_iterations = 400 if optimizer_choice == OptimizerChoice.CPP else 100
@@ -178,7 +197,9 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
 
     # region ================ Generation of lists of frames & pixel rows to work with ==================================
 
-    offset = [-64, -64, 128]
+    # CANDIDATES FOR ARGS
+    field_size = 128
+    offset = [-64, -64, z_offset]
     line_range = (214, 400)
 
     if input_case_file:
@@ -263,8 +284,8 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                                                          live_frame_path, live_mask_path, pixel_row_index,
                                                          field_size, offset)
         else:
-            dataset = ImageBasedSingleFrameDataset(calibration_path, canonical_frame_path, live_frame_path, pixel_row_index,
-                                                   field_size, offset)
+            dataset = ImageBasedSingleFrameDataset(calibration_path, canonical_frame_path, live_frame_path,
+                                                   pixel_row_index, field_size, offset)
 
         live_field, canonical_field = dataset.generate_2d_sdf_fields()
 
@@ -305,7 +326,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
 
         else:
             print(": NOT CONVERGED", end="")
-        print("IN", convergence_status.iteration_count, "ITERATIONS")
+        print(" IN", convergence_status.iteration_count, "ITERATIONS")
 
         log_convergence_status(convergence_status_log, convergence_status,
                                canonical_frame_index, live_frame_index, pixel_row_index)
@@ -324,3 +345,4 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
             record_convergence_status_log(convergence_status_log, convergence_status_log_file_path)
 
     record_convergence_status_log(convergence_status_log, convergence_status_log_file_path)
+    record_cases_files(convergence_status_log, out_path)

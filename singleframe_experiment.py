@@ -31,11 +31,11 @@ from utils.visualization import visualize_and_save_initial_fields, visualize_fin
 
 
 def perform_single_test():
-    visualize_and_save_initial_and_final_fields = False
+    visualize_and_save_initial_and_final_fields = True
     field_size = 128
     default_value = 1
-    out_path = "out2D"
-    data_to_use = DataToUse.SIMPLE_TEST_CASE01
+    out_path = "output/out2D"
+    data_to_use = DataToUse.SYNTHETIC3D_SUZANNE_TWIST
 
     if data_to_use == DataToUse.GENEREATED2D:
         live_field, canonical_field = \
@@ -44,7 +44,7 @@ def perform_single_test():
                                                          canonical_smoothing_kernel_size=0,
                                                          default_value=default_value)
     else:
-        live_field, canonical_field = datasets[data_to_use].generate_2d_sdf_fields(default_value)
+        live_field, canonical_field = datasets[data_to_use].generate_2d_sdf_fields()
         field_size = datasets[data_to_use].field_size
 
     warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
@@ -72,7 +72,7 @@ def perform_single_test():
                             level_set_term_weight=0.2,
 
                             maximum_warp_length_lower_threshold=0.05,
-                            max_iterations=100,
+                            max_iterations=5,
 
                             sobolev_kernel=generate_1d_sobolev_kernel(size=7 if field_size > 7 else 3, strength=0.1),
 

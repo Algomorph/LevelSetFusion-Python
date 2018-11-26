@@ -39,6 +39,8 @@ class Mode(Enum):
 
 def main():
     parser = argparse.ArgumentParser("Level Set Fusion 2D motion tracking optimization simulator")
+    # TODO: there is a proper way to split up arguments via argparse so that multiple_tests-only arguments
+    # cannot be used for single_test mode
     parser.add_argument("-m", "--mode", type=str, help="Mode: singe_test or multiple_tests", default="single_test")
     parser.add_argument("-sf", "--start_from", type=int, help="Which sample to start from for the multiple-test mode",
                         default=0)
@@ -56,6 +58,9 @@ def main():
                         default="/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames",
                         help="Path to the frames for the multiple_tests mode. Frame image files should have names "
                              "that follow depth_{:0>6d}.png pattern, i.e. depth_000000.png")
+    parser.add_argument("-z", "--z_offset", type=int, default=128,
+                        help="(multiple_tests mode only) the Z (depth) offset for sdf volume SDF relative to image"
+                             " plane")
     parser.add_argument("-cfp", "--case_file_path", type=str, default=None,
                         help="input cases file path for multiple_tests_mode")
     parser.add_argument("-oc", "--optimizer_choice", type=str, default="CPP",
@@ -90,7 +95,8 @@ def main():
         perform_multiple_tests(arguments.start_from, data_term_method,
                                OptimizerChoice.__dict__[arguments.optimizer_choice],
                                arguments.output_path, arguments.case_file_path,
-                               calibration_path=arguments.calibration, frame_path=arguments.frames)
+                               calibration_path=arguments.calibration, frame_path=arguments.frames,
+                               z_offset=arguments.z_offset)
 
     return EXIT_CODE_SUCCESS
 
