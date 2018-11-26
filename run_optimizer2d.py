@@ -27,6 +27,7 @@ import argparse
 from data_term import DataTermMethod
 from multiframe_experiment import perform_multiple_tests, OptimizerChoice
 from singleframe_experiment import perform_single_test
+from tsdf_field_generation import DepthInterpolationMethod
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1
@@ -52,8 +53,7 @@ def main():
                         default=
                         "/media/algomorph/Data/Reconstruction/real_data/"
                         "KillingFusion Snoopy/snoopy_calib.txt",
-                        help="Path to the camera calibration file to use for the multiple_tests mode"
-                        )
+                        help="Path to the camera calibration file to use for the multiple_tests mode")
     parser.add_argument("-f", "--frames", type=str,
                         default="/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames",
                         help="Path to the frames for the multiple_tests mode. Frame image files should have names "
@@ -66,6 +66,9 @@ def main():
     parser.add_argument("-oc", "--optimizer_choice", type=str, default="CPP",
                         help="optimizer choice (currently, multiple_tests mode only!), "
                              "must be in {CPP, PYTHON_DIRECT, PYTHON_VECTORIZED}")
+    parser.add_argument("-di", "--depth_interpolation_method", type=str, default="none",
+                        help="Depth image interpolation method to use when generating SDF. "
+                             "Can be one of: {none, bilinear}")
 
     arguments = parser.parse_args()
     mode = Mode.SINGLE_TEST
@@ -89,14 +92,21 @@ def main():
               " data_term_method (dtm) should be \"basic\" or \"thresholded_fdm\", got \"{:s}\""
               .format(arguments.data_term_method))
 
+    depth_interpolation_method = DepthInterpolationMethod.NONE
+    if arguments.depth_interpolation_method == "none":
+        depth_interpolation_method = DepthInterpolationMethod.NONE
+    elif arguments.depth_interpolation_method == "bilinear":
+        depth_interpolation_method = DepthInterpolationMethod.BILINEAR
+
     if mode == Mode.SINGLE_TEST:
-        perform_single_test()
+        perform_single_test(depth_interpolation_method=depth_interpolation_method)
     if mode == Mode.MULTIPLE_TESTS:
         perform_multiple_tests(arguments.start_from, data_term_method,
                                OptimizerChoice.__dict__[arguments.optimizer_choice],
                                arguments.output_path, arguments.case_file_path,
                                calibration_path=arguments.calibration, frame_path=arguments.frames,
-                               z_offset=arguments.z_offset)
+                               z_offset=arguments.z_offset,
+                               depth_interpolation_method=depth_interpolation_method)
 
     return EXIT_CODE_SUCCESS
 

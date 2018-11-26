@@ -287,6 +287,8 @@ def visualize_and_save_initial_fields(canonical_field, live_field, out_path, vie
     canonical_visualized = sdf_field_to_image(canonical_field, scale=view_scaling_factor)
     canonical_visualized = mark_focus_coordinate_on_sdf_image(canonical_visualized)
     canonical_visualized_unscaled = sdf_field_to_image(canonical_field, scale=1)
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
     cv2.imshow("canonical SDF", canonical_visualized)
     cv2.imwrite(os.path.join(out_path, 'unscaled_initial_canonical.png'), canonical_visualized_unscaled)
     cv2.imwrite(os.path.join(out_path, 'initial_canonical.png'), canonical_visualized)

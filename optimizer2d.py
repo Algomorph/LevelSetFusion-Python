@@ -34,7 +34,7 @@ from utils.point import Point
 from utils.printing import *
 from utils.sampling import focus_coordinates_match, get_focus_coordinates
 from utils.tsdf_set_routines import value_outside_narrow_band
-from interpolation import interpolate_warped_live, get_and_print_interpolation_data
+from warped_field_resampling import interpolate_warped_live, get_and_print_interpolation_data
 import data_term as dt
 from level_set_term import level_set_term_at_location
 import smoothing_term as st

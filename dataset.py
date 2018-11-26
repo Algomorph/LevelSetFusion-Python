@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 import cv2
 import numpy as np
 from calib.camerarig import DepthCameraRig
-from tsdf_field_generation import generate_2d_tsdf_field_from_depth_image
+import tsdf_field_generation as tsdf_gen
 
 
 class DataToUse(Enum):
@@ -39,6 +39,7 @@ class DataToUse(Enum):
     REAL3D_SNOOPY_SET01 = 100
     REAL3D_SNOOPY_SET02 = 101
     REAL3D_SNOOPY_SET03 = 102
+    REAL3D_SNOOPY_SET04 = 103
 
 
 class SingleFrameDataset(ABC):
@@ -46,7 +47,7 @@ class SingleFrameDataset(ABC):
         pass
 
     @abstractmethod
-    def generate_2d_sdf_fields(self):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
         pass
 
 
@@ -57,7 +58,7 @@ class HardcodedSingleFrameDataset(SingleFrameDataset):
         self.canonical_field = canonical_field
         self.live_field = live_field
 
-    def generate_2d_sdf_fields(self):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
         return self.live_field, self.canonical_field
 
 
@@ -71,15 +72,22 @@ class ImageBasedSingleFrameDataset(SingleFrameDataset):
         self.field_size = field_size
         self.offset = offset
 
-    def generate_2d_sdf_fields(self):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
         rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
         depth_camera = rig.depth_camera
         depth_image0 = cv2.imread(self.first_frame_path, cv2.IMREAD_UNCHANGED)
-        canonical_field = generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, self.image_pixel_row,
-                                                                  field_size=self.field_size, array_offset=self.offset)
+        max_depth = np.iinfo(np.uint16).max
+        depth_image0[depth_image0 == 0] = max_depth
+        canonical_field = \
+            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, self.image_pixel_row,
+                                                             field_size=self.field_size, array_offset=self.offset,
+                                                             depth_interpolation_method=method)
         depth_image1 = cv2.imread(self.second_frame_path, cv2.IMREAD_UNCHANGED)
-        live_field = generate_2d_tsdf_field_from_depth_image(depth_image1, depth_camera, self.image_pixel_row,
-                                                             field_size=self.field_size, array_offset=self.offset)
+        depth_image1[depth_image1 == 0] = max_depth
+        live_field = \
+            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image1, depth_camera, self.image_pixel_row,
+                                                             field_size=self.field_size, array_offset=self.offset,
+                                                             depth_interpolation_method=method)
         return live_field, canonical_field
 
 
@@ -96,19 +104,26 @@ class MaskedImageBasedSingleFrameDataset(SingleFrameDataset):
         self.field_size = field_size
         self.offset = offset
 
-    def generate_2d_sdf_fields(self):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
         rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
         depth_camera = rig.depth_camera
         depth_image0 = cv2.imread(self.first_frame_path, cv2.IMREAD_UNCHANGED)
         mask_image0 = cv2.imread(self.first_mask_path, cv2.IMREAD_UNCHANGED)
-        depth_image0[mask_image0 == 0] = 0
-        canonical_field = generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, self.image_pixel_row,
-                                                                  field_size=self.field_size, array_offset=self.offset)
+        max_depth = np.iinfo(np.uint16).max
+        depth_image0[mask_image0 == 0] = max_depth
+        depth_image0[depth_image0 == 0] = max_depth
+        canonical_field = \
+            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, self.image_pixel_row,
+                                                             field_size=self.field_size, array_offset=self.offset,
+                                                             depth_interpolation_method=method)
         depth_image1 = cv2.imread(self.second_frame_path, cv2.IMREAD_UNCHANGED)
         mask_image1 = cv2.imread(self.second_mask_path, cv2.IMREAD_UNCHANGED)
-        depth_image1[mask_image1 == 0] = 0
-        live_field = generate_2d_tsdf_field_from_depth_image(depth_image1, depth_camera, self.image_pixel_row,
-                                                             field_size=self.field_size, array_offset=self.offset)
+        depth_image1[mask_image1 == 0] = max_depth
+        depth_image1[depth_image0 == 0] = max_depth
+        live_field = \
+            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image1, depth_camera, self.image_pixel_row,
+                                                             field_size=self.field_size, array_offset=self.offset,
+                                                             depth_interpolation_method=method)
         return live_field, canonical_field
 
 
@@ -142,6 +157,12 @@ datasets = {
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000025.png",
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000026.png",
         334, 128, np.array([-64, -64, 128])
+    ),
+    DataToUse.REAL3D_SNOOPY_SET04: ImageBasedSingleFrameDataset(
+        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
+        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000065.png",
+        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000066.png",
+        223, 128, np.array([-64, -64, 128])
     ),
     DataToUse.SYNTHETIC3D_PLANE_AWAY: ImageBasedSingleFrameDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/inf_calib.txt",

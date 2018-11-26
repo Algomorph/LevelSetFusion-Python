@@ -17,13 +17,14 @@
 import numpy as np
 import math
 from utils.point import Point
-from utils.sampling import sample_at, focus_coordinates_match, sample_flag_at, \
-    sample_at_replacement
+import utils.sampling as sampling
 from utils.tsdf_set_routines import value_outside_narrow_band
 from utils.printing import BOLD_YELLOW, BOLD_GREEN, RESET
 
 
-def print_interpolation_data(value00, value01, value10, value11, ratios, inverse_ratios, original_live_sdf, new_value):
+def print_interpolation_data(metainfo, original_live_sdf, new_value):
+    value00, value01, value10, value11, ratios, inverse_ratios = \
+        metainfo.value00, metainfo.value01, metainfo.value10, metainfo.value11, metainfo.ratios, metainfo.inverse_ratios
     print("[Interpolation data] ", BOLD_YELLOW,
           "{:+03.3f}*{:03.3f}, {:+03.3f}*{:03.3f}".format(value00, inverse_ratios.y * inverse_ratios.x,
                                                           value10, inverse_ratios.y * ratios.x, ),
@@ -50,28 +51,17 @@ def get_and_print_interpolation_data(canonical_field, warped_live_field, warp_fi
             return
 
     warped_location = Point(x, y) + Point(coordinates=warp_field[y, x])
-    base_point = Point(math.floor(warped_location.x), math.floor(warped_location.y))
-    ratios = warped_location - base_point
-    inverse_ratios = Point(1.0, 1.0) - ratios
 
     if substitute_original:
-        value00 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point)
-        value01 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(0, 1))
-        value10 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(1, 0))
-        value11 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(1, 1))
+        new_value, metainfo = sampling.bilinear_sample_at_replacement_metainfo(warped_live_field, point=warped_location,
+                                                                               replacement=original_live_sdf)
     else:
-        value00 = sample_at(warped_live_field, point=base_point)
-        value01 = sample_at(warped_live_field, point=base_point + Point(0, 1))
-        value10 = sample_at(warped_live_field, point=base_point + Point(1, 0))
-        value11 = sample_at(warped_live_field, point=base_point + Point(1, 1))
+        new_value, metainfo = sampling.bilinear_sample_at_metainfo(warped_live_field, point=warped_location)
 
-    interpolated_value0 = value00 * inverse_ratios.y + value01 * ratios.y
-    interpolated_value1 = value10 * inverse_ratios.y + value11 * ratios.y
-    new_value = interpolated_value0 * inverse_ratios.x + interpolated_value1 * ratios.x
     if 1.0 - abs(new_value) < 1e-6:
         new_value = np.sign(new_value)
 
-    print_interpolation_data(value00, value01, value10, value11, ratios, inverse_ratios, original_live_sdf, new_value)
+    print_interpolation_data(metainfo, original_live_sdf, new_value)
 
 
 def interpolate_warped_live(canonical_field, warped_live_field, warp_field, gradient_field, band_union_only=False,
@@ -93,24 +83,14 @@ def interpolate_warped_live(canonical_field, warped_live_field, warp_field, grad
                     continue
 
             warped_location = Point(x, y) + Point(coordinates=warp_field[y, x])
-            base_point = Point(math.floor(warped_location.x), math.floor(warped_location.y))
-            ratios = warped_location - base_point
-            inverse_ratios = Point(1.0, 1.0) - ratios
 
             if substitute_original:
-                value00 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point)
-                value01 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(0, 1))
-                value10 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(1, 0))
-                value11 = sample_at_replacement(warped_live_field, original_live_sdf, point=base_point + Point(1, 1))
+                new_value, metainfo = sampling.bilinear_sample_at_replacement_metainfo(warped_live_field,
+                                                                                       point=warped_location,
+                                                                                       replacement=original_live_sdf)
             else:
-                value00 = sample_at(warped_live_field, point=base_point)
-                value01 = sample_at(warped_live_field, point=base_point + Point(0, 1))
-                value10 = sample_at(warped_live_field, point=base_point + Point(1, 0))
-                value11 = sample_at(warped_live_field, point=base_point + Point(1, 1))
+                new_value, metainfo = sampling.bilinear_sample_at_metainfo(warped_live_field, point=warped_location)
 
-            interpolated_value0 = value00 * inverse_ratios.y + value01 * ratios.y
-            interpolated_value1 = value10 * inverse_ratios.y + value11 * ratios.y
-            new_value = interpolated_value0 * inverse_ratios.x + interpolated_value1 * ratios.x
             if 1.0 - abs(new_value) < 1e-6:
                 new_value = np.sign(new_value)
                 warp_field[y, x] = 0.0
@@ -120,9 +100,8 @@ def interpolate_warped_live(canonical_field, warped_live_field, warp_field, grad
                 if smoothing_gradient_field is not None:
                     smoothing_gradient_field[y, x] = 0.0
 
-            if focus_coordinates_match(x, y):
-                print_interpolation_data(value00, value01, value10, value11, ratios, inverse_ratios, original_live_sdf,
-                                         new_value)
+            if sampling.focus_coordinates_match(x, y):
+                print_interpolation_data(metainfo, original_live_sdf, new_value)
             new_warped_live_field[y, x] = new_value
     np.copyto(warped_live_field, new_warped_live_field)
 
@@ -137,24 +116,24 @@ def interpolate_warped_live_with_flag_info(warped_live_field, warp_field, update
             ratios = warped_location - base_point
             inverse_ratios = Point(1.0, 1.0) - ratios
             original_value = warped_live_field[y, x]
-            value00 = sample_at(warped_live_field, point=base_point)
-            flag00 = sample_flag_at(flag_field, point=base_point)
+            value00 = sampling.sample_at(warped_live_field, point=base_point)
+            flag00 = sampling.sample_flag_at(flag_field, point=base_point)
             used_replacement = False
             if flag00 == 0:
                 value00 = original_value
                 used_replacement = True
-            value01 = sample_at(warped_live_field, point=base_point + Point(0, 1))
-            flag01 = sample_flag_at(flag_field, point=base_point + Point(0, 1))
+            value01 = sampling.sample_at(warped_live_field, point=base_point + Point(0, 1))
+            flag01 = sampling.sample_flag_at(flag_field, point=base_point + Point(0, 1))
             if flag01 == 0:
                 value01 = original_value
                 used_replacement = True
-            value10 = sample_at(warped_live_field, point=base_point + Point(1, 0))
-            flag10 = sample_flag_at(flag_field, point=base_point + Point(1, 0))
+            value10 = sampling.sample_at(warped_live_field, point=base_point + Point(1, 0))
+            flag10 = sampling.sample_flag_at(flag_field, point=base_point + Point(1, 0))
             if flag10 == 0:
                 value10 = original_value
                 used_replacement = True
-            value11 = sample_at(warped_live_field, point=base_point + Point(1, 1))
-            flag11 = sample_flag_at(flag_field, point=base_point + Point(1, 1))
+            value11 = sampling.sample_at(warped_live_field, point=base_point + Point(1, 1))
+            flag11 = sampling.sample_flag_at(flag_field, point=base_point + Point(1, 1))
             if flag11 == 0:
                 value11 = original_value
                 used_replacement = True
@@ -168,7 +147,7 @@ def interpolate_warped_live_with_flag_info(warped_live_field, warp_field, update
                 warp_field[y, x] = 0.0
                 update_field[y, x] = 0.0
 
-            if focus_coordinates_match(x, y):
+            if sampling.focus_coordinates_match(x, y):
                 print("[Interpolation data] ", BOLD_YELLOW,
                       "{:+03.3f}*{:03.3f}, {:+03.3f}*{:03.3f}".format(value00, inverse_ratios.y * inverse_ratios.x,
                                                                       value10, inverse_ratios.y * ratios.x, ),

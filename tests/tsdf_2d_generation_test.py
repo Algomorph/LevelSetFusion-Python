@@ -19,7 +19,7 @@
 
 import sys
 from calib.camerarig import DepthCameraRig
-from tsdf_field_generation import generate_2d_tsdf_field_from_depth_image
+from tsdf_field_generation import generate_2d_tsdf_field_from_depth_image_no_interpolation
 from utils.vizualization import process_cv_esc, sdf_field_to_image
 import cv2
 
@@ -32,10 +32,10 @@ def main():
     depth_camera = rig.depth_camera
     depth_image0 = cv2.imread("/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/input/depth_00000.png",
                               cv2.IMREAD_UNCHANGED)
-    field0 = generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, 200, default_value=1)
+    field0 = generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image0, depth_camera, 200, default_value=1)
     depth_image1 = cv2.imread("/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/input/depth_00001.png",
                               cv2.IMREAD_UNCHANGED)
-    field1 = generate_2d_tsdf_field_from_depth_image(depth_image1, depth_camera, 200, default_value=1)
+    field1 = generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image1, depth_camera, 200, default_value=1)
     # cv2.imshow("Field 0", sdf_field_to_image(field0))
     cv2.imwrite("test_field_0.png", sdf_field_to_image(field0))
     process_cv_esc()

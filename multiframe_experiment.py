@@ -33,6 +33,7 @@ import pandas as pd
 from build_optimizer import OptimizerChoice, build_optimizer
 from data_term import DataTermMethod
 from dataset import ImageBasedSingleFrameDataset, MaskedImageBasedSingleFrameDataset
+from tsdf_field_generation import DepthInterpolationMethod
 from utils.printing import *
 from utils.visualization import save_initial_fields, save_final_fields, rescale_depth_to_8bit, highlight_row_on_gray
 import utils.sampling as sampling
@@ -175,13 +176,17 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                            "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
                            frame_path=
                            "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/",
-                           z_offset=128):
+                           z_offset=128,
+                           depth_interpolation_method=DepthInterpolationMethod.NONE):
     # CANDIDATES FOR ARGS
+
     save_initial_and_final_fields = input_case_file is not None
     enable_warp_statistics_logging = input_case_file is not None
     save_frame_images = input_case_file is not None
     use_masks = True
     check_empty_row = True
+    # TODO a tiled image with 6x6 bad cases and 6x6 good cases (SDF fields)
+    save_tiled_good_vs_bad_case_comparison_image = True
 
     rebuild_optimizer = optimizer_choice != OptimizerChoice.CPP
     max_iterations = 400 if optimizer_choice == OptimizerChoice.CPP else 100
@@ -240,6 +245,10 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
     convergence_status_log = []
     convergence_status_log_file_path = os.path.join(out_path, "convergence_status_log.csv")
 
+    max_case_count = 36
+    good_case_sdfs = []
+    bad_case_sdfs = []
+
     save_log_every_n_runs = 5
 
     if start_from_sample == 0 and os.path.exists(os.path.join(out_path, "output_log.txt")):
@@ -261,7 +270,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
         sampling.set_focus_coordinates(focus_x, focus_y)
 
         live_frame_index = canonical_frame_index + 1
-        out_subpath = os.path.join(out_path, "snoopy frames {:0>6d}-{:0>6d} line {:0>3d}"
+        out_subpath = os.path.join(out_path, "frames {:0>6d}-{:0>6d} line {:0>3d}"
                                    .format(canonical_frame_index, live_frame_index, pixel_row_index))
 
         canonical_frame_path = frame_path_format_string.format(canonical_frame_index)
@@ -287,7 +296,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
             dataset = ImageBasedSingleFrameDataset(calibration_path, canonical_frame_path, live_frame_path,
                                                    pixel_row_index, field_size, offset)
 
-        live_field, canonical_field = dataset.generate_2d_sdf_fields()
+        live_field, canonical_field = dataset.generate_2d_sdf_fields(method=depth_interpolation_method)
 
         if save_initial_and_final_fields:
             save_initial_fields(canonical_field, live_field, out_subpath, view_scaling_factor)
@@ -300,7 +309,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                                         max_iterations=max_iterations,
                                         enable_warp_statistics_logging=enable_warp_statistics_logging,
                                         data_term_method=data_term_method)
-
+        original_live_field = live_field.copy()
         live_field = optimizer.optimize(live_field, canonical_field)
 
         # ===================== LOG AFTER-RUN RESULTS ==================================================================
@@ -324,8 +333,14 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
             else:
                 print(": CONVERGED", end="")
 
+            if (save_tiled_good_vs_bad_case_comparison_image and convergence_status.largest_warp_above_maximum_threshold
+                    and len(good_case_sdfs) < max_case_count):
+                good_case_sdfs.append((original_live_field, live_field))
+
         else:
             print(": NOT CONVERGED", end="")
+            if save_tiled_good_vs_bad_case_comparison_image and len(bad_case_sdfs) < max_case_count:
+                bad_case_sdfs.append((original_live_field, live_field))
         print(" IN", convergence_status.iteration_count, "ITERATIONS")
 
         log_convergence_status(convergence_status_log, convergence_status,
@@ -346,3 +361,6 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
 
     record_convergence_status_log(convergence_status_log, convergence_status_log_file_path)
     record_cases_files(convergence_status_log, out_path)
+    if save_tiled_good_vs_bad_case_comparison_image:
+        pass
+        # save_tiled_comparison_image(good_case_sdfs, bad_case_sdfs) #TODO
