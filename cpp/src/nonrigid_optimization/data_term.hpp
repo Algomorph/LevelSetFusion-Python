@@ -42,8 +42,6 @@ void compute_data_term_gradient_within_band_union(
 		const math::MatrixXv2f& warped_live_field_gradient,
 		float scaling_factor = 10.0f);
 
-
-
 void compute_local_data_term_gradient(const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
                                       int x, int y,
                                       const eig::MatrixXf& live_gradient_x_field,

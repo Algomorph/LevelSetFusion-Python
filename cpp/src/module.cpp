@@ -103,9 +103,9 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 	.def_readwrite("gradient_descent_rate", &SharedParameters::gradient_descent_rate)
 
 	//termination condition parameters
-	.def_readwrite("maximum_warp_length_lower_threashold",
+	.def_readwrite("maximum_warp_length_lower_threshold",
 			&SharedParameters::maximum_warp_length_lower_threshold)
-			.def_readwrite("maximum_warp_length_upper_threashold",
+			.def_readwrite("maximum_warp_length_upper_threshold",
 			&SharedParameters::maximum_warp_length_upper_threshold)
 			.def_readwrite("maximum_iteration_count", &SharedParameters::maximum_iteration_count)
 			.def_readwrite("minimum_iteration_count", &SharedParameters::minimum_iteration_count)
