@@ -82,7 +82,6 @@ function(find_python preferred_version min_version library_env include_dir_env
                           [HKEY_CURRENT_USER\\\\SOFTWARE\\\\Python\\\\PythonCore\\\\${_CURRENT_VERSION}\\\\InstallPath]
                           NO_SYSTEM_ENVIRONMENT_PATH
                           )
-      endforeach()
     endif()
 
     if(preferred_version)
@@ -307,7 +306,7 @@ find_python(2.7.15 2.7 PYTHON2_LIBRARY PYTHON2_INCLUDE_DIR
             PYTHON2_INCLUDE_DIR PYTHON2_INCLUDE_DIR2 PYTHON2_PACKAGES_PATH
             PYTHON2_NUMPY_INCLUDE_DIRS PYTHON2_NUMPY_VERSION)
 
-find_python(3.6.6 3.4 PYTHON3_LIBRARY PYTHON3_INCLUDE_DIR
+find_python(3.6.7 3.4 PYTHON3_LIBRARY PYTHON3_INCLUDE_DIR
             PYTHON3INTERP_FOUND PYTHON3_EXECUTABLE PYTHON3_VERSION_STRING
             PYTHON3_VERSION_MAJOR PYTHON3_VERSION_MINOR PYTHON3LIBS_FOUND
             PYTHON3LIBS_VERSION_STRING PYTHON3_LIBRARIES PYTHON3_LIBRARY
