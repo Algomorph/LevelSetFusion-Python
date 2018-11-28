@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
+from utils.point import Point
 from utils.sampling import get_focus_coordinates
 
 # TODO: take care of fromstring deprecation issue throughout file
@@ -200,13 +201,12 @@ def sdf_field_to_image(field, scale=8):
     return ((field + 1.0) * 255 / 2.0).astype(np.uint8).repeat(scale, axis=0).repeat(scale, axis=1)
 
 
-def mark_focus_coordinate_on_sdf_image(image, scale=8):
-    focus_coordinates = get_focus_coordinates()
-    x_start = focus_coordinates[0] * scale
-    y_start = focus_coordinates[1] * scale
+def mark_point_on_sdf_image(image, point, scale=8):
+    x_start = point.x * scale
+    y_start = point.y * scale
 
-    x_end = x_start + scale
-    y_end = y_start + scale
+    x_end = x_start + scale - 1
+    y_end = y_start + scale - 1
     out = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
 
     if scale < 3:
@@ -221,6 +221,11 @@ def mark_focus_coordinate_on_sdf_image(image, scale=8):
             out[y_start, x] = (0, 0, 255)
             out[y_end, x] = (0, 0, 255)
     return out
+
+
+def mark_focus_coordinate_on_sdf_image(image, scale=8):
+    focus_coordinates = get_focus_coordinates()
+    return mark_point_on_sdf_image(image, Point(focus_coordinates[0], focus_coordinates[1]), scale)
 
 
 def logs_ordered_by_pixel_positions_number(neighborhood_log):
@@ -335,3 +340,135 @@ def save_final_fields(canonical_field, live_field, out_path, view_scaling_factor
     cv2.imwrite(os.path.join(out_path, 'final_live.png'), final_live)
     final_canonical = sdf_field_to_image(canonical_field, scale=view_scaling_factor)
     cv2.imwrite(os.path.join(out_path, "final_canonical.png"), final_canonical)
+
+
+def save_tiled_tsdf_comparison_image(out_path, good_case_sdfs, bad_case_sdfs, vertical_tile_count=4, padding_width=1,
+                                     scale=2):
+    """
+
+
+    :param out_path: path (directory + filename) where to save the image
+    :param good_case_sdfs: a list of tuples in form (canonical_tsdf, live_tsdf, max_warp_coordinate)
+    :param bad_case_sdfs: a list of tuples in form (canonical_tsdf, live_tsdf, max_warp_coordinate)
+    :param vertical_tile_count:
+    :param padding_width: width between groups
+    :param scale: integer >= 1, factor for visualy scaling the tsdf fields up
+    :return:
+    """
+    # Assumes all tiles are square and have equal size!
+    vertical_tile_count = vertical_tile_count
+    horizontal_tile_count = vertical_tile_count
+    group_border_width = 1  # drawn as lines, not rectangles, so currently cannot be changed from 1
+
+    tile_height = tile_width = good_case_sdfs[0][0].shape[0] * scale
+    group_width = tile_width * 2 + group_border_width * 3
+    group_height = tile_height + group_border_width * 2
+    canvas_height = ((vertical_tile_count + 1) * padding_width + vertical_tile_count * group_height)
+    canvas_width = ((horizontal_tile_count + 2) * padding_width + horizontal_tile_count * group_width)
+    canvas_dimensions = (canvas_height, canvas_width, 3)
+    canvas = np.zeros(canvas_dimensions, dtype=np.uint8)
+
+    group_border_color = (34, 240, 12)
+
+    # draws an regular arrangement of groups of tiles, 2 tiles horizontally in each group, one for canonical and one for
+    # live TSDF fields corresponding to the same case
+    def make_half(x_offset, sdfs):
+        i_case = 0
+        for group_x in range(horizontal_tile_count // 2):
+            for group_y in range(vertical_tile_count):
+                if i_case < len(sdfs):
+                    canonical_sdf_image = mark_point_on_sdf_image(sdf_field_to_image(sdfs[i_case][0], scale=scale),
+                                                                  sdfs[i_case][2], scale=scale)
+                    live_sdf_image = mark_point_on_sdf_image(sdf_field_to_image(sdfs[i_case][1], scale=scale),
+                                                             sdfs[i_case][2], scale=scale)
+                    i_case += 1
+
+                    # fill in tsdfs
+                    pixel_y_start = group_y * group_height + (group_y + 1) * padding_width + group_border_width
+                    pixel_y_end = pixel_y_start + tile_height
+                    pixel_x_start = x_offset + group_x * group_width + (group_x + 1) * \
+                                    padding_width + group_border_width
+                    pixel_x_end = pixel_x_start + tile_width
+                    canvas[pixel_y_start:pixel_y_end, pixel_x_start:pixel_x_end] = canonical_sdf_image
+                    pixel_x_start = pixel_x_end + 1
+                    pixel_x_end = pixel_x_start + tile_width
+                    canvas[pixel_y_start:pixel_y_end, pixel_x_start:pixel_x_end] = live_sdf_image
+
+                    # fill in group borders ----------------------------------------------------------------------------
+                    # order:
+                    #    ______4______
+                    #   |      |      |
+                    # 1 |      |2     | 3
+                    #   |______|______|
+                    #          5
+                    # --------------------------------------------------------------------------------------------------
+
+                    # 1
+                    pixel_y_start = group_y * group_height + (group_y + 1) * padding_width
+                    pixel_y_end = pixel_y_start + group_height
+                    pixel_x = x_offset + group_x * group_width + (group_x + 1) * padding_width
+                    canvas[pixel_y_start:pixel_y_end, pixel_x] = group_border_color
+                    # 2
+                    pixel_x = pixel_x + tile_width + group_border_width
+                    canvas[pixel_y_start:pixel_y_end, pixel_x] = group_border_color
+                    # 3
+                    pixel_x = pixel_x + tile_width + group_border_width
+                    canvas[pixel_y_start:pixel_y_end, pixel_x] = group_border_color
+                    # 4
+                    pixel_x_start = x_offset + group_x * group_width + (group_x + 1) * padding_width
+                    pixel_x_end = pixel_x_start + tile_width * 2 + group_border_width * 3
+                    pixel_y = group_y * group_height + (group_y + 1) * padding_width
+                    canvas[pixel_y, pixel_x_start:pixel_x_end] = group_border_color
+                    # 5
+                    pixel_y = pixel_y + group_height-1
+                    canvas[pixel_y, pixel_x_start:pixel_x_end] = group_border_color
+
+    make_half(0, good_case_sdfs)
+    make_half(canvas_width // 2, bad_case_sdfs)
+    cv2.imwrite(out_path, canvas)
+
+
+def plot_warp_statistics(out_path, warp_statistics, convergence_threshold=0.1, extra_path=None):
+    if not os.path.exists(out_path):
+        os.makedirs(out_path)
+
+    # C++ definition of the struct underlying each row in warp_statistics (careful, may be outdated!):
+    # float ratio_of_warps_above_minimum_threshold = 0.0;
+    # float max_warp_length = 0.0
+    # float mean_warp_length = 0.0;
+    # float standard_deviation_of_warp_length = 0.0;
+    ratios_of_warps_above_minimum_threshold = warp_statistics[:, 0]
+    maximum_warp_lengths = warp_statistics[:, 1]
+    mean_warp_lengths = warp_statistics[:, 2]
+    standard_deviations_of_warp_lengths = warp_statistics[:, 3]
+    convergence_threshold_marks = np.array([convergence_threshold] * len(mean_warp_lengths))
+
+    color = "tab:red"
+    dpi = 96
+    fig, ax_ratios = plt.subplots(figsize=(3000 / dpi, 1000 / dpi), dpi=dpi)
+    ax_ratios.set_xlabel("iteration number")
+    ax_ratios.set_ylabel("Ratio of warp lengths below convergence threshold", color=color)
+    ax_ratios.plot(ratios_of_warps_above_minimum_threshold * 100, color=color, label="% of warp lengths above "
+                                                                                     "convergence threshold")
+    ax_ratios.tick_params(axis='y', labelcolor=color)
+    ax_ratios.legend(loc='upper left')
+
+    color = "tab:blue"
+    ax_lengths = ax_ratios.twinx()
+    ax_lengths.set_ylabel("warp_length", color=color)
+    ax_lengths.plot(maximum_warp_lengths, "c-", label="maximum warp length")
+    ax_lengths.plot(mean_warp_lengths, "b-", label="mean warp length")
+    ax_lengths.plot(mean_warp_lengths + standard_deviations_of_warp_lengths, "g-",
+                    label="standard deviation of warp length")
+    ax_lengths.plot(mean_warp_lengths - standard_deviations_of_warp_lengths, "g-")
+    ax_lengths.plot(convergence_threshold_marks, "k-", label="convergence threshold")
+    ax_lengths.plot(convergence_threshold)
+    ax_lengths.plot()
+    ax_lengths.tick_params(axis='y', labelcolor=color)
+    ax_lengths.legend(loc='upper right')
+
+    fig.tight_layout()
+    if extra_path:
+        plt.savefig(extra_path)
+    plt.savefig(os.path.join(out_path, "warp_statistics.png"))
+    plt.close(fig)

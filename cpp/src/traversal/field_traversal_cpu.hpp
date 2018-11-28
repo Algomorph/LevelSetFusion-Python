@@ -30,10 +30,6 @@ inline void
 traverse_2d_field_singlethreaded(const TInField& in_field,
                                  TFunctorFieldToField& functor) {
 	const eig::Index matrix_size = in_field.size();
-	const eig::Index column_count = in_field.cols();
-	const eig::Index row_count = in_field.rows();
-	eigen_assert((row_count == out_field.rows() && column_count == out_field.cols()) &&
-	             "Argument matrices do not have the same dimensions.");
 
 	for (eig::Index i_element = 0; i_element < matrix_size; i_element++) {
 		functor(in_field(i_element));
@@ -45,10 +41,6 @@ inline void
 traverse_2d_field_i_element_singlethreaded(const TInField& in_field,
                                  TFunctorFieldToField& functor) {
 	const eig::Index matrix_size = in_field.size();
-	const eig::Index column_count = in_field.cols();
-	const eig::Index row_count = in_field.rows();
-	eigen_assert((row_count == out_field.rows() && column_count == out_field.cols()) &&
-	             "Argument matrices do not have the same dimensions.");
 
 	for (eig::Index i_element = 0; i_element < matrix_size; i_element++) {
 		functor(in_field(i_element), i_element);

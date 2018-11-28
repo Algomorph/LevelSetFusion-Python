@@ -34,8 +34,10 @@ from build_optimizer import OptimizerChoice, build_optimizer
 from data_term import DataTermMethod
 from dataset import ImageBasedSingleFrameDataset, MaskedImageBasedSingleFrameDataset
 from tsdf_field_generation import DepthInterpolationMethod
+from utils.point import Point
 from utils.printing import *
-from utils.visualization import save_initial_fields, save_final_fields, rescale_depth_to_8bit, highlight_row_on_gray, sdf_field_to_image
+from utils.visualization import save_initial_fields, save_final_fields, rescale_depth_to_8bit, highlight_row_on_gray, \
+    sdf_field_to_image, save_tiled_tsdf_comparison_image, plot_warp_statistics
 import utils.sampling as sampling
 
 
@@ -84,50 +86,6 @@ def record_cases_files(log, out_directory):
     good_cases_df.to_csv(os.path.join(out_directory, "good_cases.csv"), index=False)
 
 
-def plot_warp_statistics(out_path, warp_statistics, convergence_threshold=0.1, extra_path=None):
-    if not os.path.exists(out_path):
-        os.makedirs(out_path)
-
-    # C++ definition of the struct underlying each row in warp_statistics (careful, may be outdated!):
-    # float ratio_of_warps_above_minimum_threshold = 0.0;
-    # float max_warp_length = 0.0
-    # float mean_warp_length = 0.0;
-    # float standard_deviation_of_warp_length = 0.0;
-    ratios_of_warps_above_minimum_threshold = warp_statistics[:, 0]
-    maximum_warp_lengths = warp_statistics[:, 1]
-    mean_warp_lengths = warp_statistics[:, 2]
-    standard_deviations_of_warp_lengths = warp_statistics[:, 3]
-    convergence_threshold_marks = np.array([convergence_threshold] * len(mean_warp_lengths))
-
-    color = "tab:red"
-    dpi = 96
-    fig, ax_ratios = plt.subplots(figsize=(3000 / dpi, 1000 / dpi), dpi=dpi)
-    ax_ratios.set_xlabel("iteration number")
-    ax_ratios.set_ylabel("Ratio of warp lengths below convergence threshold", color=color)
-    ax_ratios.plot(ratios_of_warps_above_minimum_threshold * 100, color=color, label="% of warp lengths above "
-                                                                                     "convergence threshold")
-    ax_ratios.tick_params(axis='y', labelcolor=color)
-    ax_ratios.legend(loc='upper left')
-
-    color = "tab:blue"
-    ax_lengths = ax_ratios.twinx()
-    ax_lengths.set_ylabel("warp_length", color=color)
-    ax_lengths.plot(maximum_warp_lengths, "c-", label="maximum warp length")
-    ax_lengths.plot(mean_warp_lengths, "b-", label="mean warp length")
-    ax_lengths.plot(mean_warp_lengths + standard_deviations_of_warp_lengths, "g-",
-                    label="standard deviation of warp length")
-    ax_lengths.plot(mean_warp_lengths - standard_deviations_of_warp_lengths, "g-")
-    ax_lengths.plot(convergence_threshold_marks, "k-", label="convergence threshold")
-    ax_lengths.plot(convergence_threshold)
-    ax_lengths.plot()
-    ax_lengths.tick_params(axis='y', labelcolor=color)
-    ax_lengths.legend(loc='upper right')
-
-    fig.tight_layout()
-    if extra_path:
-        plt.savefig(extra_path)
-    plt.savefig(os.path.join(out_path, "warp_statistics.png"))
-    plt.close(fig)
 
 
 def is_unmasked_image_row_empty(path, ix_row):
@@ -169,29 +127,6 @@ def check_frame_count_and_format(frames_path):
     return frame_count, format
 
 
-def save_tiled_comparison_image(good_case_sdfs, bad_case_sdfs, vertical_tile_count=12, border_width=2):
-    # Assumes all tiles are square and have equal size!
-    vertical_tile_count = vertical_tile_count
-    horizontal_tile_count = vertical_tile_count * 2
-    tile_size = good_case_sdfs[0].shape[0]
-    canvas_height = ((vertical_tile_count + 1) * border_width + vertical_tile_count * tile_size)
-    canvas_width = ((horizontal_tile_count + 2) * border_width + horizontal_tile_count * tile_size)
-    canvas_size = (canvas_height, canvas_width)
-    canvas = np.zeros(canvas_size, dtype=np.uint8)
-
-    pixel_y_start = border_width
-    pixel_y_end = border_width + tile_size
-    pixel_x_start = border_width
-    pixel_x_end = border_width + tile_size
-    i_good_case = 0
-    x_offset = 0
-    for tile_x in range(vertical_tile_count):
-        for tile_y in range(vertical_tile_count):
-            #sdf_image = sdf_field_to_image(sdf, scale=1)
-            pass #TODO:
-
-
-
 def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.BASIC,
                            optimizer_choice=OptimizerChoice.CPP,
                            out_path="out2D/Snoopy MultiTest", input_case_file=None,
@@ -210,6 +145,7 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
     check_empty_row = True
     # TODO a tiled image with 6x6 bad cases and 6x6 good cases (SDF fields)
     save_tiled_good_vs_bad_case_comparison_image = True
+    save_per_case_results_in_root_output_folder = False
 
     rebuild_optimizer = optimizer_choice != OptimizerChoice.CPP
     max_iterations = 400 if optimizer_choice == OptimizerChoice.CPP else 100
@@ -337,6 +273,9 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
 
         # ===================== LOG AFTER-RUN RESULTS ==================================================================
 
+        if save_initial_and_final_fields:
+            save_final_fields(canonical_field, live_field, out_subpath, view_scaling_factor)
+
         if optimizer_choice != OptimizerChoice.CPP:
             # call python-specific logging routines
             optimizer.plot_logged_sdf_and_warp_magnitudes()
@@ -347,30 +286,32 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                 warp_statistics = optimizer.get_warp_statistics_as_matrix()
                 root_subpath = os.path.join(out_path, "warp_statistics_frames_{:0>6d}-{:0>6d}_row_{:0>3d}.png"
                                             .format(canonical_frame_index, live_frame_index, pixel_row_index))
-                plot_warp_statistics(out_subpath, warp_statistics, extra_path=root_subpath)
+                if save_per_case_results_in_root_output_folder:
+                    plot_warp_statistics(out_subpath, warp_statistics, extra_path=root_subpath)
+                else:
+                    plot_warp_statistics(out_subpath, warp_statistics, extra_path=None)
 
         convergence_status = optimizer.get_convergence_status()
+        max_warp_at = Point(convergence_status.max_warp_location.x, convergence_status.max_warp_location.y)
         if not convergence_status.iteration_limit_reached:
             if convergence_status.largest_warp_above_maximum_threshold:
                 print(": DIVERGED", end="")
             else:
                 print(": CONVERGED", end="")
 
-            if (save_tiled_good_vs_bad_case_comparison_image and convergence_status.largest_warp_above_maximum_threshold
+            if (save_tiled_good_vs_bad_case_comparison_image and
+                    not convergence_status.largest_warp_above_maximum_threshold
                     and len(good_case_sdfs) < max_case_count):
-                good_case_sdfs.append((original_live_field, live_field))
+                good_case_sdfs.append((canonical_field, original_live_field, max_warp_at))
 
         else:
             print(": NOT CONVERGED", end="")
             if save_tiled_good_vs_bad_case_comparison_image and len(bad_case_sdfs) < max_case_count:
-                bad_case_sdfs.append((original_live_field, live_field))
+                bad_case_sdfs.append((canonical_field, original_live_field, max_warp_at))
         print(" IN", convergence_status.iteration_count, "ITERATIONS")
 
         log_convergence_status(convergence_status_log, convergence_status,
                                canonical_frame_index, live_frame_index, pixel_row_index)
-
-        if save_initial_and_final_fields:
-            save_final_fields(canonical_field, live_field, out_subpath, view_scaling_factor)
 
         if rebuild_optimizer:
             del optimizer
@@ -385,4 +326,10 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
     record_convergence_status_log(convergence_status_log, convergence_status_log_file_path)
     record_cases_files(convergence_status_log, out_path)
     if save_tiled_good_vs_bad_case_comparison_image:
-        save_tiled_comparison_image(good_case_sdfs, bad_case_sdfs)
+        if len(good_case_sdfs) > 0 and len(bad_case_sdfs) > 0:
+            save_tiled_tsdf_comparison_image(os.path.join(out_path, "good_vs_bad.png"), good_case_sdfs, bad_case_sdfs)
+        else:
+            if len(good_case_sdfs) == 0:
+                print("Warning: no 'good' cases; skipping saving comparison image")
+            elif len(bad_case_sdfs) == 0:
+                print("Warning: no 'bad' cases; skipping saving comparison image")
