@@ -35,7 +35,7 @@ from data_term import DataTermMethod
 from dataset import ImageBasedSingleFrameDataset, MaskedImageBasedSingleFrameDataset
 from tsdf_field_generation import DepthInterpolationMethod
 from utils.printing import *
-from utils.visualization import save_initial_fields, save_final_fields, rescale_depth_to_8bit, highlight_row_on_gray
+from utils.visualization import save_initial_fields, save_final_fields, rescale_depth_to_8bit, highlight_row_on_gray, sdf_field_to_image
 import utils.sampling as sampling
 
 
@@ -167,6 +167,29 @@ def check_frame_count_and_format(frames_path):
     frame_count = max(five_digit_counter, six_digit_counter)
     format = FrameFilenameFormat.FIVE_DIGIT if five_digit_counter > six_digit_counter else FrameFilenameFormat.SIX_DIGIT
     return frame_count, format
+
+
+def save_tiled_comparison_image(good_case_sdfs, bad_case_sdfs, vertical_tile_count=12, border_width=2):
+    # Assumes all tiles are square and have equal size!
+    vertical_tile_count = vertical_tile_count
+    horizontal_tile_count = vertical_tile_count * 2
+    tile_size = good_case_sdfs[0].shape[0]
+    canvas_height = ((vertical_tile_count + 1) * border_width + vertical_tile_count * tile_size)
+    canvas_width = ((horizontal_tile_count + 2) * border_width + horizontal_tile_count * tile_size)
+    canvas_size = (canvas_height, canvas_width)
+    canvas = np.zeros(canvas_size, dtype=np.uint8)
+
+    pixel_y_start = border_width
+    pixel_y_end = border_width + tile_size
+    pixel_x_start = border_width
+    pixel_x_end = border_width + tile_size
+    i_good_case = 0
+    x_offset = 0
+    for tile_x in range(vertical_tile_count):
+        for tile_y in range(vertical_tile_count):
+            #sdf_image = sdf_field_to_image(sdf, scale=1)
+            pass #TODO:
+
 
 
 def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.BASIC,
@@ -362,5 +385,4 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
     record_convergence_status_log(convergence_status_log, convergence_status_log_file_path)
     record_cases_files(convergence_status_log, out_path)
     if save_tiled_good_vs_bad_case_comparison_image:
-        pass
-        # save_tiled_comparison_image(good_case_sdfs, bad_case_sdfs) #TODO
+        save_tiled_comparison_image(good_case_sdfs, bad_case_sdfs)
