@@ -39,6 +39,7 @@ from utils.printing import *
 from utils.visualization import save_initial_fields, save_final_fields, rescale_depth_to_8bit, highlight_row_on_gray, \
     sdf_field_to_image, save_tiled_tsdf_comparison_image, plot_warp_statistics
 import utils.sampling as sampling
+import experiment_shared_routines as shared
 
 
 def log_convergence_status(log, convergence_status, canonical_frame_index, live_frame_index, pixel_row_index):
@@ -86,56 +87,17 @@ def record_cases_files(log, out_directory):
     good_cases_df.to_csv(os.path.join(out_directory, "good_cases.csv"), index=False)
 
 
-
-
-def is_unmasked_image_row_empty(path, ix_row):
-    image = cv2.imread(path, cv2.IMREAD_UNCHANGED)
-    return np.sum(image[ix_row]) == 0
-
-
-def is_masked_image_row_empty(image_path, mask_path, ix_row):
-    image = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-    mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
-    image[mask == 0] = 0
-    return np.sum(image[ix_row]) == 0
-
-
-def is_image_row_empty(image_path, mask_path, ix_row, check_masked):
-    if check_masked:
-        return is_masked_image_row_empty(image_path, mask_path, ix_row)
-    else:
-        return is_unmasked_image_row_empty(image_path, ix_row)
-
-
-class FrameFilenameFormat(Enum):
-    FIVE_DIGIT = 0
-    SIX_DIGIT = 1
-
-
-def check_frame_count_and_format(frames_path):
-    five_digit_pattern = re.compile(r"^depth\_\d{5}[.]png$")
-    six_digit_pattern = re.compile(r"^depth\_\d{6}[.]png$")
-    five_digit_counter = 0
-    six_digit_counter = 0
-    for filename in os.listdir(frames_path):
-        if re.findall(five_digit_pattern, filename):
-            five_digit_counter += 1
-        elif re.findall(six_digit_pattern, filename):
-            six_digit_counter += 1
-    frame_count = max(five_digit_counter, six_digit_counter)
-    format = FrameFilenameFormat.FIVE_DIGIT if five_digit_counter > six_digit_counter else FrameFilenameFormat.SIX_DIGIT
-    return frame_count, format
-
-
-def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.BASIC,
+def perform_multiple_tests(start_from_sample=0,
+                           data_term_method=DataTermMethod.BASIC,
                            optimizer_choice=OptimizerChoice.CPP,
-                           out_path="out2D/Snoopy MultiTest", input_case_file=None,
+                           depth_interpolation_method=DepthInterpolationMethod.NONE,
+                           out_path="out2D/Snoopy MultiTest",
+                           input_case_file=None,
                            calibration_path=
                            "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
                            frame_path=
                            "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/",
-                           z_offset=128,
-                           depth_interpolation_method=DepthInterpolationMethod.NONE):
+                           z_offset=128):
     # CANDIDATES FOR ARGS
 
     save_initial_and_final_fields = input_case_file is not None
@@ -151,8 +113,8 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
     max_iterations = 400 if optimizer_choice == OptimizerChoice.CPP else 100
 
     # dataset location
-    frame_count, frame_filename_format = check_frame_count_and_format(frame_path)
-    if frame_filename_format == FrameFilenameFormat.SIX_DIGIT:
+    frame_count, frame_filename_format, use_masks = shared.check_frame_count_and_format(frame_path, not use_masks)
+    if frame_filename_format == shared.FrameFilenameFormat.SIX_DIGIT:
         frame_path_format_string = frame_path + os.path.sep + "depth_{:0>6d}.png"
         mask_path_format_string = frame_path + os.path.sep + "mask_{:0>6d}.png"
     else:  # has to be FIVE_DIGIT
@@ -190,8 +152,8 @@ def perform_multiple_tests(start_from_sample=0, data_term_method=DataTermMethod.
                 canonical_mask_path = mask_path_format_string.format(canonical_frame_index)
                 live_frame_path = frame_path_format_string.format(live_frame_index)
                 live_mask_path = mask_path_format_string.format(live_frame_index)
-                while is_image_row_empty(canonical_frame_path, canonical_mask_path, pixel_row_index, use_masks) or \
-                        is_image_row_empty(live_frame_path, live_mask_path, pixel_row_index, use_masks):
+                while shared.is_image_row_empty(canonical_frame_path, canonical_mask_path, pixel_row_index, use_masks) \
+                        or shared.is_image_row_empty(live_frame_path, live_mask_path, pixel_row_index, use_masks):
                     pixel_row_index = line_range[0] + (line_range[1] - line_range[0]) * np.random.rand()
                 new_pixel_row_set.append(pixel_row_index)
             frame_row_and_focus_set = zip(frame_set, pixel_row_set, focus_x, focus_y)

@@ -98,7 +98,8 @@ def sample_warp_replace_if_zero(warp_field, x, y, replacement):
 
 
 class BilinearSamplingMetaInfo():
-    def __init__(self, value00, value01, value10, value11, ratios, inverse_ratios):
+    def __init__(self, value00=1, value01=1, value10=1, value11=1, ratios=Point(1.0, 1.0),
+                 inverse_ratios=Point(0.0, 0.0)):
         self.value00 = value00
         self.value01 = value01
         self.value10 = value10
@@ -177,7 +178,8 @@ def bilinear_sample_at_metainfo(field, x=0, y=0, point=None):
         y = point.y
 
     if x < 0 or x >= field.shape[1] or y < 0 or y >= field.shape[0]:
-        return 1
+        metainfo = BilinearSamplingMetaInfo()
+        return 1, metainfo
 
     point = Point(x, y)
 

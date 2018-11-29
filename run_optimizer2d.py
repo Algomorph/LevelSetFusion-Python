@@ -43,23 +43,32 @@ def main():
     # TODO: there is a proper way to split up arguments via argparse so that multiple_tests-only arguments
     # cannot be used for single_test mode
     parser.add_argument("-m", "--mode", type=str, help="Mode: singe_test or multiple_tests", default="single_test")
-    parser.add_argument("-sf", "--start_from", type=int, help="Which sample to start from for the multiple-test mode",
+    parser.add_argument("-sf", "--start_from", type=int,
+                        help="Which sample index to start from for the multiple-test mode, 0-based",
                         default=0)
     parser.add_argument("-dtm", "--data_term_method", type=str, default="basic",
                         help="Method to use for the data term, should be in {basic, thresholded_fdm}")
-    parser.add_argument("-o", "--output_path", type=str, default="out2D/Snoopy MultiTest",
+    parser.add_argument("-o", "--output_path", type=str, default="output/out2D",
                         help="output path for multiple_tests mode")
     parser.add_argument("-c", "--calibration", type=str,
                         default=
                         "/media/algomorph/Data/Reconstruction/real_data/"
                         "KillingFusion Snoopy/snoopy_calib.txt",
-                        help="Path to the camera calibration file to use for the multiple_tests mode")
+                        help="Path to the camera calibration file to use unless using a predefined dataset")
     parser.add_argument("-f", "--frames", type=str,
                         default="/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames",
-                        help="Path to the frames for the multiple_tests mode. Frame image files should have names "
+                        help="Path to the depth frames. Frame image files should have names "
                              "that follow depth_{:0>6d}.png pattern, i.e. depth_000000.png")
+    parser.add_argument("-cfi", "--canonical_frame_index", type=int, default=-1,
+                        help="Use in single_test mode only. Instead of a predefined dataset, use this index for the"
+                             " canonical frame in the folder specified by the --frames/-f argument. Live frame is"
+                             " assumed to be this index+1 unless otherwise specified. If this value is changed from"
+                             " default, -1, then --pixel_row_index must also be specified.")
+    parser.add_argument("-pri", "--pixel_row_index", type=int, default=-1,
+                        help="Use in single_test mode only. Uses this specific pixel row (0-based-index) for"
+                             " optimization. Has to be used in conjunction with the --canonical_frame_index argument.")
     parser.add_argument("-z", "--z_offset", type=int, default=128,
-                        help="(multiple_tests mode only) the Z (depth) offset for sdf volume SDF relative to image"
+                        help="The Z (depth) offset for sdf volume SDF relative to image"
                              " plane")
     parser.add_argument("-cfp", "--case_file_path", type=str, default=None,
                         help="input cases file path for multiple_tests_mode")
@@ -99,14 +108,23 @@ def main():
         depth_interpolation_method = DepthInterpolationMethod.BILINEAR
 
     if mode == Mode.SINGLE_TEST:
-        perform_single_test(depth_interpolation_method=depth_interpolation_method)
+        if arguments.pixel_row_index != -1 or arguments.canonical_frame_index != -1:
+            if arguments.pixel_row_index < 0 or arguments.canonical_frame_index < 0:
+                raise ValueError("When either pixel_row_index or canonical_frame_index is used, *both* of them must be"
+                                 " set to a non-negative integer.")
+        perform_single_test(depth_interpolation_method=depth_interpolation_method,
+                            out_path=arguments.output_path,
+                            frame_path=arguments.frames, calibration_path=arguments.calibration,
+                            canonical_frame_index=arguments.canonical_frame_index,
+                            pixel_row_index=arguments.pixel_row_index, z_offset=arguments.z_offset)
+
     if mode == Mode.MULTIPLE_TESTS:
         perform_multiple_tests(arguments.start_from, data_term_method,
                                OptimizerChoice.__dict__[arguments.optimizer_choice],
-                               arguments.output_path, arguments.case_file_path,
+                               depth_interpolation_method=depth_interpolation_method,
+                               out_path=arguments.output_path, input_case_file=arguments.case_file_path,
                                calibration_path=arguments.calibration, frame_path=arguments.frames,
-                               z_offset=arguments.z_offset,
-                               depth_interpolation_method=depth_interpolation_method)
+                               z_offset=arguments.z_offset)
 
     return EXIT_CODE_SUCCESS
 
