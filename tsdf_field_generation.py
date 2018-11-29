@@ -1,6 +1,7 @@
 # code for generating TSDF from raster depth images or from hard-coded piecewise-linear functions
 
 # stdlib
+import math
 from enum import Enum
 
 # libraries
@@ -19,14 +20,15 @@ except ImportError:
 
 class DepthInterpolationMethod:
     NONE = 0
-    BILINEAR = 1
+    BILINEAR_IMAGE_SPACE = 1
+    BILINEAR_TSDF_SPACE = 1
 
 
-def generate_2d_tsdf_field_from_depth_image_bilinear(depth_image, camera, image_y_coordinate,
-                                                     camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
-                                                     field_size=128, default_value=1, voxel_size=0.004,
-                                                     array_offset=np.array([-64, -64, 64]),
-                                                     narrow_band_width_voxels=20, back_cutoff_voxels=np.inf):
+def generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space(depth_image, camera, image_y_coordinate,
+                                                                camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                                                field_size=128, default_value=1, voxel_size=0.004,
+                                                                array_offset=np.array([-64, -64, 64]),
+                                                                narrow_band_width_voxels=20, back_cutoff_voxels=np.inf):
     if default_value == 1:
         field = np.ones((field_size, field_size), dtype=np.float32)
     elif default_value == 0:
@@ -35,7 +37,64 @@ def generate_2d_tsdf_field_from_depth_image_bilinear(depth_image, camera, image_
         field = np.ndarray((field_size, field_size), dtype=np.float32)
         field.fill(default_value)
 
-    resolution = camera.intrinsics.resolution
+    projection_matrix = camera.intrinsics.intrinsic_matrix
+    depth_ratio = camera.depth_unit_ratio
+    narrow_band_half_width = narrow_band_width_voxels / 2 * voxel_size  # in metric units
+
+    y_voxel = 0.0
+    w_voxel = 1.0
+
+    for y_field in range(field_size):
+        for x_field in range(field_size):
+            x_voxel = (x_field + array_offset[0]) * voxel_size
+            z_voxel = (y_field + array_offset[2]) * voxel_size  # acts as "Z" coordinate
+
+            point = np.array([[x_voxel, y_voxel, z_voxel, w_voxel]], dtype=np.float32).T
+            point_in_camera_space = camera_extrinsic_matrix.dot(point).flatten()
+
+            if point_in_camera_space[2] <= 0:
+                continue
+
+            image_x_coordinate = projection_matrix[0, 0] * point_in_camera_space[0] / point_in_camera_space[2] + \
+                                 projection_matrix[0, 2]
+
+            ratios = sampling.get_bilinear_ratios(image_x_coordinate, image_y_coordinate)
+            base_x = math.floor(image_x_coordinate)
+            base_y = math.floor(image_y_coordinate)
+            points = [(base_x, base_y), (base_x, base_y + 1), (base_x + 1, base_y), (base_x + 1, base_y + 1)]
+            values = []
+            for x_image, y_image in points:
+                if x_image < 0 or x_image >= depth_image.shape[1]:
+                    values.append(1.0)
+                    continue
+                depth = depth_image[y_image, x_image] * depth_ratio
+
+                signed_distance_to_voxel_along_camera_ray = depth - point_in_camera_space[2]
+                if signed_distance_to_voxel_along_camera_ray < -narrow_band_half_width:
+                    values.append(-1.0)
+                elif signed_distance_to_voxel_along_camera_ray > narrow_band_half_width:
+                    values.append(1.0)
+                else:
+                    values.append(signed_distance_to_voxel_along_camera_ray / narrow_band_half_width)
+            field[y_field, x_field] = sampling.interpolate_bilinearly(values, ratios)
+
+    return field
+
+
+def generate_2d_tsdf_field_from_depth_image_bilinear_image_space(depth_image, camera, image_y_coordinate,
+                                                                 camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                                                 field_size=128, default_value=1, voxel_size=0.004,
+                                                                 array_offset=np.array([-64, -64, 64]),
+                                                                 narrow_band_width_voxels=20,
+                                                                 back_cutoff_voxels=np.inf):
+    if default_value == 1:
+        field = np.ones((field_size, field_size), dtype=np.float32)
+    elif default_value == 0:
+        field = np.zeros((field_size, field_size), dtype=np.float32)
+    else:
+        field = np.ndarray((field_size, field_size), dtype=np.float32)
+        field.fill(default_value)
+
     projection_matrix = camera.intrinsics.intrinsic_matrix
     depth_ratio = camera.depth_unit_ratio
     narrow_band_half_width = narrow_band_width_voxels / 2 * voxel_size  # in metric units
@@ -66,7 +125,6 @@ def generate_2d_tsdf_field_from_depth_image_bilinear(depth_image, camera, image_
                 continue
 
             signed_distance_to_voxel_along_camera_ray = depth - point_in_camera_space[2]
-            # print(depth, "-", point_in_camera_space[2], "=", signed_distance_to_voxel_along_camera_ray)
             if signed_distance_to_voxel_along_camera_ray < -narrow_band_half_width:
                 field[y_field, x_field] = -1.0
             elif signed_distance_to_voxel_along_camera_ray > narrow_band_half_width:
@@ -111,7 +169,6 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
         field = np.ndarray((field_size, field_size), dtype=np.float32)
         field.fill(default_value)
 
-    resolution = camera.intrinsics.resolution
     projection_matrix = camera.intrinsics.intrinsic_matrix
     depth_ratio = camera.depth_unit_ratio
     narrow_band_half_width = narrow_band_width_voxels / 2 * voxel_size  # in metric units
@@ -156,8 +213,8 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
 
 tsdf_from_depth_image_generation_functions = {
     DepthInterpolationMethod.NONE: generate_2d_tsdf_field_from_depth_image_no_interpolation,
-    DepthInterpolationMethod.BILINEAR: generate_2d_tsdf_field_from_depth_image_bilinear
-
+    DepthInterpolationMethod.BILINEAR_IMAGE_SPACE: generate_2d_tsdf_field_from_depth_image_bilinear_image_space,
+    DepthInterpolationMethod.BILINEAR_TSDF_SPACE: generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space
 }
 
 

@@ -447,7 +447,7 @@ def plot_warp_statistics(out_path, warp_statistics, convergence_threshold=0.1, e
     dpi = 96
     fig, ax_ratios = plt.subplots(figsize=(3000 / dpi, 1000 / dpi), dpi=dpi)
     ax_ratios.set_xlabel("iteration number")
-    ax_ratios.set_ylabel("Ratio of warp lengths below convergence threshold", color=color)
+    ax_ratios.set_ylabel("% of warp lengths above convergence threshold", color=color)
     ax_ratios.plot(ratios_of_warps_above_minimum_threshold * 100, color=color, label="% of warp lengths above "
                                                                                      "convergence threshold")
     ax_ratios.tick_params(axis='y', labelcolor=color)

@@ -77,7 +77,10 @@ def main():
                              "must be in {CPP, PYTHON_DIRECT, PYTHON_VECTORIZED}")
     parser.add_argument("-di", "--depth_interpolation_method", type=str, default="none",
                         help="Depth image interpolation method to use when generating SDF. "
-                             "Can be one of: {none, bilinear}")
+                             "Can be one of: {NONE, BILINEAR_IMAGE_SPACE, BILINEAR_TSDF_SPACE}")
+    parser.add_argument("--draw_initial_tsdfs_and_exit",
+                        action='store_true',
+                        help="(single_test mode only), exits after drawing and saving the initial TSDF")
 
     arguments = parser.parse_args()
     mode = Mode.SINGLE_TEST
@@ -101,11 +104,8 @@ def main():
               " data_term_method (dtm) should be \"basic\" or \"thresholded_fdm\", got \"{:s}\""
               .format(arguments.data_term_method))
 
-    depth_interpolation_method = DepthInterpolationMethod.NONE
-    if arguments.depth_interpolation_method == "none":
-        depth_interpolation_method = DepthInterpolationMethod.NONE
-    elif arguments.depth_interpolation_method == "bilinear":
-        depth_interpolation_method = DepthInterpolationMethod.BILINEAR
+    depth_interpolation_method = DepthInterpolationMethod.__dict__[arguments.depth_interpolation_method]
+    optimizer_choice = OptimizerChoice.__dict__[arguments.optimizer_choice]
 
     if mode == Mode.SINGLE_TEST:
         if arguments.pixel_row_index != -1 or arguments.canonical_frame_index != -1:
@@ -116,11 +116,12 @@ def main():
                             out_path=arguments.output_path,
                             frame_path=arguments.frames, calibration_path=arguments.calibration,
                             canonical_frame_index=arguments.canonical_frame_index,
-                            pixel_row_index=arguments.pixel_row_index, z_offset=arguments.z_offset)
+                            pixel_row_index=arguments.pixel_row_index, z_offset=arguments.z_offset,
+                            draw_tsdfs_and_exit=arguments.draw_initial_tsdfs_and_exit)
 
     if mode == Mode.MULTIPLE_TESTS:
         perform_multiple_tests(arguments.start_from, data_term_method,
-                               OptimizerChoice.__dict__[arguments.optimizer_choice],
+                               optimizer_choice=optimizer_choice,
                                depth_interpolation_method=depth_interpolation_method,
                                out_path=arguments.output_path, input_case_file=arguments.case_file_path,
                                calibration_path=arguments.calibration, frame_path=arguments.frames,

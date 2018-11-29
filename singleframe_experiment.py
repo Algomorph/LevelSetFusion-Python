@@ -32,9 +32,9 @@ from utils.visualization import visualize_and_save_initial_fields, visualize_fin
 import experiment_shared_routines as shared
 
 
-def perform_single_test(depth_interpolation_method=DepthInterpolationMethod.NONE,
-                        out_path="output/out2D", frame_path="", calibration_path="calib.txt", canonical_frame_index=-1,
-                        pixel_row_index=-1, z_offset=128):
+def perform_single_test(depth_interpolation_method=DepthInterpolationMethod.NONE, out_path="output/out2D",
+                        frame_path="", calibration_path="calib.txt", canonical_frame_index=-1, pixel_row_index=-1,
+                        z_offset=128, draw_tsdfs_and_exit=False):
     visualize_and_save_initial_and_final_fields = True
     field_size = 128
     default_value = 1
@@ -83,6 +83,9 @@ def perform_single_test(depth_interpolation_method=DepthInterpolationMethod.NONE
 
     if visualize_and_save_initial_and_final_fields:
         visualize_and_save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor)
+
+    if draw_tsdfs_and_exit:
+        return
 
     optimizer = Optimizer2d(out_path=out_path,
                             field_size=field_size,

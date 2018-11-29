@@ -23,9 +23,8 @@ import numpy as np
 # local
 from utils.point import Point
 
-
 # TODO: move all the focus coordinate stuff to a separate file
-FOCUS_COORDINATES = (33, 76)
+FOCUS_COORDINATES = (34, 80)
 
 
 def set_focus_coordinates(x, y):
@@ -106,6 +105,32 @@ class BilinearSamplingMetaInfo():
         self.value11 = value11
         self.ratios = ratios
         self.inverse_ratios = inverse_ratios
+
+
+def interpolate_bilinearly(values, ratios):
+    """
+    :param values: iterable of 4 values, representing discrete points, in the order {([x=]0,[y=]0), (01), (10), (11)}
+    :type ratios: Point
+    :param ratios: distances from point (00) to the sample point along x and y axes, respectively
+    :return:
+    """
+    inverse_ratios = Point(1.0, 1.0) - ratios
+
+    value00 = values[0]
+    value01 = values[1]
+    value10 = values[2]
+    value11 = values[3]
+    interpolated_value0 = value00 * inverse_ratios.y + value01 * ratios.y
+    interpolated_value1 = value10 * inverse_ratios.y + value11 * ratios.y
+    interpolated_value = interpolated_value0 * inverse_ratios.x + interpolated_value1 * ratios.x
+    return interpolated_value
+
+
+def get_bilinear_ratios(x, y):
+    point = Point(x, y)
+    base_point = Point(math.floor(x), math.floor(y))
+    ratios = point - base_point
+    return ratios
 
 
 # The coordinate is considered out-of-bounds if it is further than 1 cell away from the border of the field.
