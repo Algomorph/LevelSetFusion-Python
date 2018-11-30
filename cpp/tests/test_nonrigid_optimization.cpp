@@ -33,7 +33,7 @@
 //test targets
 #include "../src/nonrigid_optimization/data_term.hpp"
 #include "../src/nonrigid_optimization/smoothing_term.hpp"
-#include "../src/nonrigid_optimization/interpolation.hpp"
+#include "../src/nonrigid_optimization/field_resampling.hpp"
 #include "../src/nonrigid_optimization/sobolev_optimizer2d.hpp"
 
 namespace tt = boost::test_tools;
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(interpolation_test01) {
             1.0F, -1.0F;
     //@formatter:on
 	math::MatrixXv2f warp_field = math::stack_as_xv2f(u_vectors, v_vectors);
-	Matrix2f warped_live_field_out = nonrigid_optimization::interpolate(warp_field, warped_live_field, canonical_field);
+	Matrix2f warped_live_field_out = nonrigid_optimization::resample(warp_field, warped_live_field, canonical_field);
 	Matrix2f expected_live_out;
 	expected_live_out << 0.0F, 0.0F, 0.0F, 0.0F;
 
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE(interpolation_test02) {
             0.5F, 0.5F, -1.0F;
     //@formatter:on
 	math::MatrixXv2f warp_field = math::stack_as_xv2f(u_vectors, v_vectors);
-	Matrix3f warped_live_field_out = nonrigid_optimization::interpolate(warp_field, warped_live_field, canonical_field,
+	Matrix3f warped_live_field_out = nonrigid_optimization::resample(warp_field, warped_live_field, canonical_field,
 	                                                                    true, false, true);
 
 
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE(interpolation_test03) {
             1.0000000e+00, 7.5000443e-02, 4.4107438e-07, -9.9999562e-02;
     //@formatter:on
 	math::MatrixXv2f warp_field = math::stack_as_xv2f(u_vectors, v_vectors);
-	MatrixXf warped_live_field_out = nonrigid_optimization::interpolate(warp_field, warped_live_field, canonical_field,
+	MatrixXf warped_live_field_out = nonrigid_optimization::resample(warp_field, warped_live_field, canonical_field,
 	                                                                    false, false, false);
 
 	MatrixXf expected_live_out(4, 4);
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(interpolation_test03) {
 BOOST_AUTO_TEST_CASE(interpolation_test04) {
 	using namespace Eigen;
 
-	MatrixXf warped_live_field_out = nonrigid_optimization::interpolate(
+	MatrixXf warped_live_field_out = nonrigid_optimization::resample(
 			test_data::warp_field, test_data::warped_live_field, test_data::canonical_field, false, false, false);
 
 	MatrixXf expected_live_out(4, 4);

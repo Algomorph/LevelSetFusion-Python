@@ -7,7 +7,7 @@ from enum import Enum
 # libraries
 import numpy as np
 # local
-from utils.point import Point
+from utils.point2d import Point2d
 import utils.sampling as sampling
 
 IGNORE_OPENCV = False
@@ -236,7 +236,7 @@ def add_surface_to_2d_tsdf_field_sample(field, consecutive_surface_points, narro
     for i_point in range(len(consecutive_surface_points) - 1):
         point_a = consecutive_surface_points[i_point]
         point_b = consecutive_surface_points[i_point + 1]
-        point = Point()
+        point = Point2d()
         x_dist = point_b.x - point_a.x
         for x_voxel in range(int(point_a.x), int(point_b.x)):
             point.x = x_voxel
@@ -302,9 +302,9 @@ def generate_initial_orthographic_2d_tsdf_fields(field_size=128, narrow_band_wid
 
     for i_point in range(surface_point_coordinates.shape[0]):
         live_surface_points.append(
-            Point(surface_point_coordinates[i_point, 0], surface_point_coordinates[i_point, 1]))
+            Point2d(surface_point_coordinates[i_point, 0], surface_point_coordinates[i_point, 1]))
 
-    live_extra_points = [Point(surf_point_coordinates[0], surf_point_coordinates[1])
+    live_extra_points = [Point2d(surf_point_coordinates[0], surf_point_coordinates[1])
                          for surf_point_coordinates in surface_points_extra]
 
     for live_point in live_surface_points:
@@ -319,8 +319,8 @@ def generate_initial_orthographic_2d_tsdf_fields(field_size=128, narrow_band_wid
                                                      narrow_band_width_voxels=narrow_band_width_voxels)
 
     # generate canonical field as live field shifted with a constant offset
-    canonical_surface_points = [Point(live_point.x, live_point.y + 5.0) for live_point in live_surface_points]
-    canonical_extra_points = [Point(live_point.x, live_point.y + 5.0) for live_point in live_extra_points]
+    canonical_surface_points = [Point2d(live_point.x, live_point.y + 5.0) for live_point in live_surface_points]
+    canonical_extra_points = [Point2d(live_point.x, live_point.y + 5.0) for live_point in live_extra_points]
 
     if mimic_eta:
         back_cutoff_voxels = 3

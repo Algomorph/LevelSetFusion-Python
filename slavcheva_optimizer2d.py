@@ -30,11 +30,11 @@ from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_uni
 from utils.visualization import make_3d_plots, make_vector_field_plot, warp_field_to_heatmap, \
     sdf_field_to_image, visualize_and_save_sdf_and_warp_magnitude_progression, \
     visualzie_and_save_energy_and_max_warp_progression
-from utils.point import Point
+from utils.point2d import Point2d
 from utils.printing import *
 from utils.sampling import focus_coordinates_match, get_focus_coordinates
 from utils.tsdf_set_routines import value_outside_narrow_band
-from warped_field_resampling import interpolate_warped_live, get_and_print_interpolation_data
+from warped_field_resampling import resample_warped_live, get_and_print_interpolation_data
 import data_term as dt
 from level_set_term import level_set_term_at_location
 import smoothing_term as st
@@ -72,7 +72,7 @@ class ComputeMethod(Enum):
     VECTORIZED = 1
 
 
-class Optimizer2d:
+class SlavchevaOptimizer2d:
     def __init__(self, out_path="out2D",
                  field_size=128,
                  # TODO writers should be initialized only after the field size becomes known during optimization and
@@ -244,7 +244,7 @@ class Optimizer2d:
         v_vectors = warp_field[:, :, 1].copy()
 
         out_warped_live_field, (out_u_vectors, out_v_vectors) = \
-            cpp_extension.interpolate(warped_live_field, canonical_field, u_vectors, v_vectors)
+            cpp_extension.resample(warped_live_field, canonical_field, u_vectors, v_vectors)
 
         np.copyto(warped_live_field, out_warped_live_field)
 
@@ -252,7 +252,7 @@ class Optimizer2d:
         warp_field[:, :, 0] = out_u_vectors
         warp_field[:, :, 1] = out_v_vectors
 
-        return maximum_warp_length, Point(maximum_warp_length_at[1], maximum_warp_length_at[0])
+        return maximum_warp_length, Point2d(maximum_warp_length_at[1], maximum_warp_length_at[0])
 
     def __optimization_iteration_direct(self, warped_live_field, canonical_field, warp_field,
                                         data_component_field=None, smoothing_component_field=None,
@@ -336,14 +336,14 @@ class Optimizer2d:
                 warp_length = np.linalg.norm(warp_field[y, x])
                 if warp_length > max_warp:
                     max_warp = warp_length
-                    max_warp_location = Point(x, y)
+                    max_warp_location = Point2d(x, y)
                 if (x, y) in self.focus_neighborhood_log:
                     log = self.focus_neighborhood_log[(x, y)]
                     log.warp_magnitudes.append(warp_length)
                     log.sdf_values.append(warped_live_field[y, x])
 
-        interpolate_warped_live(canonical_field, warped_live_field, warp_field, self.gradient_field,
-                                band_union_only=False, known_values_only=False, substitute_original=False)
+        resample_warped_live(canonical_field, warped_live_field, warp_field, self.gradient_field,
+                             band_union_only=False, known_values_only=False, substitute_original=False)
 
 
 

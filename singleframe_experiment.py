@@ -26,7 +26,7 @@ from data_term import DataTermMethod
 from dataset import datasets, DataToUse, MaskedImageBasedSingleFrameDataset, ImageBasedSingleFrameDataset
 from smoothing_term import SmoothingTermMethod
 from tsdf_field_generation import generate_initial_orthographic_2d_tsdf_fields, DepthInterpolationMethod
-from optimizer2d import Optimizer2d, AdaptiveLearningRateMethod, ComputeMethod
+from slavcheva_optimizer2d import SlavchevaOptimizer2d, AdaptiveLearningRateMethod, ComputeMethod
 from sobolev_filter import generate_1d_sobolev_kernel
 from utils.visualization import visualize_and_save_initial_fields, visualize_final_fields
 import experiment_shared_routines as shared
@@ -87,31 +87,31 @@ def perform_single_test(depth_interpolation_method=DepthInterpolationMethod.NONE
     if draw_tsdfs_and_exit:
         return
 
-    optimizer = Optimizer2d(out_path=out_path,
-                            field_size=field_size,
-                            default_value=default_value,
+    optimizer = SlavchevaOptimizer2d(out_path=out_path,
+                                     field_size=field_size,
+                                     default_value=default_value,
 
-                            compute_method=ComputeMethod.VECTORIZED,
+                                     compute_method=ComputeMethod.VECTORIZED,
 
-                            level_set_term_enabled=False,
-                            sobolev_smoothing_enabled=True,
+                                     level_set_term_enabled=False,
+                                     sobolev_smoothing_enabled=True,
 
-                            data_term_method=DataTermMethod.BASIC,
-                            smoothing_term_method=SmoothingTermMethod.TIKHONOV,
-                            adaptive_learning_rate_method=AdaptiveLearningRateMethod.NONE,
+                                     data_term_method=DataTermMethod.BASIC,
+                                     smoothing_term_method=SmoothingTermMethod.TIKHONOV,
+                                     adaptive_learning_rate_method=AdaptiveLearningRateMethod.NONE,
 
-                            data_term_weight=1.0,
-                            smoothing_term_weight=0.2,
-                            isomorphic_enforcement_factor=0.1,
-                            level_set_term_weight=0.2,
+                                     data_term_weight=1.0,
+                                     smoothing_term_weight=0.2,
+                                     isomorphic_enforcement_factor=0.1,
+                                     level_set_term_weight=0.2,
 
-                            maximum_warp_length_lower_threshold=0.05,
-                            max_iterations=100,
+                                     maximum_warp_length_lower_threshold=0.05,
+                                     max_iterations=100,
 
-                            sobolev_kernel=generate_1d_sobolev_kernel(size=7 if field_size > 7 else 3, strength=0.1),
+                                     sobolev_kernel=generate_1d_sobolev_kernel(size=7 if field_size > 7 else 3, strength=0.1),
 
-                            enable_component_fields=True,
-                            view_scaling_factor=view_scaling_factor)
+                                     enable_component_fields=True,
+                                     view_scaling_factor=view_scaling_factor)
 
     start_time = time.time()
     optimizer.optimize(live_field, canonical_field)

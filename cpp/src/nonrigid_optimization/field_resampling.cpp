@@ -18,10 +18,9 @@
 #include <iostream>
 
 //local
-#include "interpolation.hpp"
 #include "boolean_operations.hpp"
 #include "../math/typedefs.hpp"
-
+#include "field_resampling.hpp"
 
 namespace nonrigid_optimization {
 
@@ -33,17 +32,19 @@ inline float sample_tsdf_value_at(const eig::MatrixXf& tsdf_field, int x, int y)
 }
 
 inline float sample_tsdf_value_replacing_when_out_of_bounds(const eig::MatrixXf& tsdf_field, int x, int y,
-                                                            float replacement_value) {
+		float replacement_value) {
 	if (x < 0 || x >= tsdf_field.cols() || y < 0 || y >= tsdf_field.rows()) {
 		return replacement_value;
 	}
 	return tsdf_field(y, x);
 }
 
-eig::MatrixXf interpolate(math::MatrixXv2f& warp_field,
-                          const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
-                          bool band_union_only, bool known_values_only,
-                          bool substitute_original, float truncation_float_threshold) {
+template<bool TModifyWarpField>
+inline eig::MatrixXf
+resample_aux(math::MatrixXv2f& warp_field,
+		const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
+		bool band_union_only, bool known_values_only,
+		bool substitute_original, float truncation_float_threshold) {
 	int matrix_size = static_cast<int>(warped_live_field.size());
 	const int column_count = static_cast<int>(warped_live_field.cols());
 	const int row_count = static_cast<int>(warped_live_field.rows());
@@ -86,13 +87,13 @@ eig::MatrixXf interpolate(math::MatrixXv2f& warp_field,
 		float value00, value01, value10, value11;
 		if (substitute_original) {
 			value00 = sample_tsdf_value_replacing_when_out_of_bounds(warped_live_field, base_x, base_y,
-			                                                         live_tsdf_value);
+					live_tsdf_value);
 			value01 = sample_tsdf_value_replacing_when_out_of_bounds(warped_live_field, base_x, base_y + 1,
-			                                                         live_tsdf_value);
+					live_tsdf_value);
 			value10 = sample_tsdf_value_replacing_when_out_of_bounds(warped_live_field, base_x + 1, base_y,
-			                                                         live_tsdf_value);
+					live_tsdf_value);
 			value11 = sample_tsdf_value_replacing_when_out_of_bounds(warped_live_field, base_x + 1, base_y + 1,
-			                                                         live_tsdf_value);
+					live_tsdf_value);
 		} else {
 			value00 = sample_tsdf_value_at(warped_live_field, base_x, base_y);
 			value01 = sample_tsdf_value_at(warped_live_field, base_x, base_y + 1);
@@ -103,24 +104,41 @@ eig::MatrixXf interpolate(math::MatrixXv2f& warp_field,
 		float interpolated_value0 = value00 * inverse_ratio_y + value01 * ratio_y;
 		float interpolated_value1 = value10 * inverse_ratio_y + value11 * ratio_y;
 		float new_value = interpolated_value0 * inverse_ratio_x + interpolated_value1 * ratio_x;
-		if (1.0 - std::abs(new_value) < truncation_float_threshold) {
+		if (TModifyWarpField && 1.0 - std::abs(new_value) < truncation_float_threshold) {
 			new_value = std::copysign(1.0f, new_value);
 			warp_field(i_element) = math::Vector2f(0.0f);
 		}
-
 		new_live_field(i_element) = new_value;
 	}
 
 	return new_live_field;
 }
 
-bp::object py_interpolate(const eig::MatrixXf& warped_live_field,
+eig::MatrixXf resample(math::MatrixXv2f& warp_field,
+		const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
+		bool band_union_only, bool known_values_only,
+		bool substitute_original, float truncation_float_threshold) {
+	return resample_aux<true>(warp_field, warped_live_field, canonical_field, band_union_only, known_values_only,
+			substitute_original, truncation_float_threshold);
+}
+
+eig::MatrixXf resample_warp_unchanged(
+		math::MatrixXv2f& warp_field,
+		const eig::MatrixXf& warped_live_field,
+		const eig::MatrixXf& canonical_field,
+		bool band_union_only, bool known_values_only,
+		bool substitute_original, float truncation_float_threshold) {
+	return resample_aux<true>(warp_field, warped_live_field, canonical_field, band_union_only, known_values_only,
+			substitute_original, truncation_float_threshold);
+}
+
+bp::object py_resample(const eig::MatrixXf& warped_live_field,
 		const eig::MatrixXf& canonical_field, eig::MatrixXf warp_field_u,
 		eig::MatrixXf warp_field_v, bool band_union_only, bool known_values_only,
 		bool substitute_original, float truncation_float_threshold)
 		{
 	math::MatrixXv2f warp_field = math::stack_as_xv2f(warp_field_u, warp_field_v);
-	eig::MatrixXf new_warped_live_field = interpolate(warp_field, warped_live_field,
+	eig::MatrixXf new_warped_live_field = resample(warp_field, warped_live_field,
 			canonical_field, band_union_only, known_values_only, substitute_original,
 			truncation_float_threshold);
 	bp::object warp_field_u_out(warp_field_u);
@@ -129,4 +147,19 @@ bp::object py_interpolate(const eig::MatrixXf& warped_live_field,
 	return bp::make_tuple(warped_live_field_out, bp::make_tuple(warp_field_u_out, warp_field_v_out));
 }
 
-}//namespace nonrigid_optimization
+bp::object py_resample_warp_unchanged(const eig::MatrixXf& warped_live_field,
+		const eig::MatrixXf& canonical_field, eig::MatrixXf warp_field_u,
+		eig::MatrixXf warp_field_v, bool band_union_only, bool known_values_only,
+		bool substitute_original, float truncation_float_threshold)
+		{
+	math::MatrixXv2f warp_field = math::stack_as_xv2f(warp_field_u, warp_field_v);
+	eig::MatrixXf new_warped_live_field = resample_warp_unchanged(warp_field, warped_live_field,
+			canonical_field, band_union_only, known_values_only, substitute_original,
+			truncation_float_threshold);
+	bp::object warp_field_u_out(warp_field_u);
+	bp::object warp_field_v_out(warp_field_v);
+	bp::object warped_live_field_out(new_warped_live_field);
+	return bp::make_tuple(warped_live_field_out, bp::make_tuple(warp_field_u_out, warp_field_v_out));
+}
+
+}		//namespace nonrigid_optimization

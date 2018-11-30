@@ -22,7 +22,7 @@ from enum import Enum
 
 # local
 from data_term import DataTermMethod
-from optimizer2d import ComputeMethod, Optimizer2d, AdaptiveLearningRateMethod
+from slavcheva_optimizer2d import ComputeMethod, SlavchevaOptimizer2d, AdaptiveLearningRateMethod
 from smoothing_term import SmoothingTermMethod
 from sobolev_filter import generate_1d_sobolev_kernel
 # has to be compiled and installed first (cpp folder)
@@ -48,31 +48,31 @@ def build_optimizer(optimizer_choice, out_path, field_size, view_scaling_factor=
         compute_method = (ComputeMethod.DIRECT
                           if optimizer_choice == OptimizerChoice.PYTHON_DIRECT
                           else ComputeMethod.VECTORIZED)
-        optimizer = Optimizer2d(out_path=out_path,
-                                field_size=field_size,
+        optimizer = SlavchevaOptimizer2d(out_path=out_path,
+                                         field_size=field_size,
 
-                                compute_method=compute_method,
+                                         compute_method=compute_method,
 
-                                level_set_term_enabled=False,
-                                sobolev_smoothing_enabled=True,
+                                         level_set_term_enabled=False,
+                                         sobolev_smoothing_enabled=True,
 
-                                data_term_method=data_term_method,
-                                smoothing_term_method=SmoothingTermMethod.TIKHONOV,
-                                adaptive_learning_rate_method=AdaptiveLearningRateMethod.NONE,
+                                         data_term_method=data_term_method,
+                                         smoothing_term_method=SmoothingTermMethod.TIKHONOV,
+                                         adaptive_learning_rate_method=AdaptiveLearningRateMethod.NONE,
 
-                                data_term_weight=1.0,
-                                smoothing_term_weight=0.2,
-                                isomorphic_enforcement_factor=0.1,
-                                level_set_term_weight=0.2,
+                                         data_term_weight=1.0,
+                                         smoothing_term_weight=0.2,
+                                         isomorphic_enforcement_factor=0.1,
+                                         level_set_term_weight=0.2,
 
-                                maximum_warp_length_lower_threshold=convergence_threshold,
-                                max_iterations=max_iterations,
-                                min_iterations=5,
+                                         maximum_warp_length_lower_threshold=convergence_threshold,
+                                         max_iterations=max_iterations,
+                                         min_iterations=5,
 
-                                sobolev_kernel=generate_1d_sobolev_kernel(size=7, strength=0.1),
+                                         sobolev_kernel=generate_1d_sobolev_kernel(size=7, strength=0.1),
 
-                                enable_component_fields=True,
-                                view_scaling_factor=view_scaling_factor)
+                                         enable_component_fields=True,
+                                         view_scaling_factor=view_scaling_factor)
     elif optimizer_choice == OptimizerChoice.CPP:
 
         shared_parameters = cpp_module.SharedParameters.get_instance()

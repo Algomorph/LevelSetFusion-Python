@@ -34,7 +34,7 @@ from build_optimizer import OptimizerChoice, build_optimizer
 from data_term import DataTermMethod
 from dataset import ImageBasedSingleFrameDataset, MaskedImageBasedSingleFrameDataset
 from tsdf_field_generation import DepthInterpolationMethod
-from utils.point import Point
+from utils.point2d import Point2d
 from utils.printing import *
 from utils.visualization import save_initial_fields, save_final_fields, rescale_depth_to_8bit, highlight_row_on_gray, \
     sdf_field_to_image, save_tiled_tsdf_comparison_image, plot_warp_statistics
@@ -254,7 +254,7 @@ def perform_multiple_tests(start_from_sample=0,
                     plot_warp_statistics(out_subpath, warp_statistics, extra_path=None)
 
         convergence_status = optimizer.get_convergence_status()
-        max_warp_at = Point(convergence_status.max_warp_location.x, convergence_status.max_warp_location.y)
+        max_warp_at = Point2d(convergence_status.max_warp_location.x, convergence_status.max_warp_location.y)
         if not convergence_status.iteration_limit_reached:
             if convergence_status.largest_warp_above_maximum_threshold:
                 print(": DIVERGED", end="")

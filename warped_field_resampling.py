@@ -16,7 +16,7 @@
 
 import numpy as np
 import math
-from utils.point import Point
+from utils.point2d import Point2d
 import utils.sampling as sampling
 from utils.tsdf_set_routines import value_outside_narrow_band
 from utils.printing import BOLD_YELLOW, BOLD_GREEN, RESET
@@ -50,7 +50,7 @@ def get_and_print_interpolation_data(canonical_field, warped_live_field, warp_fi
         if original_live_sdf == 1.0:
             return
 
-    warped_location = Point(x, y) + Point(coordinates=warp_field[y, x])
+    warped_location = Point2d(x, y) + Point2d(coordinates=warp_field[y, x])
 
     if substitute_original:
         new_value, metainfo = sampling.bilinear_sample_at_replacement_metainfo(warped_live_field, point=warped_location,
@@ -64,9 +64,9 @@ def get_and_print_interpolation_data(canonical_field, warped_live_field, warp_fi
     print_interpolation_data(metainfo, original_live_sdf, new_value)
 
 
-def interpolate_warped_live(canonical_field, warped_live_field, warp_field, gradient_field, band_union_only=False,
-                            known_values_only=False, substitute_original=False,
-                            data_gradient_field=None, smoothing_gradient_field=None):
+def resample_warped_live(canonical_field, warped_live_field, warp_field, gradient_field, band_union_only=False,
+                         known_values_only=False, substitute_original=False,
+                         data_gradient_field=None, smoothing_gradient_field=None):
     field_size = warp_field.shape[0]
     new_warped_live_field = np.ones_like(warped_live_field)
     for y in range(field_size):
@@ -82,7 +82,7 @@ def interpolate_warped_live(canonical_field, warped_live_field, warp_field, grad
                     new_warped_live_field[y, x] = original_live_sdf
                     continue
 
-            warped_location = Point(x, y) + Point(coordinates=warp_field[y, x])
+            warped_location = Point2d(x, y) + Point2d(coordinates=warp_field[y, x])
 
             if substitute_original:
                 new_value, metainfo = sampling.bilinear_sample_at_replacement_metainfo(warped_live_field,
@@ -106,15 +106,15 @@ def interpolate_warped_live(canonical_field, warped_live_field, warp_field, grad
     np.copyto(warped_live_field, new_warped_live_field)
 
 
-def interpolate_warped_live_with_flag_info(warped_live_field, warp_field, update_field, flag_field):
+def resample_warped_live_with_flag_info(warped_live_field, warp_field, update_field, flag_field):
     field_size = warp_field.shape[0]
     new_warped_live_field = np.ones_like(warped_live_field)
     for y in range(field_size):
         for x in range(field_size):
-            warped_location = Point(x, y) + Point(coordinates=warp_field[y, x])
-            base_point = Point(math.floor(warped_location.x), math.floor(warped_location.y))
+            warped_location = Point2d(x, y) + Point2d(coordinates=warp_field[y, x])
+            base_point = Point2d(math.floor(warped_location.x), math.floor(warped_location.y))
             ratios = warped_location - base_point
-            inverse_ratios = Point(1.0, 1.0) - ratios
+            inverse_ratios = Point2d(1.0, 1.0) - ratios
             original_value = warped_live_field[y, x]
             value00 = sampling.sample_at(warped_live_field, point=base_point)
             flag00 = sampling.sample_flag_at(flag_field, point=base_point)
@@ -122,18 +122,18 @@ def interpolate_warped_live_with_flag_info(warped_live_field, warp_field, update
             if flag00 == 0:
                 value00 = original_value
                 used_replacement = True
-            value01 = sampling.sample_at(warped_live_field, point=base_point + Point(0, 1))
-            flag01 = sampling.sample_flag_at(flag_field, point=base_point + Point(0, 1))
+            value01 = sampling.sample_at(warped_live_field, point=base_point + Point2d(0, 1))
+            flag01 = sampling.sample_flag_at(flag_field, point=base_point + Point2d(0, 1))
             if flag01 == 0:
                 value01 = original_value
                 used_replacement = True
-            value10 = sampling.sample_at(warped_live_field, point=base_point + Point(1, 0))
-            flag10 = sampling.sample_flag_at(flag_field, point=base_point + Point(1, 0))
+            value10 = sampling.sample_at(warped_live_field, point=base_point + Point2d(1, 0))
+            flag10 = sampling.sample_flag_at(flag_field, point=base_point + Point2d(1, 0))
             if flag10 == 0:
                 value10 = original_value
                 used_replacement = True
-            value11 = sampling.sample_at(warped_live_field, point=base_point + Point(1, 1))
-            flag11 = sampling.sample_flag_at(flag_field, point=base_point + Point(1, 1))
+            value11 = sampling.sample_at(warped_live_field, point=base_point + Point2d(1, 1))
+            flag11 = sampling.sample_flag_at(flag_field, point=base_point + Point2d(1, 1))
             if flag11 == 0:
                 value11 = original_value
                 used_replacement = True

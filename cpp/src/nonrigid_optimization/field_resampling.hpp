@@ -31,12 +31,21 @@ namespace eig = Eigen;
 namespace nonrigid_optimization {
 
 //TODO: break this up into multiple functions (as necessary, judge by usage) instead of passing behavior flags
-eig::MatrixXf interpolate(math::MatrixXv2f& warp_field,
+eig::MatrixXf resample(math::MatrixXv2f& warp_field,
+                           const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
+                           bool band_union_only = false, bool known_values_only = false,
+                           bool substitute_original = false, float truncation_float_threshold = 1e-6);
+eig::MatrixXf resample_warp_unchanged(math::MatrixXv2f& warp_field,
                            const eig::MatrixXf& warped_live_field, const eig::MatrixXf& canonical_field,
                            bool band_union_only = false, bool known_values_only = false,
                            bool substitute_original = false, float truncation_float_threshold = 1e-6);
 
-bp::object py_interpolate(const eig::MatrixXf& warped_live_field,
+bp::object py_resample(const eig::MatrixXf& warped_live_field,
+		const eig::MatrixXf& canonical_field, eig::MatrixXf warp_field_u,
+		eig::MatrixXf warp_field_v, bool band_union_only = false, bool known_values_only = false,
+		bool substitute_original = false, float truncation_float_threshold = 1e-6);
+
+bp::object py_resample_warp_unchanged(const eig::MatrixXf& warped_live_field,
 		const eig::MatrixXf& canonical_field, eig::MatrixXf warp_field_u,
 		eig::MatrixXf warp_field_v, bool band_union_only = false, bool known_values_only = false,
 		bool substitute_original = false, float truncation_float_threshold = 1e-6);

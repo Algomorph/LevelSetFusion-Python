@@ -9,7 +9,7 @@
 //local
 #include <eigen_numpy.hpp>
 #include "nonrigid_optimization/data_term.hpp"
-#include "nonrigid_optimization/interpolation.hpp"
+#include "nonrigid_optimization/field_resampling.hpp"
 #include "nonrigid_optimization/sobolev_optimizer2d.hpp"
 #include "nonrigid_optimization/logging.hpp"
 
@@ -41,7 +41,8 @@ boost::shared_ptr<SharedParameters> get_shared_shared_parameters() {
 	return boost::shared_ptr<SharedParameters>(&SharedParameters::get_instance(), NullDeleter());
 }
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(interpolate_overloads, nonrigid_optimization::py_interpolate, 4, 8)
+BOOST_PYTHON_FUNCTION_OVERLOADS(resample_overloads, nonrigid_optimization::py_resample, 4, 8)
+BOOST_PYTHON_FUNCTION_OVERLOADS(resample_warp_unchanged_overloads, nonrigid_optimization::py_resample, 4, 8)
 
 BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 {
@@ -51,11 +52,11 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 	bp::def("matrix_product_float64", matrix_product_double);
 	bp::def("matrix_product_float32", matrix_product_float);
 	bp::def("data_term_at_location", nro::py_data_term_at_location);
-	bp::def("interpolate", nro::py_interpolate,
-			interpolate_overloads(
+	bp::def("resample", nro::py_resample,
+			resample_overloads(
 					bp::args("warped_live_field", "canonical_field", "warp_field_u", "warp_field_v", "band_union_only",
 							"known_values_only", "substitute_original", "truncation_float_threshold"),
-					"interpolate (warp) a 2D scalar field using a 2D vector field, such that new value at (x,y)"
+					        " resample (warp) a 2D scalar field using a 2D vector field, such that new value at (x,y)"
 							" is interpolated bilinearly from the original scalar field (warped_live_field) at the location "
 							"(x+u, y+v), where"
 							" the vector (u,v) is located at (x,y) within the warp field (i.e. u = warp_field_u[y,x]).\n"

@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
 
-from utils.point import Point
+from utils.point2d import Point2d
 from utils.sampling import get_focus_coordinates
 
 # TODO: take care of fromstring deprecation issue throughout file
@@ -225,7 +225,7 @@ def mark_point_on_sdf_image(image, point, scale=8):
 
 def mark_focus_coordinate_on_sdf_image(image, scale=8):
     focus_coordinates = get_focus_coordinates()
-    return mark_point_on_sdf_image(image, Point(focus_coordinates[0], focus_coordinates[1]), scale)
+    return mark_point_on_sdf_image(image, Point2d(focus_coordinates[0], focus_coordinates[1]), scale)
 
 
 def logs_ordered_by_pixel_positions_number(neighborhood_log):
@@ -420,7 +420,7 @@ def save_tiled_tsdf_comparison_image(out_path, good_case_sdfs, bad_case_sdfs, ve
                     pixel_y = group_y * group_height + (group_y + 1) * padding_width
                     canvas[pixel_y, pixel_x_start:pixel_x_end] = group_border_color
                     # 5
-                    pixel_y = pixel_y + group_height-1
+                    pixel_y = pixel_y + group_height - 1
                     canvas[pixel_y, pixel_x_start:pixel_x_end] = group_border_color
 
     make_half(0, good_case_sdfs)

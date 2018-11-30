@@ -21,7 +21,7 @@ import math
 # libraries
 import numpy as np
 # local
-from utils.point import Point
+from utils.point2d import Point2d
 
 # TODO: move all the focus coordinate stuff to a separate file
 FOCUS_COORDINATES = (34, 80)
@@ -44,7 +44,7 @@ def sample_at(field, x=0, y=0, point=None):
     :param y: y coordinate for sampling location
     :type y: int
     :param point: full coordinate for sampling location.
-    :type point: Point
+    :type point: Point2d
     :return: scalar value at given coordinate if (x,y) are within bounds of the scalar field, 1 otherwise
     """
     if point is not None:
@@ -97,8 +97,8 @@ def sample_warp_replace_if_zero(warp_field, x, y, replacement):
 
 
 class BilinearSamplingMetaInfo():
-    def __init__(self, value00=1, value01=1, value10=1, value11=1, ratios=Point(1.0, 1.0),
-                 inverse_ratios=Point(0.0, 0.0)):
+    def __init__(self, value00=1, value01=1, value10=1, value11=1, ratios=Point2d(1.0, 1.0),
+                 inverse_ratios=Point2d(0.0, 0.0)):
         self.value00 = value00
         self.value01 = value01
         self.value10 = value10
@@ -110,11 +110,11 @@ class BilinearSamplingMetaInfo():
 def interpolate_bilinearly(values, ratios):
     """
     :param values: iterable of 4 values, representing discrete points, in the order {([x=]0,[y=]0), (01), (10), (11)}
-    :type ratios: Point
+    :type ratios: Point2d
     :param ratios: distances from point (00) to the sample point along x and y axes, respectively
     :return:
     """
-    inverse_ratios = Point(1.0, 1.0) - ratios
+    inverse_ratios = Point2d(1.0, 1.0) - ratios
 
     value00 = values[0]
     value01 = values[1]
@@ -127,8 +127,8 @@ def interpolate_bilinearly(values, ratios):
 
 
 def get_bilinear_ratios(x, y):
-    point = Point(x, y)
-    base_point = Point(math.floor(x), math.floor(y))
+    point = Point2d(x, y)
+    base_point = Point2d(math.floor(x), math.floor(y))
     ratios = point - base_point
     return ratios
 
@@ -149,7 +149,7 @@ def bilinear_sample_at(field, x=0, y=0, point=None):
     :param y: y coordinate for sampling location
     :type y: int
     :param point: full coordinate for sampling location.
-    :type point: Point
+    :type point: Point2d
     :return: bilinearly interpolated scalar value at given coordinate if (x,y) are within bounds of the scalar field,
      1 otherwise
     """
@@ -160,16 +160,16 @@ def bilinear_sample_at(field, x=0, y=0, point=None):
     if x < 0 or x >= field.shape[1] or y < 0 or y >= field.shape[0]:
         return 1
 
-    point = Point(x, y)
+    point = Point2d(x, y)
 
-    base_point = Point(math.floor(point.x), math.floor(point.y))
+    base_point = Point2d(math.floor(point.x), math.floor(point.y))
     ratios = point - base_point
-    inverse_ratios = Point(1.0, 1.0) - ratios
+    inverse_ratios = Point2d(1.0, 1.0) - ratios
 
     value00 = sample_at(field, point=base_point)
-    value01 = sample_at(field, point=base_point + Point(0, 1))
-    value10 = sample_at(field, point=base_point + Point(1, 0))
-    value11 = sample_at(field, point=base_point + Point(1, 1))
+    value01 = sample_at(field, point=base_point + Point2d(0, 1))
+    value10 = sample_at(field, point=base_point + Point2d(1, 0))
+    value11 = sample_at(field, point=base_point + Point2d(1, 1))
 
     interpolated_value0 = value00 * inverse_ratios.y + value01 * ratios.y
     interpolated_value1 = value10 * inverse_ratios.y + value11 * ratios.y
@@ -194,7 +194,7 @@ def bilinear_sample_at_metainfo(field, x=0, y=0, point=None):
     :param y: y coordinate for sampling location
     :type y: int
     :param point: full coordinate for sampling location.
-    :type point: Point
+    :type point: Point2d
     :return: bilinearly interpolated scalar value at given coordinate if (x,y) are within bounds of the scalar field,
      1 otherwise
     """
@@ -206,16 +206,16 @@ def bilinear_sample_at_metainfo(field, x=0, y=0, point=None):
         metainfo = BilinearSamplingMetaInfo()
         return 1, metainfo
 
-    point = Point(x, y)
+    point = Point2d(x, y)
 
-    base_point = Point(math.floor(point.x), math.floor(point.y))
+    base_point = Point2d(math.floor(point.x), math.floor(point.y))
     ratios = point - base_point
-    inverse_ratios = Point(1.0, 1.0) - ratios
+    inverse_ratios = Point2d(1.0, 1.0) - ratios
 
     value00 = sample_at(field, point=base_point)
-    value01 = sample_at(field, point=base_point + Point(0, 1))
-    value10 = sample_at(field, point=base_point + Point(1, 0))
-    value11 = sample_at(field, point=base_point + Point(1, 1))
+    value01 = sample_at(field, point=base_point + Point2d(0, 1))
+    value10 = sample_at(field, point=base_point + Point2d(1, 0))
+    value11 = sample_at(field, point=base_point + Point2d(1, 1))
 
     interpolated_value0 = value00 * inverse_ratios.y + value01 * ratios.y
     interpolated_value1 = value10 * inverse_ratios.y + value11 * ratios.y
@@ -241,7 +241,7 @@ def bilinear_sample_at_replacement(field, x=0, y=0, point=None, replacement=1):
     :param y: y coordinate for sampling location
     :type y: int
     :param point: full coordinate for sampling location.
-    :type point: Point
+    :type point: Point2d
     :return: bilinearly interpolated scalar value at given coordinate if (x,y) are within bounds of the scalar field,
      1 otherwise
     """
@@ -252,16 +252,16 @@ def bilinear_sample_at_replacement(field, x=0, y=0, point=None, replacement=1):
     if x < 0 or x >= field.shape[1] or y < 0 or y >= field.shape[0]:
         return 1
 
-    point = Point(x, y)
+    point = Point2d(x, y)
 
-    base_point = Point(math.floor(point.x), math.floor(point.y))
+    base_point = Point2d(math.floor(point.x), math.floor(point.y))
     ratios = point - base_point
-    inverse_ratios = Point(1.0, 1.0) - ratios
+    inverse_ratios = Point2d(1.0, 1.0) - ratios
 
     value00 = sample_at_replacement(field, replacement, point=base_point)
-    value01 = sample_at_replacement(field, replacement, point=base_point + Point(0, 1))
-    value10 = sample_at_replacement(field, replacement, point=base_point + Point(1, 0))
-    value11 = sample_at_replacement(field, replacement, point=base_point + Point(1, 1))
+    value01 = sample_at_replacement(field, replacement, point=base_point + Point2d(0, 1))
+    value10 = sample_at_replacement(field, replacement, point=base_point + Point2d(1, 0))
+    value11 = sample_at_replacement(field, replacement, point=base_point + Point2d(1, 1))
 
     interpolated_value0 = value00 * inverse_ratios.y + value01 * ratios.y
     interpolated_value1 = value10 * inverse_ratios.y + value11 * ratios.y
@@ -285,7 +285,7 @@ def bilinear_sample_at_replacement_metainfo(field, x=0, y=0, point=None, replace
     :param y: y coordinate for sampling location
     :type y: int
     :param point: full coordinate for sampling location.
-    :type point: Point
+    :type point: Point2d
     :return: bilinearly interpolated scalar value at given coordinate if (x,y) are within bounds of the scalar field,
      1 otherwise
     """
@@ -296,16 +296,16 @@ def bilinear_sample_at_replacement_metainfo(field, x=0, y=0, point=None, replace
     if x < 0 or x >= field.shape[1] or y < 0 or y >= field.shape[0]:
         return 1
 
-    point = Point(x, y)
+    point = Point2d(x, y)
 
-    base_point = Point(math.floor(point.x), math.floor(point.y))
+    base_point = Point2d(math.floor(point.x), math.floor(point.y))
     ratios = point - base_point
-    inverse_ratios = Point(1.0, 1.0) - ratios
+    inverse_ratios = Point2d(1.0, 1.0) - ratios
 
     value00 = sample_at_replacement(field, replacement, point=base_point)
-    value01 = sample_at_replacement(field, replacement, point=base_point + Point(0, 1))
-    value10 = sample_at_replacement(field, replacement, point=base_point + Point(1, 0))
-    value11 = sample_at_replacement(field, replacement, point=base_point + Point(1, 1))
+    value01 = sample_at_replacement(field, replacement, point=base_point + Point2d(0, 1))
+    value10 = sample_at_replacement(field, replacement, point=base_point + Point2d(1, 0))
+    value11 = sample_at_replacement(field, replacement, point=base_point + Point2d(1, 1))
 
     interpolated_value0 = value00 * inverse_ratios.y + value01 * ratios.y
     interpolated_value1 = value10 * inverse_ratios.y + value11 * ratios.y

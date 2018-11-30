@@ -23,11 +23,11 @@
 #include "sobolev_optimizer2d.hpp"
 #include "data_term.hpp"
 #include "smoothing_term.hpp"
-#include "interpolation.hpp"
 #include "filtered_statistics.hpp"
 #include "../math/statistics.hpp"
 #include "../math/gradients.hpp"
 #include "../math/convolution.hpp"
+#include "field_resampling.hpp"
 
 namespace nonrigid_optimization {
 
@@ -119,7 +119,7 @@ float SobolevOptimizer2d::perform_optimization_iteration_and_return_max_warp(eig
 	warp_field = (data_term_gradient + smoothing_term_gradient * sobolev_parameters().smoothing_term_weight)
 			* -shared_parameters().gradient_descent_rate;
 	math::convolve_with_kernel_preserve_zeros(warp_field, sobolev_parameters().sobolev_kernel);
-	warped_live_field = interpolate(warp_field, warped_live_field, canonical_field, true);
+	warped_live_field = resample(warp_field, warped_live_field, canonical_field, true);
 	float maximum_warp_length;
 	math::locate_max_norm(maximum_warp_length, max_warp_location, warp_field);
 	return maximum_warp_length;

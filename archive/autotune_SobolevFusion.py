@@ -26,7 +26,7 @@ import numpy as np
 
 # local
 from field_generator import generate_initial_fields
-from optimizer2d import Optimizer2d, AdaptiveLearningRateMethod
+from slavcheva_optimizer2d import SlavchevaOptimizer2d, AdaptiveLearningRateMethod
 from sobolev_filter import generate_1d_sobolev_kernel
 from utils.printing import *
 
@@ -104,7 +104,7 @@ def main():
                     canonical_field_copy = canonical_field.copy()
                     warp_field_copy = warp_field.copy()
 
-                    optimizer = Optimizer2d(
+                    optimizer = SlavchevaOptimizer2d(
                         out_path=out_path,
                         field_size=field_size,
 

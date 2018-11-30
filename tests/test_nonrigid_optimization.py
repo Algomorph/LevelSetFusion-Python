@@ -16,7 +16,7 @@
 from unittest import TestCase
 
 from data_term import DataTermMethod
-from optimizer2d import Optimizer2d, ComputeMethod, AdaptiveLearningRateMethod
+from slavcheva_optimizer2d import SlavchevaOptimizer2d, ComputeMethod, AdaptiveLearningRateMethod
 import numpy as np
 
 from smoothing_term import SmoothingTermMethod
@@ -25,31 +25,31 @@ from sobolev_filter import generate_1d_sobolev_kernel
 
 def make_optimizer(compute_method, field_size, max_iterations=1):
     view_scaling_factor = 1024 // field_size
-    optimizer = Optimizer2d(out_path="test_non_rigid_out",
-                            field_size=field_size,
-                            default_value=1,
+    optimizer = SlavchevaOptimizer2d(out_path="test_non_rigid_out",
+                                     field_size=field_size,
+                                     default_value=1,
 
-                            compute_method=compute_method,
+                                     compute_method=compute_method,
 
-                            level_set_term_enabled=False,
-                            sobolev_smoothing_enabled=True,
+                                     level_set_term_enabled=False,
+                                     sobolev_smoothing_enabled=True,
 
-                            data_term_method=DataTermMethod.BASIC,
-                            smoothing_term_method=SmoothingTermMethod.TIKHONOV,
-                            adaptive_learning_rate_method=AdaptiveLearningRateMethod.NONE,
+                                     data_term_method=DataTermMethod.BASIC,
+                                     smoothing_term_method=SmoothingTermMethod.TIKHONOV,
+                                     adaptive_learning_rate_method=AdaptiveLearningRateMethod.NONE,
 
-                            data_term_weight=1.0,
-                            smoothing_term_weight=0.2,
-                            isomorphic_enforcement_factor=0.1,
-                            level_set_term_weight=0.2,
+                                     data_term_weight=1.0,
+                                     smoothing_term_weight=0.2,
+                                     isomorphic_enforcement_factor=0.1,
+                                     level_set_term_weight=0.2,
 
-                            maximum_warp_length_lower_threshold=0.05,
-                            max_iterations=max_iterations,
+                                     maximum_warp_length_lower_threshold=0.05,
+                                     max_iterations=max_iterations,
 
-                            sobolev_kernel=generate_1d_sobolev_kernel(size=3, strength=0.1),
+                                     sobolev_kernel=generate_1d_sobolev_kernel(size=3, strength=0.1),
 
-                            enable_component_fields=True,
-                            view_scaling_factor=view_scaling_factor)
+                                     enable_component_fields=True,
+                                     view_scaling_factor=view_scaling_factor)
     return optimizer
 
 

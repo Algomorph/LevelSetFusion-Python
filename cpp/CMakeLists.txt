@@ -141,8 +141,8 @@ add_library(${MODULE_NAME} SHARED
 
             src/nonrigid_optimization/data_term.hpp
             src/nonrigid_optimization/data_term.cpp
-            src/nonrigid_optimization/interpolation.hpp
-            src/nonrigid_optimization/interpolation.cpp
+            src/nonrigid_optimization/field_resampling.hpp
+            src/nonrigid_optimization/field_resampling.cpp
             src/nonrigid_optimization/boolean_operations.hpp
             src/nonrigid_optimization/full_gradient.cpp
             src/nonrigid_optimization/full_gradient.hpp
