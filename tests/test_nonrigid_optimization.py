@@ -13,12 +13,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #  ================================================================
+# stlib
 from unittest import TestCase
-
-from data_term import DataTermMethod
-from slavcheva_optimizer2d import SlavchevaOptimizer2d, ComputeMethod, AdaptiveLearningRateMethod
+# libraries
 import numpy as np
 
+# test targets
+from data_term import DataTermMethod
+from slavcheva_optimizer2d import SlavchevaOptimizer2d, ComputeMethod, AdaptiveLearningRateMethod
+import utils.sampling as sampling
 from smoothing_term import SmoothingTermMethod
 from sobolev_filter import generate_1d_sobolev_kernel
 
@@ -55,6 +58,8 @@ def make_optimizer(compute_method, field_size, max_iterations=1):
 
 class TestNonRigidOptimization(TestCase):
     def test_nonrigid_optimization01(self):
+        # corresponds to test case test_sobolev_optimizer01 for C++
+        sampling.set_focus_coordinates(0, 0)
         field_size = 4
         live_field_template = np.array([[1., 1., 0.49999955, 0.42499956],
                                         [1., 0.44999936, 0.34999937, 0.32499936],
@@ -89,19 +94,18 @@ class TestNonRigidOptimization(TestCase):
                                         [0.05771814, 0.02112256],
                                         [0.01468342, 0.01908935],
                                         [0.01397111, 0.02855439]]], dtype=np.float32)
-        # warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
-        optimizer = make_optimizer(ComputeMethod.DIRECT, field_size, 1)
-        optimizer.optimize(live_field, canonical_field)
-        self.assertTrue(np.allclose(live_field, expected_live_field_out))
-        # self.assertTrue(np.allclose(warp_field, expected_warps_out))
         live_field = live_field_template.copy()
-        warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
         optimizer = make_optimizer(ComputeMethod.VECTORIZED, field_size, 1)
         optimizer.optimize(live_field, canonical_field)
         self.assertTrue(np.allclose(live_field, expected_live_field_out))
-        # self.assertTrue(np.allclose(warp_field, expected_warps_out))
+        optimizer = make_optimizer(ComputeMethod.DIRECT, field_size, 1)
+        live_field = live_field_template.copy()
+        optimizer.optimize(live_field, canonical_field)
+        self.assertTrue(np.allclose(live_field, expected_live_field_out))
+
 
     def test_nonrigid_optimization02(self):
+        sampling.set_focus_coordinates(0, 0)
         field_size = 4
         live_field_template = np.array([[1., 1., 0.49999955, 0.42499956],
                                         [1., 0.44999936, 0.34999937, 0.32499936],
@@ -112,9 +116,8 @@ class TestNonRigidOptimization(TestCase):
                                     [1.0000000e+00, 3.2499936e-01, 1.9999936e-01, 1.4999935e-01],
                                     [1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02],
                                     [1.0000000e+00, 7.5000443e-02, 4.4107438e-07, -9.9999562e-02]], dtype=np.float32)
-        warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
         optimizer = make_optimizer(ComputeMethod.DIRECT, field_size, 2)
-        optimizer.optimize(live_field, canonical_field, warp_field)
+        optimizer.optimize(live_field, canonical_field)
         expected_live_field_out = np.array(
             [[1., 1., 0.48917317, 0.43777004],
              [1., 0.43342987, 0.3444094, 0.3287867],
@@ -122,7 +125,6 @@ class TestNonRigidOptimization(TestCase):
              [1., 0.2261582, 0.17907946, 0.14683424]], dtype=np.float32)
         self.assertTrue(np.allclose(live_field, expected_live_field_out))
         live_field = live_field_template.copy()
-        warp_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
         optimizer = make_optimizer(ComputeMethod.VECTORIZED, field_size, 2)
-        optimizer.optimize(live_field, canonical_field, warp_field)
+        optimizer.optimize(live_field, canonical_field)
         self.assertTrue(np.allclose(live_field, expected_live_field_out))

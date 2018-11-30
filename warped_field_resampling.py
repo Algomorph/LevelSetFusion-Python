@@ -103,7 +103,7 @@ def resample_warped_live(canonical_field, warped_live_field, warp_field, gradien
             if sampling.focus_coordinates_match(x, y):
                 print_interpolation_data(metainfo, original_live_sdf, new_value)
             new_warped_live_field[y, x] = new_value
-    np.copyto(warped_live_field, new_warped_live_field)
+    return new_warped_live_field
 
 
 def resample_warped_live_with_flag_info(warped_live_field, warp_field, update_field, flag_field):

@@ -67,6 +67,7 @@ bool almost_equal_verbose(TMatrix matrix_a, TMatrix matrix_b, double tolerance =
 }
 
 MatrixXv2f stack_as_xv2f(const Eigen::MatrixXf& matrix_a, const Eigen::MatrixXf& matrix_b);
+void unstack_xv2f(Eigen::MatrixXf& matrix_a, Eigen::MatrixXf& matrix_b, const MatrixXv2f vector_field);
 
 }//namespace math
 

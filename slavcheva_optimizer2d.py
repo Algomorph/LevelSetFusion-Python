@@ -224,7 +224,6 @@ class SlavchevaOptimizer2d:
               -focus_smoothing_gradient, RESET, sep='', end='')
 
         # ***
-
         if self.sobolev_smoothing_enabled:
             convolve_with_kernel_preserve_zeros(self.gradient_field, self.sobolev_kernel)
 
@@ -274,10 +273,8 @@ class SlavchevaOptimizer2d:
                 gradient = 0.0
 
                 live_sdf = warped_live_field[y, x]
-                canonical_sdf = canonical_field[y, x]
 
                 live_is_truncated = value_outside_narrow_band(live_sdf)
-                canonical_is_truncated = value_outside_narrow_band(canonical_sdf)
 
                 if band_union_only and voxel_is_outside_narrow_band_union(warped_live_field, canonical_field, x, y):
                     continue
@@ -342,12 +339,13 @@ class SlavchevaOptimizer2d:
                     log.warp_magnitudes.append(warp_length)
                     log.sdf_values.append(warped_live_field[y, x])
 
-        resample_warped_live(canonical_field, warped_live_field, warp_field, self.gradient_field,
-                             band_union_only=False, known_values_only=False, substitute_original=False)
+        new_warped_live_field = resample_warped_live(canonical_field, warped_live_field, warp_field,
+                                                     self.gradient_field,
+                                                     band_union_only=False, known_values_only=False,
+                                                     substitute_original=False)
+        np.copyto(warped_live_field, new_warped_live_field)
 
-
-
-        return max_warp, max_warp_location,
+        return max_warp, max_warp_location
 
     def optimize(self, live_field, canonical_field):
 

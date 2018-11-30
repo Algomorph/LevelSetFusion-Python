@@ -42,7 +42,7 @@ boost::shared_ptr<SharedParameters> get_shared_shared_parameters() {
 }
 
 BOOST_PYTHON_FUNCTION_OVERLOADS(resample_overloads, nonrigid_optimization::py_resample, 4, 8)
-BOOST_PYTHON_FUNCTION_OVERLOADS(resample_warp_unchanged_overloads, nonrigid_optimization::py_resample, 4, 8)
+BOOST_PYTHON_FUNCTION_OVERLOADS(resample_warp_unchanged_overloads, nonrigid_optimization::py_resample_warp_unchanged, 4, 8)
 
 BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 {
@@ -54,6 +54,17 @@ BOOST_PYTHON_MODULE (level_set_fusion_optimization)
 	bp::def("data_term_at_location", nro::py_data_term_at_location);
 	bp::def("resample", nro::py_resample,
 			resample_overloads(
+					bp::args("warped_live_field", "canonical_field", "warp_field_u", "warp_field_v", "band_union_only",
+							"known_values_only", "substitute_original", "truncation_float_threshold"),
+					        " resample (warp) a 2D scalar field using a 2D vector field, such that new value at (x,y)"
+							" is interpolated bilinearly from the original scalar field (warped_live_field) at the location "
+							"(x+u, y+v), where"
+							" the vector (u,v) is located at (x,y) within the warp field (i.e. u = warp_field_u[y,x]).\n"
+							" :param band_union_only when set to True, skips processing locations for which both"
+							" warped_live_field and canonical_field contain the values +1 or -1 (truncated sdf values)")
+					);
+	bp::def("resample_warp_unchanged", nro::py_resample_warp_unchanged,
+			resample_warp_unchanged_overloads(
 					bp::args("warped_live_field", "canonical_field", "warp_field_u", "warp_field_v", "band_union_only",
 							"known_values_only", "substitute_original", "truncation_float_threshold"),
 					        " resample (warp) a 2D scalar field using a 2D vector field, such that new value at (x,y)"

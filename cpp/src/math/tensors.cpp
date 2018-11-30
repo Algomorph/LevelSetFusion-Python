@@ -29,6 +29,13 @@ MatrixXv2f stack_as_xv2f(const Eigen::MatrixXf& matrix_a, const Eigen::MatrixXf&
 	return out;
 }
 
-
+void unstack_xv2f(Eigen::MatrixXf& matrix_a, Eigen::MatrixXf& matrix_b, const MatrixXv2f vector_field){
+	matrix_a = Eigen::MatrixXf(vector_field.rows(), vector_field.cols());
+	matrix_b = Eigen::MatrixXf(vector_field.rows(), vector_field.cols());
+	for (Eigen::Index i_element = 0; i_element < vector_field.size(); i_element++){
+		matrix_a(i_element) = vector_field(i_element).x;
+		matrix_b(i_element) = vector_field(i_element).y;
+	}
+}
 
 }//end namespace math

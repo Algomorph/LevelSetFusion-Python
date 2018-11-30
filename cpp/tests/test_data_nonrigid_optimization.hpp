@@ -171,7 +171,7 @@ static math::MatrixXv2f tikhonov_gradient_band_union_only = [] {
 			math::Vector2f(-0.0098418f, -0.01556983f);
 	return grad;
 }();
-static float tikhonov_energy_band_union_only = 0.002550773788243532f;
+static float tikhonov_energy_band_union_only = 0.00255077635f;
 
 //endregion
 

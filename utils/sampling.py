@@ -157,9 +157,6 @@ def bilinear_sample_at(field, x=0, y=0, point=None):
         x = point.x
         y = point.y
 
-    if x < 0 or x >= field.shape[1] or y < 0 or y >= field.shape[0]:
-        return 1
-
     point = Point2d(x, y)
 
     base_point = Point2d(math.floor(point.x), math.floor(point.y))
@@ -201,10 +198,6 @@ def bilinear_sample_at_metainfo(field, x=0, y=0, point=None):
     if point is not None:
         x = point.x
         y = point.y
-
-    if x < 0 or x >= field.shape[1] or y < 0 or y >= field.shape[0]:
-        metainfo = BilinearSamplingMetaInfo()
-        return 1, metainfo
 
     point = Point2d(x, y)
 
@@ -292,9 +285,6 @@ def bilinear_sample_at_replacement_metainfo(field, x=0, y=0, point=None, replace
     if point is not None:
         x = point.x
         y = point.y
-
-    if x < 0 or x >= field.shape[1] or y < 0 or y >= field.shape[0]:
-        return 1
 
     point = Point2d(x, y)
 

@@ -68,7 +68,6 @@ resample_aux(math::MatrixXv2f& warp_field,
 			}
 		}
 		if (known_values_only) {
-			//TODO assumes 1.0 is the default value
 			if (std::abs(live_tsdf_value) == 1.0) {
 				new_live_field(i_element) = live_tsdf_value;
 				continue;
@@ -104,7 +103,7 @@ resample_aux(math::MatrixXv2f& warp_field,
 		float interpolated_value0 = value00 * inverse_ratio_y + value01 * ratio_y;
 		float interpolated_value1 = value10 * inverse_ratio_y + value11 * ratio_y;
 		float new_value = interpolated_value0 * inverse_ratio_x + interpolated_value1 * ratio_x;
-		if (TModifyWarpField && 1.0 - std::abs(new_value) < truncation_float_threshold) {
+		if (TModifyWarpField && (1.0 - std::abs(new_value) < truncation_float_threshold)) {
 			new_value = std::copysign(1.0f, new_value);
 			warp_field(i_element) = math::Vector2f(0.0f);
 		}
@@ -128,7 +127,7 @@ eig::MatrixXf resample_warp_unchanged(
 		const eig::MatrixXf& canonical_field,
 		bool band_union_only, bool known_values_only,
 		bool substitute_original, float truncation_float_threshold) {
-	return resample_aux<true>(warp_field, warped_live_field, canonical_field, band_union_only, known_values_only,
+	return resample_aux<false>(warp_field, warped_live_field, canonical_field, band_union_only, known_values_only,
 			substitute_original, truncation_float_threshold);
 }
 
@@ -141,6 +140,7 @@ bp::object py_resample(const eig::MatrixXf& warped_live_field,
 	eig::MatrixXf new_warped_live_field = resample(warp_field, warped_live_field,
 			canonical_field, band_union_only, known_values_only, substitute_original,
 			truncation_float_threshold);
+	math::unstack_xv2f(warp_field_u,warp_field_v,warp_field);
 	bp::object warp_field_u_out(warp_field_u);
 	bp::object warp_field_v_out(warp_field_v);
 	bp::object warped_live_field_out(new_warped_live_field);
@@ -156,10 +156,8 @@ bp::object py_resample_warp_unchanged(const eig::MatrixXf& warped_live_field,
 	eig::MatrixXf new_warped_live_field = resample_warp_unchanged(warp_field, warped_live_field,
 			canonical_field, band_union_only, known_values_only, substitute_original,
 			truncation_float_threshold);
-	bp::object warp_field_u_out(warp_field_u);
-	bp::object warp_field_v_out(warp_field_v);
 	bp::object warped_live_field_out(new_warped_live_field);
-	return bp::make_tuple(warped_live_field_out, bp::make_tuple(warp_field_u_out, warp_field_v_out));
+	return warped_live_field_out;
 }
 
 }		//namespace nonrigid_optimization
