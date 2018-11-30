@@ -5,7 +5,7 @@ Created on Jan 1, 2016
 """
 from lxml import etree
 import numpy as np
-from calib import camera as camera_module, geom, rig
+from calib import camera as camera_module, geom, camerarig as rig
 from calib.geom import Pose
 from calib.camera import Camera
 
