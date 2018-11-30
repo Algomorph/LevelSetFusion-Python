@@ -222,6 +222,10 @@ install(TARGETS ${MODULE_NAME}
         LIBRARY DESTINATION ${PYTHON_PACKAGES_PATH} COMPONENT python
         ${PYTHON_INSTALL_ARCHIVE}
         )
+# ================== COPY LIBRARY TO PYTHON DIRECTORY ABOVE ============================================================
+add_custom_command(TARGET ${MODULE_NAME} POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${MODULE_NAME}> ${PROJECT_SOURCE_DIR}/../$<TARGET_FILE_NAME:${MODULE_NAME}>
+) 
 # ================== UNIT TESTING ======================================================================================
 
 enable_testing()
