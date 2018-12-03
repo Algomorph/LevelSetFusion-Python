@@ -64,6 +64,50 @@ def get_and_print_interpolation_data(canonical_field, warped_live_field, warp_fi
     print_interpolation_data(metainfo, original_live_sdf, new_value)
 
 
+def resample_field(field, vector_field):
+    """
+    - Accepts a scalar field and a vector field [supposedly of the same dimensions & size -- not checked].
+    - Creates a new scalar field of the same dimensions.
+    - For each location of the vector field, performs a bilinear lookup in the scalar field.
+    - If a vector is pointing outside of the bounds of the input fields, uses the value "1" during
+    the bilinear lookup for any "out-of-bounds" spots.
+    - Stores the results of each lookup in the corresponding location of the new scalar field
+    :param field: the scalar field containing source values
+    :param vector_field: 2d vector field to use for bilinear lookups
+    :return: the resulting scalar field
+    """
+    resampled_field = np.ones_like(field)
+    for y in range(field.shape[0]):
+        for x in range(field.shape[1]):
+            warped_location = Point2d(x, y) + Point2d(coordinates=vector_field[y, x])
+            new_value = sampling.bilinear_sample_at(field, point=warped_location)
+            resampled_field[y, x] = new_value
+    return resampled_field
+
+
+def resample_field_replacement(field, warp_field, replacement):
+    """
+    - Accepts a scalar field and a vector field [supposedly of the same dimensions & size -- not checked].
+    - Creates a new scalar field of the same dimensions
+    - For each location of the vector field, performs a bilinear lookup in the scalar field
+    - If a vector is pointing outside of the bounds of the input fields, uses the replacement during
+    the interpolation process for any "out-of-bounds" spots.
+    - Stores the results of each lookup in the corresponding location of the new scalar field
+    :param field: the scalar field containing source values
+    :param vector_field: 2d vector field to use for bilinear lookups
+    :return: the resulting scalar field
+    """
+    resampled_field = np.ones_like(field)
+    for y in range(field.shape[0]):
+        for x in range(field.shape[1]):
+            warped_location = Point2d(x, y) + Point2d(coordinates=warp_field[y, x])
+            new_value = sampling.bilinear_sample_at_replacement(field,
+                                                                point=warped_location,
+                                                                replacement=replacement)
+            resampled_field[y, x] = new_value
+    return resampled_field
+
+
 def resample_warped_live(canonical_field, warped_live_field, warp_field, gradient_field, band_union_only=False,
                          known_values_only=False, substitute_original=False,
                          data_gradient_field=None, smoothing_gradient_field=None):

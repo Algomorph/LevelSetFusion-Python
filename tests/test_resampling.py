@@ -15,7 +15,7 @@
 #  ================================================================
 from unittest import TestCase
 import numpy as np
-import warped_field_resampling as ipt
+import field_resampling as ipt
 
 import level_set_fusion_optimization as cpp_extension
 
