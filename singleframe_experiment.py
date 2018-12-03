@@ -23,7 +23,7 @@ import os
 import numpy as np
 # local
 from data_term import DataTermMethod
-from dataset import datasets, DataToUse, MaskedImageBasedSingleFrameDataset, ImageBasedSingleFrameDataset
+from dataset import datasets, PredefinedDatasetEnum, MaskedImageBasedSingleFrameDataset, ImageBasedSingleFrameDataset
 from smoothing_term import SmoothingTermMethod
 from tsdf_field_generation import generate_initial_orthographic_2d_tsdf_fields, DepthInterpolationMethod
 from slavcheva_optimizer2d import SlavchevaOptimizer2d, AdaptiveLearningRateMethod, ComputeMethod
@@ -35,14 +35,14 @@ import experiment_shared_routines as shared
 def perform_single_test(depth_interpolation_method=DepthInterpolationMethod.NONE, out_path="output/out2D",
                         frame_path="", calibration_path="calib.txt", canonical_frame_index=-1, pixel_row_index=-1,
                         z_offset=128, draw_tsdfs_and_exit=False):
-    visualize_and_save_initial_and_final_fields = True
+    visualize_and_save_initial_and_final_fields = False
     field_size = 128
     default_value = 1
 
     if pixel_row_index < 0 and canonical_frame_index < 0:
-        data_to_use = DataToUse.REAL3D_SNOOPY_SET04
+        data_to_use = PredefinedDatasetEnum.REAL3D_SNOOPY_SET04
 
-        if data_to_use == DataToUse.GENEREATED2D:
+        if data_to_use == PredefinedDatasetEnum.GENEREATED2D:
             live_field, canonical_field = \
                 generate_initial_orthographic_2d_tsdf_fields(field_size=field_size,
                                                              live_smoothing_kernel_size=0,

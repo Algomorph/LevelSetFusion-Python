@@ -26,7 +26,7 @@ from calib.camerarig import DepthCameraRig
 import tsdf_field_generation as tsdf_gen
 
 
-class DataToUse(Enum):
+class PredefinedDatasetEnum(Enum):
     GENEREATED2D = 0
     SIMPLE_TEST_CASE01 = 1
 
@@ -128,55 +128,55 @@ class MaskedImageBasedSingleFrameDataset(SingleFrameDataset):
 
 
 datasets = {
-    DataToUse.SYNTHETIC3D_SUZANNE_AWAY: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.SYNTHETIC3D_SUZANNE_AWAY: ImageBasedSingleFrameDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/input/depth_00000.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/input/depth_00001.png",
         200, 128, np.array([-64, -64, 0])
     ),
-    DataToUse.SYNTHETIC3D_SUZANNE_TWIST: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.SYNTHETIC3D_SUZANNE_TWIST: ImageBasedSingleFrameDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/input/depth_00000.png",
-        "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/input/depth_00001.png",
+        "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/input/depth_00010.png",
         200, 128, np.array([-64, -64, 64])
     ),
-    DataToUse.REAL3D_SNOOPY_SET01: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.REAL3D_SNOOPY_SET01: ImageBasedSingleFrameDataset(
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000015.png",
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000016.png",
         214, 128, np.array([-64, -64, 128])
     ),
-    DataToUse.REAL3D_SNOOPY_SET02: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.REAL3D_SNOOPY_SET02: ImageBasedSingleFrameDataset(
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000064.png",
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000065.png",
         214, 128, np.array([-64, -64, 128])
     ),
-    DataToUse.REAL3D_SNOOPY_SET03: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.REAL3D_SNOOPY_SET03: ImageBasedSingleFrameDataset(
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000025.png",
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000026.png",
         334, 128, np.array([-64, -64, 128])
     ),
-    DataToUse.REAL3D_SNOOPY_SET04: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.REAL3D_SNOOPY_SET04: ImageBasedSingleFrameDataset(
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000065.png",
         "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000066.png",
         223, 128, np.array([-64, -64, 128])
     ),
-    DataToUse.SYNTHETIC3D_PLANE_AWAY: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.SYNTHETIC3D_PLANE_AWAY: ImageBasedSingleFrameDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00000.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00001.png",
         200, 128, np.array([-64, -64, 106])
     ),
-    DataToUse.SYNTHETIC3D_PLANE_AWAY_512: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.SYNTHETIC3D_PLANE_AWAY_512: ImageBasedSingleFrameDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00000.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00001.png",
         130, 512, np.array([-256, -256, 0])
     ),
-    DataToUse.SIMPLE_TEST_CASE01: HardcodedSingleFrameDataset(
+    PredefinedDatasetEnum.SIMPLE_TEST_CASE01: HardcodedSingleFrameDataset(
         np.array([[1.0000000e+00, 1.0000000e+00, 3.7499955e-01, 2.4999955e-01],
                   [1.0000000e+00, 3.2499936e-01, 1.9999936e-01, 1.4999935e-01],
                   [1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02],
