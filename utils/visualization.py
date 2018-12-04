@@ -67,7 +67,7 @@ def highlight_row_on_gray(gray_image, ix_row):
     return image_with_highlight
 
 
-# TODO: all vizualization functions that currently accept an OpenCV writer and write image should instead simply
+# TODO: all visualization functions that currently accept an OpenCV writer and write image should instead simply
 # produce an image, which should be written, if necessary, by another routine
 
 def make_vector_field_plot(vector_field_video_writer, warp_field, iteration_number=None, sparsity_factor=1,

@@ -73,6 +73,70 @@ class ComputeMethod(Enum):
 
 
 class SlavchevaOptimizer2d:
+    class Visualizer:
+        class Settings:
+            def __init__(self, view_scaling_factor, enable_component_fields):
+                # visualization flags & parameters
+                self.enable_convergence_status_logging = True
+                self.enable_3d_plot = False
+                self.enable_warp_quiverplot = True
+                self.enable_gradient_quiverplot = True
+                self.enable_component_fields = enable_component_fields
+                self.view_scaling_factor = view_scaling_factor
+
+        def __init__(self, field_size):
+            # video writers
+            self.live_video_writer2D = cv2.VideoWriter(
+                os.path.join(self.out_path, 'live_field_evolution_2D.mkv'),
+                cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10,
+                (field_size * self.view_scaling_factor, field_size * self.view_scaling_factor),
+                isColor=False)
+            self.warp_magnitude_video_writer2D = cv2.VideoWriter(
+                os.path.join(self.out_path, 'warp_magnitudes_2D.mkv'),
+                cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10,
+                (field_size * self.view_scaling_factor, field_size * self.view_scaling_factor),
+                isColor=True)
+            if self.enable_3d_plot:
+                self.live_video_writer3D = cv2.VideoWriter(
+                    os.path.join(self.out_path, 'live_field_evolution_2D_3D_plot.mkv'),
+                    cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1230, 720), isColor=True)
+            if self.enable_warp_quiverplot:
+                self.warp_video_writer2D = cv2.VideoWriter(
+                    os.path.join(self.out_path, 'warp_2D_quiverplot.mkv'),
+                    cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
+            if self.enable_gradient_quiverplot:
+                self.gradient_video_writer2D = cv2.VideoWriter(
+                    os.path.join(self.out_path, 'gradient_2D_quiverplot.mkv'),
+                    cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
+            if self.enable_component_fields:
+                self.data_gradient_video_writer2D = cv2.VideoWriter(
+                    os.path.join(self.out_path, 'data_2D_quiverplot.mkv'),
+                    cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
+                self.smoothing_gradient_video_writer2D = cv2.VideoWriter(
+                    os.path.join(self.out_path, 'smoothing_2D_quiverplot.mkv'),
+                    cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
+                if self.level_set_term_enabled:
+                    self.level_set_gradient_video_writer2D = cv2.VideoWriter(
+                        os.path.join(self.out_path, 'level_set_2D_quiverplot.mkv'),
+                        cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
+
+        def __del__(self):
+            if self.live_video_writer3D is not None:
+                self.live_video_writer3D.release()
+            if self.warp_video_writer2D is not None:
+                self.warp_video_writer2D.release()
+            if self.gradient_video_writer2D is not None:
+                self.gradient_video_writer2D.release()
+            if self.data_gradient_video_writer2D is not None:
+                self.data_gradient_video_writer2D.release()
+            if self.smoothing_gradient_video_writer2D is not None:
+                self.smoothing_gradient_video_writer2D.release()
+            if self.level_set_gradient_video_writer2D is not None:
+                self.level_set_gradient_video_writer2D.release()
+
+            self.live_video_writer2D.release()
+            self.warp_magnitude_video_writer2D.release()
+
     def __init__(self, out_path="out2D",
                  field_size=128,
                  # TODO writers should be initialized only after the field size becomes known during optimization and
@@ -141,27 +205,9 @@ class SlavchevaOptimizer2d:
         completely independent class
         """
 
-        # visualization flags & parameters
-        self.enable_convergence_status_logging = True
-        self.enable_3d_plot = False
-        self.enable_warp_quiverplot = True
-        self.enable_gradient_quiverplot = True
-        self.enable_component_fields = enable_component_fields
-        self.view_scaling_factor = view_scaling_factor
-
         # statistical aggregates
         self.focus_neighborhood_log = None
         self.log = None
-
-        # video writers
-        self.live_video_writer2D = None
-        self.warp_magnitude_video_writer2D = None
-        self.data_gradient_video_writer2D = None
-        self.smoothing_gradient_video_writer2D = None
-        self.level_set_gradient_video_writer2D = None
-        self.live_video_writer3D = None
-        self.warp_video_writer2D = None
-        self.gradient_video_writer2D = None
 
         # TODO: writers & other things depending on a single optimization run need to be initialized in the beginning
         # of the optimization routine (and torn down at the end of it, instead of in the object destructor)
@@ -439,58 +485,6 @@ class SlavchevaOptimizer2d:
 
     def get_convergence_status(self):
         return self.log.convergence_status
-
-    def __del__(self):
-        if self.live_video_writer3D is not None:
-            self.live_video_writer3D.release()
-        if self.warp_video_writer2D is not None:
-            self.warp_video_writer2D.release()
-        if self.gradient_video_writer2D is not None:
-            self.gradient_video_writer2D.release()
-        if self.data_gradient_video_writer2D is not None:
-            self.data_gradient_video_writer2D.release()
-        if self.smoothing_gradient_video_writer2D is not None:
-            self.smoothing_gradient_video_writer2D.release()
-        if self.level_set_gradient_video_writer2D is not None:
-            self.level_set_gradient_video_writer2D.release()
-
-        self.live_video_writer2D.release()
-        self.warp_magnitude_video_writer2D.release()
-
-    def __initialize_writers(self, field_size):
-        self.live_video_writer2D = cv2.VideoWriter(
-            os.path.join(self.out_path, 'live_field_evolution_2D.mkv'),
-            cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10,
-            (field_size * self.view_scaling_factor, field_size * self.view_scaling_factor),
-            isColor=False)
-        self.warp_magnitude_video_writer2D = cv2.VideoWriter(
-            os.path.join(self.out_path, 'warp_magnitudes_2D.mkv'),
-            cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10,
-            (field_size * self.view_scaling_factor, field_size * self.view_scaling_factor),
-            isColor=True)
-        if self.enable_3d_plot:
-            self.live_video_writer3D = cv2.VideoWriter(
-                os.path.join(self.out_path, 'live_field_evolution_2D_3D_plot.mkv'),
-                cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1230, 720), isColor=True)
-        if self.enable_warp_quiverplot:
-            self.warp_video_writer2D = cv2.VideoWriter(
-                os.path.join(self.out_path, 'warp_2D_quiverplot.mkv'),
-                cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
-        if self.enable_gradient_quiverplot:
-            self.gradient_video_writer2D = cv2.VideoWriter(
-                os.path.join(self.out_path, 'gradient_2D_quiverplot.mkv'),
-                cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
-        if self.enable_component_fields:
-            self.data_gradient_video_writer2D = cv2.VideoWriter(
-                os.path.join(self.out_path, 'data_2D_quiverplot.mkv'),
-                cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
-            self.smoothing_gradient_video_writer2D = cv2.VideoWriter(
-                os.path.join(self.out_path, 'smoothing_2D_quiverplot.mkv'),
-                cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
-            if self.level_set_term_enabled:
-                self.level_set_gradient_video_writer2D = cv2.VideoWriter(
-                    os.path.join(self.out_path, 'level_set_2D_quiverplot.mkv'),
-                    cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
 
     def plot_logged_sdf_and_warp_magnitudes(self):
         visualize_and_save_sdf_and_warp_magnitude_progression(get_focus_coordinates(),

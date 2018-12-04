@@ -17,11 +17,12 @@
 # contains main visualization subroutines for showing and recording results of the optimization process in the
 # HierarchicalNonrigidSLAMOptimizer2d class
 
+
 class HNSOVisualizer:
     class HNSOVisualizerSettings:
-        def __init__(self):
-            # TODO
-            pass
+        def __init__(self, show_live_progress=False, save_live_progress=False):
+            self.show_live_progress = show_live_progress
+            self.save_live_progress = save_live_progress
 
     def __init__(self):
         # TODO
