@@ -38,6 +38,7 @@ from field_resampling import resample_warped_live, get_and_print_interpolation_d
 import data_term as dt
 from level_set_term import level_set_term_at_location
 import smoothing_term as st
+import slavcheva_visualizer as viz
 
 # C++ extension
 import level_set_fusion_optimization as cpp_extension
@@ -73,69 +74,6 @@ class ComputeMethod(Enum):
 
 
 class SlavchevaOptimizer2d:
-    class Visualizer:
-        class Settings:
-            def __init__(self, view_scaling_factor, enable_component_fields):
-                # visualization flags & parameters
-                self.enable_convergence_status_logging = True
-                self.enable_3d_plot = False
-                self.enable_warp_quiverplot = True
-                self.enable_gradient_quiverplot = True
-                self.enable_component_fields = enable_component_fields
-                self.view_scaling_factor = view_scaling_factor
-
-        def __init__(self, field_size):
-            # video writers
-            self.live_video_writer2D = cv2.VideoWriter(
-                os.path.join(self.out_path, 'live_field_evolution_2D.mkv'),
-                cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10,
-                (field_size * self.view_scaling_factor, field_size * self.view_scaling_factor),
-                isColor=False)
-            self.warp_magnitude_video_writer2D = cv2.VideoWriter(
-                os.path.join(self.out_path, 'warp_magnitudes_2D.mkv'),
-                cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10,
-                (field_size * self.view_scaling_factor, field_size * self.view_scaling_factor),
-                isColor=True)
-            if self.enable_3d_plot:
-                self.live_video_writer3D = cv2.VideoWriter(
-                    os.path.join(self.out_path, 'live_field_evolution_2D_3D_plot.mkv'),
-                    cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1230, 720), isColor=True)
-            if self.enable_warp_quiverplot:
-                self.warp_video_writer2D = cv2.VideoWriter(
-                    os.path.join(self.out_path, 'warp_2D_quiverplot.mkv'),
-                    cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
-            if self.enable_gradient_quiverplot:
-                self.gradient_video_writer2D = cv2.VideoWriter(
-                    os.path.join(self.out_path, 'gradient_2D_quiverplot.mkv'),
-                    cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
-            if self.enable_component_fields:
-                self.data_gradient_video_writer2D = cv2.VideoWriter(
-                    os.path.join(self.out_path, 'data_2D_quiverplot.mkv'),
-                    cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
-                self.smoothing_gradient_video_writer2D = cv2.VideoWriter(
-                    os.path.join(self.out_path, 'smoothing_2D_quiverplot.mkv'),
-                    cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
-                if self.level_set_term_enabled:
-                    self.level_set_gradient_video_writer2D = cv2.VideoWriter(
-                        os.path.join(self.out_path, 'level_set_2D_quiverplot.mkv'),
-                        cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10, (1920, 1200), isColor=True)
-
-        def __del__(self):
-            if self.live_video_writer3D is not None:
-                self.live_video_writer3D.release()
-            if self.warp_video_writer2D is not None:
-                self.warp_video_writer2D.release()
-            if self.gradient_video_writer2D is not None:
-                self.gradient_video_writer2D.release()
-            if self.data_gradient_video_writer2D is not None:
-                self.data_gradient_video_writer2D.release()
-            if self.smoothing_gradient_video_writer2D is not None:
-                self.smoothing_gradient_video_writer2D.release()
-            if self.level_set_gradient_video_writer2D is not None:
-                self.level_set_gradient_video_writer2D.release()
-
-            self.live_video_writer2D.release()
-            self.warp_magnitude_video_writer2D.release()
 
     def __init__(self, out_path="out2D",
                  field_size=128,
@@ -163,9 +101,15 @@ class SlavchevaOptimizer2d:
                  max_iterations=100, min_iterations=1,
 
                  sobolev_kernel=None,
+                 visualization_settings=None,
 
-                 enable_component_fields=False,
-                 view_scaling_factor=8):
+                 ):
+
+        if visualization_settings:
+            self.visualization_settings = visualization_settings
+        else:
+            self.visualization_settings = viz.SlavchevaVisualizer.Settings()
+        self.visualizer = None
 
         self.field_size = field_size
         self.out_path = out_path
@@ -180,7 +124,6 @@ class SlavchevaOptimizer2d:
         self.compute_method = compute_method
 
         # optimization parameters
-
         self.level_set_term_enabled = level_set_term_enabled
         self.sobolev_smoothing_enabled = sobolev_smoothing_enabled
 
@@ -209,11 +152,9 @@ class SlavchevaOptimizer2d:
         self.focus_neighborhood_log = None
         self.log = None
 
-        # TODO: writers & other things depending on a single optimization run need to be initialized in the beginning
-        # of the optimization routine (and torn down at the end of it, instead of in the object destructor)
-        # initializations
+        self.gradient = None
+        # adaptive learning rate
         self.edasg_field = None
-        self.__initialize_writers(field_size)
 
     @staticmethod
     def __run_checks(warped_live_field, canonical_field, warp_field):
@@ -395,6 +336,8 @@ class SlavchevaOptimizer2d:
 
     def optimize(self, live_field, canonical_field):
 
+        self.visualizer = viz.SlavchevaVisualizer(self.visualization_settings)
+
         self.focus_neighborhood_log = \
             self.__generate_initial_focus_neighborhood_log(self.field_size)
         self.log = OptimizationLog()
@@ -410,19 +353,6 @@ class SlavchevaOptimizer2d:
         if self.adaptive_learning_rate_method == AdaptiveLearningRateMethod.RMS_PROP:
             # exponentially decaying average of squared gradients
             self.edasg_field = np.zeros_like(live_field)
-
-        # prepare to log fields for warp vector components from various terms if necessary
-        if self.enable_component_fields:
-            data_component_field = np.zeros_like(warp_field)
-            smoothing_component_field = np.zeros_like(warp_field)
-            if self.level_set_term_enabled:
-                level_set_component_field = np.zeros_like(warp_field)
-            else:
-                level_set_component_field = None
-        else:
-            data_component_field = None
-            smoothing_component_field = None
-            level_set_component_field = None
 
         # do some logging initialization that requires canonical data
         for (x, y), log in self.focus_neighborhood_log.items():
@@ -441,14 +371,10 @@ class SlavchevaOptimizer2d:
 
             if self.compute_method == ComputeMethod.DIRECT:
                 max_warp, max_warp_location = \
-                    self.__optimization_iteration_direct(live_field, canonical_field, warp_field,
-                                                         data_component_field, smoothing_component_field,
-                                                         level_set_component_field)
+                    self.__optimization_iteration_direct(live_field, canonical_field, warp_field)
             elif self.compute_method == ComputeMethod.VECTORIZED:
                 max_warp, max_warp_location = \
-                    self.__optimization_iteration_vectorized(live_field, canonical_field, warp_field,
-                                                             data_component_field, smoothing_component_field,
-                                                             level_set_component_field)
+                    self.__optimization_iteration_vectorized(live_field, canonical_field, warp_field)
             # log energy aggregates
             self.log.max_warps.append(max_warp)
             self.log.data_energies.append(self.total_data_energy)
@@ -466,9 +392,8 @@ class SlavchevaOptimizer2d:
                   "; total energy:", self.total_data_energy + self.total_smoothing_energy + self.total_level_set_energy,
                   "; max warp:", max_warp, "@", max_warp_location, sep="")
 
-            self.__make_iteration_visualizations(iteration_number, warp_field, self.gradient_field,
-                                                 data_component_field, smoothing_component_field,
-                                                 level_set_component_field, live_field, canonical_field)
+            self.__make_iteration_visualizations(iteration_number, warp_field, self.gradient_field, live_field,
+                                                 canonical_field)
 
             iteration_number += 1
 
@@ -481,6 +406,8 @@ class SlavchevaOptimizer2d:
                 bool(max_warp < self.maximum_warp_length_lower_threshold),
                 bool(max_warp > self.maximum_warp_length_upper_threshold))
 
+        del self.visualizer
+        self.visualizer = None
         return live_field
 
     def get_convergence_status(self):

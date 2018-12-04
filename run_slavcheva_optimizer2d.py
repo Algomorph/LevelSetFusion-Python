@@ -75,7 +75,7 @@ def main():
     parser.add_argument("-oc", "--optimizer_choice", type=str, default="CPP",
                         help="optimizer choice (currently, multiple_tests mode only!), "
                              "must be in {CPP, PYTHON_DIRECT, PYTHON_VECTORIZED}")
-    parser.add_argument("-di", "--depth_interpolation_method", type=str, default="none",
+    parser.add_argument("-di", "--depth_interpolation_method", type=str, default="NONE",
                         help="Depth image interpolation method to use when generating SDF. "
                              "Can be one of: {NONE, BILINEAR_IMAGE_SPACE, BILINEAR_TSDF_SPACE}")
     parser.add_argument("--draw_initial_tsdfs_and_exit",
