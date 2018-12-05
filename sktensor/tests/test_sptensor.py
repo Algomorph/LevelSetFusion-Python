@@ -4,8 +4,8 @@ from numpy import ones, zeros, array, setdiff1d, allclose
 from numpy.random import randint
 from sktensor.dtensor import dtensor
 from sktensor.sptensor import sptensor, fromarray
-from .ttm_fixture import T, U, Y
-from .sptensor_rand_fixture import subs, vals, shape, sptensor_seed, sz
+from sktensor.tests.ttm_fixture import T, U, Y
+from sktensor.tests.sptensor_rand_fixture import subs, vals, shape, sptensor_seed, sz
 
 
 def setup_diagonal():

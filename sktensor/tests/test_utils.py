@@ -1,4 +1,4 @@
-from ..utils import accum
+from sktensor.utils import accum
 from numpy import array, allclose
 
 

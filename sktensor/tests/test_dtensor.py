@@ -1,7 +1,7 @@
 from numpy import array
 from numpy.random import randn
 from sktensor.dtensor import dtensor
-from .ttm_fixture import T, U, Y
+from sktensor.tests.ttm_fixture import T, U, Y
 
 
 def test_new():

@@ -2,8 +2,8 @@ from numpy import array
 from numpy.random import randn
 from sktensor.core import *
 from sktensor import dtensor, sptensor, ktensor
-from .ttm_fixture import T, U, Y
-from .sptensor_fixture import shape, vals, subs
+from sktensor.tests.ttm_fixture import T, U, Y
+from sktensor.tests.sptensor_fixture import shape, vals, subs
 
 
 def test_check_multiplication_dims():

@@ -22,6 +22,7 @@ import numpy as np
 from data_term import DataTermMethod
 from slavcheva_optimizer2d import SlavchevaOptimizer2d, ComputeMethod, AdaptiveLearningRateMethod
 import utils.sampling as sampling
+from slavcheva_visualizer import SlavchevaVisualizer
 from smoothing_term import SmoothingTermMethod
 from sobolev_filter import generate_1d_sobolev_kernel
 
@@ -50,9 +51,9 @@ def make_optimizer(compute_method, field_size, max_iterations=1):
                                      max_iterations=max_iterations,
 
                                      sobolev_kernel=generate_1d_sobolev_kernel(size=3, strength=0.1),
-
-                                     enable_component_fields=True,
-                                     view_scaling_factor=view_scaling_factor)
+                                     visualization_settings=SlavchevaVisualizer.Settings(
+                                         enable_component_fields=True,
+                                         view_scaling_factor=view_scaling_factor))
     return optimizer
 
 
