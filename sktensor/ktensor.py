@@ -192,12 +192,13 @@ class vectorized_ktensor(object):
         self.lmbda = lmbda
 
     def toktensor(self):
+        #TODO test, fix (test_vectorization)
         order = len(self.shape)
-        rank = len(self.v) / sum(self.shape)
+        rank = len(self.v) // sum(self.shape)
         U = [None for _ in range(order)]
         offset = 0
         for i in range(order):
-            noff = offset + self.shape[i] * rank
+            noff = offset + self.shape[i]
             U[i] = self.v[offset:noff].reshape((self.shape[i], rank))
             offset = noff
         return ktensor(U, self.lmbda)

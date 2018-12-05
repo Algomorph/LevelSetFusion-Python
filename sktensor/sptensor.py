@@ -181,7 +181,7 @@ class sptensor(tensor_mixin):
         Assume Y = T x_i V_i for i = 1...n can fit into memory
         """
         shapeY = np.copy(self.shape)
-
+        #TODO: test, fix
         # Determine size of Y
         for n in np.union1d(edims, sdims):
             shapeY[n] = V[n].shape[1] if transp else V[n].shape[0]
@@ -191,7 +191,7 @@ class sptensor(tensor_mixin):
         shapeY = array(shapeY)
         v = [None for _ in range(len(edims))]
 
-        for i in range(np.prod(shapeY[edims])):
+        for i in range(int(np.prod(shapeY[edims]))):
             rsubs = unravel_index(shapeY[edims], i)
 
     def unfold(self, rdims, cdims=None, transp=False):
