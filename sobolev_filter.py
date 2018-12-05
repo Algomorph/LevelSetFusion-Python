@@ -17,7 +17,8 @@
 
 from __future__ import print_function
 import sys
-from sktensor import dtensor, tucker_hosvd, tenmat
+from sktensor import dtensor
+from math_utils import tenmat, tucker
 
 import numpy as np
 import argparse as ap
@@ -241,9 +242,9 @@ def generate_1d_sobolev_kernel(size=7, strength=0.1, precision=np.float32,
     sobolev_kernel_tensor = dtensor(sobolev_kernel)
 
     if use_size_as_rank:
-        core, u_matrices = tucker_hosvd(sobolev_kernel_tensor, size)
+        core, u_matrices = tucker.hooi(sobolev_kernel_tensor, size)
     else:
-        core, u_matrices = tucker_hosvd(sobolev_kernel_tensor)
+        core, u_matrices = tucker.hooi(sobolev_kernel_tensor)
 
     if return_u_matrices:
         return u_matrices

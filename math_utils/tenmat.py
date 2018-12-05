@@ -17,9 +17,9 @@
 # !/usr/bin/env python
 
 import numpy as np
-from .core import tensor_mixin
-from .dtensor import dtensor
-from .pyutils import is_number
+from sktensor.core import tensor_mixin
+from sktensor.dtensor import dtensor
+from sktensor.pyutils import is_number
 
 
 # import tools

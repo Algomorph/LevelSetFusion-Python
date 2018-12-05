@@ -19,9 +19,9 @@ import time
 import numpy as np
 from numpy import array, ones, sqrt
 from numpy.random import rand
-from .pyutils import is_number
-from .core import ttm, nvecs, norm
-from .tenmat import tenmat
+from sktensor.pyutils import is_number
+from sktensor.core import ttm, nvecs, norm
+from math_utils.tenmat import tenmat
 
 __all__ = [
     'hooi',
