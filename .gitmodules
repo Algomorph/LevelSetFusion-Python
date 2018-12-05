@@ -1,0 +1,4 @@
+[submodule "cpp/LevelSetFusionExperimentsCPP"]
+	path = cpp/LevelSetFusionExperimentsCPP
+	url = git@github.com:Algomorph/LevelSetFusionExperimentsCPP.git
+	branch = master
