@@ -19,17 +19,25 @@ import os
 import cv2
 import numpy as np
 
+from utils.visualization import make_3d_plots, sdf_field_to_image, make_vector_field_plot, warp_field_to_heatmap
+
 
 class SlavchevaVisualizer:
     class Settings:
-        def __init__(self, view_scaling_factor=8, enable_component_fields=False):
+        def __init__(self, view_scaling_factor=8,
+                     enable_component_fields=False,
+                     enable_3d_plot=False,
+                     enable_warp_quiverplot=True,
+                     enable_gradient_quiverplot=True,
+                     level_set_term_enabled=False
+                     ):
             # visualization flags & parameters
-            self.enable_convergence_status_logging = True
-            self.enable_3d_plot = False
-            self.enable_warp_quiverplot = True
-            self.enable_gradient_quiverplot = True
+            self.enable_3d_plot = enable_3d_plot
+            self.enable_warp_quiverplot = enable_warp_quiverplot
+            self.enable_gradient_quiverplot = enable_gradient_quiverplot
             self.enable_component_fields = enable_component_fields
             self.view_scaling_factor = view_scaling_factor
+            self.level_set_term_enabled = level_set_term_enabled
 
     def __init__(self, field_size, out_path, settings=None):
         if settings:
@@ -37,21 +45,29 @@ class SlavchevaVisualizer:
         else:
             self.settings = SlavchevaVisualizer.Settings()
 
-        # prepare to log fields for warp vector components from various terms if necessary
-        if self.enable_component_fields:
-            data_component_field = np.zeros((field_size, field_size), dtype=np.float32)
-            smoothing_component_field = np.zeros_like((field_size, field_size), dtype=np.float32)
-            if self.level_set_term_enabled:
-                level_set_component_field = np.zeros_like((field_size, field_size), dtype=np.float32)
-            else:
-                level_set_component_field = None
-        else:
-            data_component_field = None
-            smoothing_component_field = None
-            level_set_component_field = None
-
         self.out_path = out_path
 
+        self.data_component_field = None
+        self.smoothing_component_field = None
+        self.level_set_component_field = None
+
+        # prepare to log fields for warp vector components from various terms if necessary
+        if self.settings.enable_component_fields:
+            self.data_component_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
+            self.smoothing_component_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
+            if self.settings.level_set_term_enabled:
+                self.level_set_component_field = np.zeros((field_size, field_size, 2), dtype=np.float32)
+            else:
+                self.level_set_component_field = None
+
+        self.live_video_writer2D = None
+        self.warp_magnitude_video_writer2D = None
+        self.live_video_writer3D = None
+        self.warp_video_writer2D = None
+        self.gradient_video_writer2D = None
+        self.data_gradient_video_writer2D = None
+        self.smoothing_gradient_video_writer2D = None
+        self.level_set_gradient_video_writer2D = None
 
         # video writers
         self.live_video_writer2D = cv2.VideoWriter(
@@ -104,3 +120,37 @@ class SlavchevaVisualizer:
 
         self.live_video_writer2D.release()
         self.warp_magnitude_video_writer2D.release()
+
+    def write_live_sdf_visualizations(self, canonical_field, live_field):
+        if self.live_video_writer3D is not None:
+            make_3d_plots(self.live_video_writer3D, canonical_field, live_field)
+        if self.live_video_writer2D is not None:
+            self.live_video_writer2D.write(sdf_field_to_image(live_field, self.settings.view_scaling_factor))
+        pass
+
+    def write_all_iteration_visualizations(self, iteration_number, warp_field, gradient_field, live_field,
+                                           canonical_field):
+        if self.warp_video_writer2D is not None:
+            make_vector_field_plot(self.warp_video_writer2D, warp_field,
+                                   scale=10.0, iteration_number=iteration_number,
+                                   vectors_name="Warp vectors (scaled x10)")
+        if self.gradient_video_writer2D is not None:
+            make_vector_field_plot(self.gradient_video_writer2D, -gradient_field, iteration_number=iteration_number,
+                                   vectors_name="Gradient vectors (negated)")
+        if self.data_gradient_video_writer2D is not None:
+            make_vector_field_plot(self.data_gradient_video_writer2D, -self.data_component_field,
+                                   iteration_number=iteration_number, vectors_name="Data gradients (negated)")
+        if self.smoothing_gradient_video_writer2D is not None:
+            make_vector_field_plot(self.smoothing_gradient_video_writer2D, -self.smoothing_component_field,
+                                   iteration_number=iteration_number, vectors_name="Smoothing gradients (negated)")
+        if self.level_set_gradient_video_writer2D is not None:
+            make_vector_field_plot(self.level_set_gradient_video_writer2D, -self.level_set_component_field,
+                                   iteration_number=iteration_number, vectors_name="Level set gradients (negated)")
+
+        if self.live_video_writer2D is not None:
+            self.live_video_writer2D.write(sdf_field_to_image(live_field, self.settings.view_scaling_factor))
+        if self.warp_magnitude_video_writer2D is not None:
+            self.warp_magnitude_video_writer2D.write(
+                warp_field_to_heatmap(warp_field, self.settings.view_scaling_factor))
+        if self.live_video_writer3D is not None:
+            make_3d_plots(self.live_video_writer3D, canonical_field, live_field)

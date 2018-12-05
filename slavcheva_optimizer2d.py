@@ -27,8 +27,7 @@ import cv2
 
 # local
 from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union, voxel_is_outside_narrow_band_union
-from utils.visualization import make_3d_plots, make_vector_field_plot, warp_field_to_heatmap, \
-    sdf_field_to_image, visualize_and_save_sdf_and_warp_magnitude_progression, \
+from utils.visualization import visualize_and_save_sdf_and_warp_magnitude_progression, \
     visualzie_and_save_energy_and_max_warp_progression
 from utils.point2d import Point2d
 from utils.printing import *
@@ -102,7 +101,7 @@ class SlavchevaOptimizer2d:
 
                  sobolev_kernel=None,
                  visualization_settings=None,
-
+                 enable_convergence_status_logging=True
                  ):
 
         if visualization_settings:
@@ -148,11 +147,12 @@ class SlavchevaOptimizer2d:
         completely independent class
         """
 
-        # statistical aggregates
+        # logging and statistical aggregates
         self.focus_neighborhood_log = None
         self.log = None
+        self.enable_convergence_status_logging = enable_convergence_status_logging
 
-        self.gradient = None
+        self.gradient_field = None
         # adaptive learning rate
         self.edasg_field = None
 
@@ -163,9 +163,7 @@ class SlavchevaOptimizer2d:
             raise ValueError(
                 "warp field, warped live field, and canonical field all need to be 1D arrays of the same size.")
 
-    def __optimization_iteration_vectorized(self, warped_live_field, canonical_field, warp_field,
-                                            data_component_field=None, smoothing_component_field=None,
-                                            level_set_component_field=None, band_union_only=True):
+    def __optimization_iteration_vectorized(self, warped_live_field, canonical_field, warp_field, band_union_only=True):
 
         live_gradient_y, live_gradient_x = np.gradient(warped_live_field)
         data_gradient_field = dt.compute_data_term_gradient_vectorized(warped_live_field, canonical_field,
@@ -178,11 +176,11 @@ class SlavchevaOptimizer2d:
             st.compute_smoothing_term_energy(warp_field, warped_live_field,
                                              canonical_field) * self.smoothing_term_weight
 
-        if data_component_field is not None:
-            np.copyto(data_component_field, data_gradient_field)
-        if smoothing_component_field is not None:
-            np.copyto(smoothing_component_field, smoothing_gradient_field)
-        if level_set_component_field is not None:
+        if self.visualizer.data_component_field is not None:
+            np.copyto(self.visualizer.data_component_field, data_gradient_field)
+        if self.visualizer.smoothing_component_field is not None:
+            np.copyto(self.visualizer.smoothing_component_field, smoothing_gradient_field)
+        if self.visualizer.level_set_component_field is not None:
             frame_info = getframeinfo(currentframe())
             print("Warning: level set term not implemented in vectorized version, "
                   "passed level_set_component_field is not None, {:s} : {:d}".format(frame_info.filename,
@@ -336,7 +334,7 @@ class SlavchevaOptimizer2d:
 
     def optimize(self, live_field, canonical_field):
 
-        self.visualizer = viz.SlavchevaVisualizer(self.visualization_settings)
+        self.visualizer = viz.SlavchevaVisualizer(len(live_field), self.out_path, self.visualization_settings)
 
         self.focus_neighborhood_log = \
             self.__generate_initial_focus_neighborhood_log(self.field_size)
@@ -359,10 +357,7 @@ class SlavchevaOptimizer2d:
             log.canonical_sdf = canonical_field[y, x]
 
         # write original raw live
-        if self.live_video_writer3D is not None:
-            make_3d_plots(self.live_video_writer3D, canonical_field, live_field, warp_field)
-        if self.live_video_writer2D is not None:
-            self.live_video_writer2D.write(sdf_field_to_image(live_field, self.view_scaling_factor))
+        self.visualizer.write_live_sdf_visualizations(canonical_field, live_field)
 
         # actually perform the optimization
         while (iteration_number < self.min_iterations) or \
@@ -392,8 +387,8 @@ class SlavchevaOptimizer2d:
                   "; total energy:", self.total_data_energy + self.total_smoothing_energy + self.total_level_set_energy,
                   "; max warp:", max_warp, "@", max_warp_location, sep="")
 
-            self.__make_iteration_visualizations(iteration_number, warp_field, self.gradient_field, live_field,
-                                                 canonical_field)
+            self.visualizer.write_all_iteration_visualizations(iteration_number, warp_field, self.gradient_field,
+                                                               live_field, canonical_field)
 
             iteration_number += 1
 
@@ -431,30 +426,3 @@ class SlavchevaOptimizer2d:
                     neighborhood_log[(x, y)] = VoxelLog()
 
         return neighborhood_log
-
-    def __make_iteration_visualizations(self, iteration_number, warp_field, gradient_field, data_component_field,
-                                        smoothing_component_field, level_set_component_field, live_field,
-                                        canonical_field):
-        if self.warp_video_writer2D is not None:
-            make_vector_field_plot(self.warp_video_writer2D, warp_field,
-                                   scale=10.0, iteration_number=iteration_number,
-                                   vectors_name="Warp vectors (scaled x10)")
-        if self.gradient_video_writer2D is not None:
-            make_vector_field_plot(self.gradient_video_writer2D, -gradient_field, iteration_number=iteration_number,
-                                   vectors_name="Gradient vectors (negated)")
-        if self.data_gradient_video_writer2D is not None:
-            make_vector_field_plot(self.data_gradient_video_writer2D, -data_component_field,
-                                   iteration_number=iteration_number, vectors_name="Data gradients (negated)")
-        if self.smoothing_gradient_video_writer2D is not None:
-            make_vector_field_plot(self.smoothing_gradient_video_writer2D, -smoothing_component_field,
-                                   iteration_number=iteration_number, vectors_name="Smoothing gradients (negated)")
-        if self.level_set_gradient_video_writer2D is not None:
-            make_vector_field_plot(self.level_set_gradient_video_writer2D, -level_set_component_field,
-                                   iteration_number=iteration_number, vectors_name="Level set gradients (negated)")
-
-        if self.live_video_writer2D is not None:
-            self.live_video_writer2D.write(sdf_field_to_image(live_field, self.view_scaling_factor))
-        if self.warp_magnitude_video_writer2D is not None:
-            self.warp_magnitude_video_writer2D.write(warp_field_to_heatmap(warp_field, self.view_scaling_factor))
-        if self.live_video_writer3D is not None:
-            make_3d_plots(self.live_video_writer3D, canonical_field, live_field, warp_field)

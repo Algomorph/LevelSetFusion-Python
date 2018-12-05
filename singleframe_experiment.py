@@ -24,6 +24,7 @@ import numpy as np
 # local
 from data_term import DataTermMethod
 from dataset import datasets, PredefinedDatasetEnum, MaskedImageBasedSingleFrameDataset, ImageBasedSingleFrameDataset
+from slavcheva_visualizer import SlavchevaVisualizer
 from smoothing_term import SmoothingTermMethod
 from tsdf_field_generation import generate_initial_orthographic_2d_tsdf_fields, DepthInterpolationMethod
 from slavcheva_optimizer2d import SlavchevaOptimizer2d, AdaptiveLearningRateMethod, ComputeMethod
@@ -108,10 +109,11 @@ def perform_single_test(depth_interpolation_method=DepthInterpolationMethod.NONE
                                      maximum_warp_length_lower_threshold=0.05,
                                      max_iterations=100,
 
-                                     sobolev_kernel=generate_1d_sobolev_kernel(size=7 if field_size > 7 else 3, strength=0.1),
-
-                                     enable_component_fields=True,
-                                     view_scaling_factor=view_scaling_factor)
+                                     sobolev_kernel=generate_1d_sobolev_kernel(size=7 if field_size > 7 else 3,
+                                                                               strength=0.1),
+                                     visualization_settings=SlavchevaVisualizer.Settings(
+                                         enable_component_fields=True,
+                                         view_scaling_factor=view_scaling_factor))
 
     start_time = time.time()
     optimizer.optimize(live_field, canonical_field)
