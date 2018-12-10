@@ -131,26 +131,31 @@ class SlavchevaVisualizer:
     def write_all_iteration_visualizations(self, iteration_number, warp_field, gradient_field, live_field,
                                            canonical_field):
         if self.warp_video_writer2D is not None:
-            make_vector_field_plot(self.warp_video_writer2D, warp_field,
-                                   scale=10.0, iteration_number=iteration_number,
-                                   vectors_name="Warp vectors (scaled x10)")
-        if self.gradient_video_writer2D is not None:
-            make_vector_field_plot(self.gradient_video_writer2D, -gradient_field, iteration_number=iteration_number,
-                                   vectors_name="Gradient vectors (negated)")
-        if self.data_gradient_video_writer2D is not None:
-            make_vector_field_plot(self.data_gradient_video_writer2D, -self.data_component_field,
-                                   iteration_number=iteration_number, vectors_name="Data gradients (negated)")
-        if self.smoothing_gradient_video_writer2D is not None:
-            make_vector_field_plot(self.smoothing_gradient_video_writer2D, -self.smoothing_component_field,
-                                   iteration_number=iteration_number, vectors_name="Smoothing gradients (negated)")
-        if self.level_set_gradient_video_writer2D is not None:
-            make_vector_field_plot(self.level_set_gradient_video_writer2D, -self.level_set_component_field,
-                                   iteration_number=iteration_number, vectors_name="Level set gradients (negated)")
+            self.warp_video_writer2D.write(
+                make_vector_field_plot(warp_field, scale=10.0, iteration_number=iteration_number,
+                                       vectors_name="Warp vectors (scaled x10)"))
 
-        if self.live_video_writer2D is not None:
-            self.live_video_writer2D.write(sdf_field_to_image(live_field, self.settings.view_scaling_factor))
-        if self.warp_magnitude_video_writer2D is not None:
-            self.warp_magnitude_video_writer2D.write(
-                warp_field_to_heatmap(warp_field, self.settings.view_scaling_factor))
-        if self.live_video_writer3D is not None:
-            make_3d_plots(self.live_video_writer3D, canonical_field, live_field)
+        if self.gradient_video_writer2D is not None:
+            self.gradient_video_writer2D.write(
+                make_vector_field_plot(-gradient_field, iteration_number=iteration_number,
+                                       vectors_name="Gradient vectors (negated)"))
+        if self.data_gradient_video_writer2D is not None:
+            self.data_gradient_video_writer2D.write(
+                make_vector_field_plot(-self.data_component_field,
+                                       iteration_number=iteration_number, vectors_name="Data gradients (negated)"))
+            if self.smoothing_gradient_video_writer2D is not None:
+                self.smoothing_gradient_video_writer2D.write(
+                    make_vector_field_plot(-self.smoothing_component_field, iteration_number=iteration_number,
+                                           vectors_name="Smoothing gradients (negated)"))
+            if self.level_set_gradient_video_writer2D is not None:
+                self.level_set_gradient_video_writer2D.write(
+                    make_vector_field_plot(-self.level_set_component_field, iteration_number=iteration_number,
+                                           vectors_name="Level set gradients (negated)"))
+            if self.live_video_writer2D is not None:
+                self.live_video_writer2D.write(sdf_field_to_image(live_field, self.settings.view_scaling_factor))
+            if self.warp_magnitude_video_writer2D is not None:
+                self.warp_magnitude_video_writer2D.write(
+                    warp_field_to_heatmap(warp_field, self.settings.view_scaling_factor))
+            if self.live_video_writer3D is not None:
+                self.live_video_writer3D.write(
+                    make_3d_plots(canonical_field, live_field))

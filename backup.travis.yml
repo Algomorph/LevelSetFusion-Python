@@ -1,0 +1,11 @@
+language: python
+python:
+  - "3.6"
+  - "3.7"
+before_install:
+  - pip install --user -r requirements.txt
+  - python3 -m pip install --user git+https://github.com/mnick/scikit-tensor.git
+install:
+  - pip --version
+script:
+  - pytest --pyargs tests

@@ -70,7 +70,7 @@ def highlight_row_on_gray(gray_image, ix_row):
 # TODO: all visualization functions that currently accept an OpenCV writer and write image should instead simply
 # produce an image, which should be written, if necessary, by another routine
 
-def make_vector_field_plot(vector_field_video_writer, warp_field, iteration_number=None, sparsity_factor=1,
+def make_vector_field_plot(warp_field, iteration_number=None, sparsity_factor=1,
                            use_magnitude_for_color=True, scale=1.0, vectors_name="Warp vectors"):
     fig = plt.figure(figsize=(23.6, 14))
     ax = fig.gca()
@@ -112,10 +112,10 @@ def make_vector_field_plot(vector_field_video_writer, warp_field, iteration_numb
     plot_image = plot_image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
     plot_image = plot_image[110:1310, 240:2160]
     bgr = cv2.cvtColor(plot_image, cv2.COLOR_RGB2BGR)
-    vector_field_video_writer.write(bgr)
+    return bgr
 
 
-def make_3d_plots(live_video_writer_3d, canonical_field, warped_live_field):
+def make_3d_plots(canonical_field, warped_live_field):
     """
     Makes a 3D plot of the live sdf, with the SDF value plotted along the (vertical) Z axis
     :param live_video_writer_3d:
@@ -166,7 +166,7 @@ def make_3d_plots(live_video_writer_3d, canonical_field, warped_live_field):
     plot_image = plot_image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
     plot_image = plot_image[150:870, 200:1430]
     plt.close(fig)
-    live_video_writer_3d.write(plot_image)
+    return plot_image
 
 
 def warp_field_to_heatmap(warp_field, scale=VIEW_SCALING_FACTOR, use_pixel_labels=True):
