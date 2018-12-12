@@ -129,51 +129,51 @@ class MaskedImageBasedSingleFrameDataset(SingleFrameDataset):
 
 datasets = {
     PredefinedDatasetEnum.SYNTHETIC3D_SUZANNE_AWAY: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/inf_calib.txt",
-        "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/input/depth_00000.png",
-        "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/input/depth_00001.png",
+        "../Data/Reconstruction/synthetic_data/suzanne_away/inf_calib.txt",
+        "../Data/Reconstruction/synthetic_data/suzanne_away/input/depth_00000.png",
+        "../Data/Reconstruction/synthetic_data/suzanne_away/input/depth_00001.png",
         200, 128, np.array([-64, -64, 0])
     ),
     PredefinedDatasetEnum.SYNTHETIC3D_SUZANNE_TWIST: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/inf_calib.txt",
-        "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/input/depth_00000.png",
-        "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/input/depth_00010.png",
+        "../Data/Reconstruction/synthetic_data/suzanne_twist/inf_calib.txt",
+        "../Data/Reconstruction/synthetic_data/suzanne_twist/input/depth_00000.png",
+        "../Data/Reconstruction/synthetic_data/suzanne_twist/input/depth_00010.png",
         200, 128, np.array([-64, -64, 64])
     ),
     PredefinedDatasetEnum.REAL3D_SNOOPY_SET01: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000015.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000016.png",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000015.png",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000016.png",
         214, 128, np.array([-64, -64, 128])
     ),
     PredefinedDatasetEnum.REAL3D_SNOOPY_SET02: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000064.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000065.png",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000064.png",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000065.png",
         214, 128, np.array([-64, -64, 128])
     ),
     PredefinedDatasetEnum.REAL3D_SNOOPY_SET03: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000025.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000026.png",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000025.png",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000026.png",
         334, 128, np.array([-64, -64, 128])
     ),
     PredefinedDatasetEnum.REAL3D_SNOOPY_SET04: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000065.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000066.png",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000065.png",
+        "../Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000066.png",
         223, 128, np.array([-64, -64, 128])
     ),
     PredefinedDatasetEnum.SYNTHETIC3D_PLANE_AWAY: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/inf_calib.txt",
-        "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00000.png",
-        "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00001.png",
+        "../Data/Reconstruction/synthetic_data/plane_away/inf_calib.txt",
+        "../Data/Reconstruction/synthetic_data/plane_away/input/depth_00000.png",
+        "../Data/Reconstruction/synthetic_data/plane_away/input/depth_00001.png",
         200, 128, np.array([-64, -64, 106])
     ),
     PredefinedDatasetEnum.SYNTHETIC3D_PLANE_AWAY_512: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/inf_calib.txt",
-        "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00000.png",
-        "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00001.png",
+        "../Data/Reconstruction/synthetic_data/plane_away/inf_calib.txt",
+        "../Data/Reconstruction/synthetic_data/plane_away/input/depth_00000.png",
+        "../Data/Reconstruction/synthetic_data/plane_away/input/depth_00001.png",
         130, 512, np.array([-256, -256, 0])
     ),
     PredefinedDatasetEnum.SIMPLE_TEST_CASE01: HardcodedSingleFrameDataset(

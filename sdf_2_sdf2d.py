@@ -27,7 +27,7 @@ from interpolation import interpolate_warped_live, get_and_print_interpolation_d
 from level_set_term import level_set_term_at_location
 import smoothing_term as st
 from transformation import twist_vector_to_matrix
-from sdf_gradient_resp_to_twist import sdf_gradient_resp_to_twist
+from sdf_gradient_wrt_to_twist import sdf_gradient_resp_to_twist
 
 
 class VoxelLog:
