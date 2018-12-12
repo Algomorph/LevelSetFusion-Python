@@ -15,12 +15,13 @@ addons:
         - python3-numpy
 python:
   - "3.5"
-before_install:
+before_script:
   - pip --version
   - pip install -r requirements.txt
   - python3 -m pip install git+https://github.com/mnick/scikit-tensor.git
-install:
-  - # build C++ module
+
+script:
+   # build C++ module
   - sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
   - sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.5 2
   - export CXX=g++-7
@@ -35,5 +36,4 @@ install:
   - make
   - sudo make install
   - cd ../..
-script:
   - pytest
