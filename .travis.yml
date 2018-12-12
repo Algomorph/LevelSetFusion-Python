@@ -17,8 +17,8 @@ python:
   - "3.6"
 before_install:
   - pip --version
-  - sudo pip install -r requirements.txt
-  - sudo python3 -m pip install git+https://github.com/mnick/scikit-tensor.git
+  - pip install -r requirements.txt
+  - python3 -m pip install git+https://github.com/mnick/scikit-tensor.git
 install:
   - # build C++ module
   - sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
