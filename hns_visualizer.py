@@ -17,13 +17,31 @@
 # contains main visualization subroutines for showing and recording results of the optimization process in the
 # HierarchicalNonrigidSLAMOptimizer2d class
 
+# stdlib
+import os.path
+# libraries
+import cv2
+
 
 class HNSOVisualizer:
     class HNSOVisualizerSettings:
-        def __init__(self, show_live_progress=False, save_live_progress=False):
+        def __init__(self, out_path="output/hns_optimizer/", view_scaling_fator=8,
+                     show_live_progress=False, save_live_progress=False):
+            self.out_path = out_path
+            self.view_scaling_factor = view_scaling_fator
             self.show_live_progress = show_live_progress
             self.save_live_progress = save_live_progress
 
-    def __init__(self):
-        # TODO
-        pass
+    def __init__(self, settings=None, field_size=128):
+        self.field_size = field_size
+        self.settings = settings
+        if not settings:
+            self.settings = HNSOVisualizer.HNSOVisualizerSettings()
+        # initialize video-writers
+        self.live_progression_writer = None
+        if settings.save_live_progress:
+            self.live_progression_writer = cv2.VideoWriter(
+                os.path.join(self.settings.out_path, 'live_field_evolution_2D.mkv'),
+                cv2.VideoWriter_fourcc('X', '2', '6', '4'), 10,
+                (field_size * self.settings.view_scaling_factor, field_size * self.settings.view_scaling_factor),
+                isColor=False)
