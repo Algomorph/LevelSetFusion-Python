@@ -1,10 +1,38 @@
 language: python
+
+os: linux
+dist: xenial
+sudo: true
+addons:
+   apt:
+     sources:
+        - ubuntu-toolchain-r-test
+     packages:
+        - cmake-data
+        - cmake
+        - g++-7
+        - libpython3-dev
+        - python3-numpy
 python:
   - "3.6"
 before_install:
+  - pip --version
   - pip install --user -r requirements.txt
   - python3 -m pip install --user git+https://github.com/mnick/scikit-tensor.git
 install:
-  - pip --version
+  - # build C++ module
+  - sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
+  - sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.5 2
+  - export CXX=g++-7
+  - ${CXX} --version
+  - cmake --version
+  - python --version
+  - git submodule update --init
+  - cd cpp
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make
+  - cd ../..
 script:
-  - pytest --pyargs tests
+  - pytest
