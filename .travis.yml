@@ -13,6 +13,7 @@ addons:
         - g++-7
         - libpython3-dev
         - python3-numpy
+        - python3-pip
 #python:
 #  - "3.5"
 before_script:
