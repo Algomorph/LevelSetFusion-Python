@@ -157,5 +157,4 @@ class SlavchevaVisualizer:
                 self.warp_magnitude_video_writer2D.write(
                     warp_field_to_heatmap(warp_field, self.settings.view_scaling_factor))
             if self.live_video_writer3D is not None:
-                self.live_video_writer3D.write(
-                    make_3d_plots(canonical_field, live_field))
+                self.live_video_writer3D.write(make_3d_plots(canonical_field, live_field))

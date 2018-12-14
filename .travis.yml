@@ -35,5 +35,5 @@ script:
   - cmake ..
   - make
   - sudo make install
-  - cd ../..
+  - cd ..
   - pytest
