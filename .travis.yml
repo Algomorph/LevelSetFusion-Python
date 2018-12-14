@@ -13,8 +13,8 @@ addons:
         - g++-7
         - libpython3-dev
         - python3-numpy
-python:
-  - "3.5"
+#python:
+#  - "3.5"
 before_script:
   - pip --version
   - pip install -r requirements.txt
