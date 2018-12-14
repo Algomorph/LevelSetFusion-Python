@@ -16,25 +16,29 @@
 
 # stdlib
 from unittest import TestCase
+import pytest
+
+# libraries
+import numpy as np
 
 # test targets
 import hns_optimizer2d as hnso
 import dataset as ds
 import tsdf_field_generation as tsdf
+import field_resampling as resampling
+from tests.hnso_fixtures import live_field, canonical_field, warp_field, final_live_field
 
 
 class HNSOptimizerTest(TestCase):
     def test_construction_and_operation(self):
-        # data_to_use = ds.PredefinedDatasetEnum.REAL3D_SNOOPY_SET04
-        # depth_interpolation_method = tsdf.DepthInterpolationMethod.NONE
-        #
-        # live_field, canonical_field = \
-        #     ds.datasets[data_to_use].generate_2d_sdf_fields(method=depth_interpolation_method)
-        #
-        # optimizer = hnso.HierarchicalNonrigidSLAMOptimizer2d(
-        #     verbosity_parameters=hnso.HierarchicalNonrigidSLAMOptimizer2d.VerbosityParameters(
-        #         print_max_warp_update=True
-        #     ))
-        # optimizer.optimize(canonical_field, live_field)
-
-        self.assertTrue(True)
+        optimizer = hnso.HierarchicalNonrigidSLAMOptimizer2d(
+            rate=0.2,
+            data_term_amplifier=1.0,
+            maximum_warp_update_threshold=0.001,
+            verbosity_parameters=hnso.HierarchicalNonrigidSLAMOptimizer2d.VerbosityParameters(
+                print_max_warp_update=False
+            ))
+        warp_field_out = optimizer.optimize(canonical_field, live_field)
+        final_live_resampled = resampling.resample_field(live_field, warp_field_out)
+        self.assertTrue(np.allclose(warp_field_out, warp_field))
+        self.assertTrue(np.allclose(final_live_resampled, final_live_field))

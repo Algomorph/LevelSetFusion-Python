@@ -38,7 +38,7 @@ class ScalarFieldPyramid2d:
 
         # check that we can get a level with the maximum chunk size
         max_level_count = min(int(math.log(field.shape[0], 2)), int(math.log(field.shape[1], 2)))
-        if max_level_count - 1 <= power_of_two_largest_chunk:
+        if max_level_count <= power_of_two_largest_chunk:
             raise ValueError("maximum chunk size {:d} is too large for a field of size {:s}"
                              .format(maximum_chunk_size, str(field.shape)))
 

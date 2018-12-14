@@ -55,6 +55,7 @@ class HNSOVisualizer:
             self.parameters = HNSOVisualizer.Parameters()
         # initialize video-writers
         self.live_progression_writer = None
+        self.warp_video_writer2D = None
 
         if self.parameters.using_output_folder:
             if not os.path.exists(self.parameters.out_path):
