@@ -17,7 +17,8 @@ addons:
 #  - "3.5"
 before_script:
   - wget https://bootstrap.pypa.io/get-pip.py
-  - python3 get-pip.py
+  - python3 --version
+  - sudo python3 get-pip.py
   - pip3 --version
   - pip3 install -r requirements.txt
   - python3 -m pip install git+https://github.com/mnick/scikit-tensor.git
@@ -38,4 +39,4 @@ script:
   - make
   - sudo make install
   - cd ../..
-  - pytest tests
+  - python3 -m pytest tests
