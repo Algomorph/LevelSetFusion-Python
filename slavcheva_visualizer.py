@@ -123,7 +123,7 @@ class SlavchevaVisualizer:
 
     def write_live_sdf_visualizations(self, canonical_field, live_field):
         if self.live_video_writer3D is not None:
-            make_3d_plots(self.live_video_writer3D, canonical_field, live_field)
+            self.live_video_writer3D.write(make_3d_plots(canonical_field, live_field))
         if self.live_video_writer2D is not None:
             self.live_video_writer2D.write(sdf_field_to_image(live_field, self.settings.view_scaling_factor))
         pass

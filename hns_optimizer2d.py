@@ -23,6 +23,7 @@ import numpy as np
 from utils.pyramid import ScalarFieldPyramid2d
 import field_resampling as resampling
 import utils.printing as printing
+from hns_visualizer import HNSOVisualizer
 
 
 class HierarchicalNonrigidSLAMOptimizer2d:
@@ -45,10 +46,15 @@ class HierarchicalNonrigidSLAMOptimizer2d:
             self.print_per_iteration_info = any(self.per_iteration_flags)
             self.print_per_level_info = True  # TODO: def should be any(self.per_level_flags)
 
-    def __init__(self, maximum_chunk_size=8, rate=0.1,
-                 tikhonov_strength=0.2, maximum_warp_update_threshold=0.001,
+    def __init__(self, maximum_chunk_size=8,
+                 rate=0.1,
+                 data_term_amplifier=1.0,
+                 tikhonov_strength=0.2,
+                 maximum_warp_update_threshold=0.001,
                  maximum_iteration_count=100,
-                 verbosity_parameters=None):
+                 verbosity_parameters=None,
+                 visualization_parameters=None
+                 ):
 
         """
         Constructor
@@ -63,6 +69,7 @@ class HierarchicalNonrigidSLAMOptimizer2d:
         """
         self.maximum_chunk_size = maximum_chunk_size
         self.rate = rate
+        self.data_term_amplifier = data_term_amplifier
         self.tikhonov_strength = tikhonov_strength
         self.maximum_warp_update_threshold = maximum_warp_update_threshold
         self.maximum_iteration_count = maximum_iteration_count
@@ -71,17 +78,30 @@ class HierarchicalNonrigidSLAMOptimizer2d:
         else:
             self.verbosity_parameters = HierarchicalNonrigidSLAMOptimizer2d.VerbosityParameters()
 
+        if visualization_parameters:
+            self.visualization_parameters = visualization_parameters
+        else:
+            self.visualization_parameters = HNSOVisualizer.Parameters()
+        self.visualizer = None
+        self.hierarchy_level = 0
+
     def optimize(self, canonical_field, live_field):
+        field_size = canonical_field.shape[0]
+
         live_gradient_y, live_gradient_x = np.gradient(live_field)
 
         canonical_pyramid = ScalarFieldPyramid2d(canonical_field, self.maximum_chunk_size)
         live_pyramid = ScalarFieldPyramid2d(live_field, self.maximum_chunk_size)
         live_gradient_x_pyramid = ScalarFieldPyramid2d(live_gradient_x, self.maximum_chunk_size)
         live_gradient_y_pyramid = ScalarFieldPyramid2d(live_gradient_y, self.maximum_chunk_size)
-        i_level = 0
+        self.hierarchy_level = 0
 
         level_count = len(canonical_pyramid.levels)
         warp_field = None
+
+        self.visualizer = HNSOVisualizer(parameters=self.visualization_parameters, field_size=field_size,
+                                         level_count=level_count)
+        self.visualizer.generate_pre_optimization_visualizations(canonical_field, live_field)
 
         for canonical_pyramid_level, live_pyramid_level, live_gradient_x_level, live_gradient_y_level \
                 in zip(canonical_pyramid.levels,
@@ -89,23 +109,26 @@ class HierarchicalNonrigidSLAMOptimizer2d:
                        live_gradient_x_pyramid.levels,
                        live_gradient_y_pyramid.levels):
 
-            if i_level == 0:
+            if self.hierarchy_level == 0:
                 warp_field = np.zeros((canonical_pyramid_level.shape[0], canonical_pyramid_level.shape[1], 2),
                                       dtype=np.float32)
             warp_field = \
                 self.__optimize_level(canonical_pyramid_level, live_pyramid_level,
                                       live_gradient_x_level, live_gradient_y_level, warp_field)
 
-            if i_level != level_count - 1:
+            if self.hierarchy_level != level_count - 1:
                 warp_field = warp_field.repeat(2, axis=0).repeat(2, axis=1)
 
             if self.verbosity_parameters.print_per_iteration_info:
-                print("%s[LEVEL %d COMPLETED]%s" % (printing.BOLD_RED, i_level, printing.RESET),
+                print("%s[LEVEL %d COMPLETED]%s" % (printing.BOLD_RED, self.hierarchy_level, printing.RESET),
                       end="")
 
                 print()
 
-            i_level += 1
+            self.hierarchy_level += 1
+        self.visualizer.generate_post_optimization_visualizations(canonical_field, live_field, warp_field)
+        del self.visualizer
+        return warp_field
 
     def __termination_conditions_reached(self, maximum_warp_update, iteration_count):
         return maximum_warp_update < self.maximum_warp_update_threshold or \
@@ -113,6 +136,8 @@ class HierarchicalNonrigidSLAMOptimizer2d:
 
     def __optimize_level(self, canonical_pyramid_level, live_pyramid_level,
                          live_gradient_x_level, live_gradient_y_level, warp_field):
+        
+        
         maximum_warp_update_length = np.finfo(np.float32).max
         iteration_count = 0
 
@@ -124,7 +149,7 @@ class HierarchicalNonrigidSLAMOptimizer2d:
 
             # see how badly our sampled values correspond to the canonical values at the same locations
             # (warped_live - canonical) * warped_gradient(live)
-            diff = (resampled_live - canonical_pyramid_level)
+            diff = self.data_term_amplifier * (resampled_live - canonical_pyramid_level)
             data_gradient_x = diff * resampled_live_gradient_x
             data_gradient_y = diff * resampled_live_gradient_y
 
@@ -147,11 +172,14 @@ class HierarchicalNonrigidSLAMOptimizer2d:
                 if self.verbosity_parameters.print_max_warp_update:
                     print(" max upd. l.: %f" % maximum_warp_update_length, end="")
                 if self.verbosity_parameters.print_iteration_data_energy:
-                    data_energy = (diff**2).sum()
+                    data_energy = (diff ** 2).sum()
                     normalized_data_energy = data_energy * 1000000 / diff.size
                     print(" norm. data energy: %f" % normalized_data_energy, end="")
 
                 print()
+            self.visualizer.generate_per_iteration_visualizations(canonical_pyramid_level, resampled_live,
+                                                                  warp_field, self.hierarchy_level, iteration_count)
             iteration_count += 1
+
 
         return warp_field

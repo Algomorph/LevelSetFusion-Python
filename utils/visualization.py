@@ -115,13 +115,12 @@ def make_vector_field_plot(warp_field, iteration_number=None, sparsity_factor=1,
     return bgr
 
 
-def make_3d_plots(canonical_field, warped_live_field):
+def make_3d_plots(canonical_field, live_field):
     """
     Makes a 3D plot of the live sdf, with the SDF value plotted along the (vertical) Z axis
-    :param live_video_writer_3d:
-    :param canonical_field:
-    :param warped_live_field:
-    :return:
+    :param canonical_field: canonical (source) SDF field
+    :param live_field: warped/transformed live (target) SDF field
+    :return: image (numpy array) of the 3D plot
     """
     # plot warped live field
     fig = plt.figure(figsize=(16, 10))
@@ -129,8 +128,8 @@ def make_3d_plots(canonical_field, warped_live_field):
     ax = fig.gca(projection='3d')
 
     # Make live data.
-    x_grid = np.arange(0, warped_live_field.shape[0])
-    y_grid = np.arange(0, warped_live_field.shape[1])
+    x_grid = np.arange(0, live_field.shape[0])
+    y_grid = np.arange(0, live_field.shape[1])
 
     x_grid, y_grid = np.meshgrid(x_grid, y_grid)
 
@@ -139,7 +138,7 @@ def make_3d_plots(canonical_field, warped_live_field):
     x_end = 109
     x_grid_cropped = x_grid[:, x_start:x_end]
     y_grid_cropped = y_grid[:, x_start:x_end]
-    live_z = warped_live_field * 10
+    live_z = live_field * 10
     live_z_cropped = live_z[:, x_start:x_end, ]
 
     # Plot the surface.
