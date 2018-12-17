@@ -27,7 +27,7 @@ before_script:
 script:
    # build C++ module
   - sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
-  - sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.5 2
+  - sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.5 10
   - export CXX=g++-7
   - ${CXX} --version
   - cmake --version
