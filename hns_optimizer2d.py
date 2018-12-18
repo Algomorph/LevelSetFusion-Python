@@ -54,7 +54,8 @@ class HierarchicalNonrigidSLAMOptimizer2d:
             # per-level
             self.print_per_level_info = True  # TODO: def should be any(self.per_level_flags)
 
-    def __init__(self, maximum_chunk_size=8,
+    def __init__(self,
+                 maximum_chunk_size=8,
                  rate=0.1,
                  data_term_amplifier=1.0,
                  tikhonov_strength=0.2,
