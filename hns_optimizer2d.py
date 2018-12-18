@@ -19,10 +19,12 @@
 import math
 # libraries
 import numpy as np
+import scipy.ndimage
 # local
 from utils.pyramid import ScalarFieldPyramid2d
 import field_resampling as resampling
 import utils.printing as printing
+import math_utils.convolution as convolution
 from hns_visualizer import HNSOVisualizer
 
 
@@ -38,22 +40,31 @@ class HierarchicalNonrigidSLAMOptimizer2d:
         Assumes being used in an "immutable" manner, i.e. just a structure that holds values
         """
 
-        def __init__(self, print_max_warp_update=False, print_iteration_data_energy=False):
+        def __init__(self, print_max_warp_update=False, print_iteration_data_energy=False,
+                     print_iteration_tikhonov_energy=False):
             # per-iteration
             self.print_max_warp_update = print_max_warp_update
             self.print_iteration_data_energy = print_iteration_data_energy
-            self.per_iteration_flags = [self.print_max_warp_update]
+            self.print_iteration_tikhonov_energy = print_iteration_tikhonov_energy
+            self.per_iteration_flags = [self.print_max_warp_update,
+                                        self.print_iteration_data_energy,
+                                        self.print_iteration_tikhonov_energy]
             self.print_per_iteration_info = any(self.per_iteration_flags)
+
+            # per-level
             self.print_per_level_info = True  # TODO: def should be any(self.per_level_flags)
 
     def __init__(self, maximum_chunk_size=8,
                  rate=0.1,
                  data_term_amplifier=1.0,
                  tikhonov_strength=0.2,
+                 kernel=None,
                  maximum_warp_update_threshold=0.001,
                  maximum_iteration_count=100,
                  verbosity_parameters=None,
-                 visualization_parameters=None
+                 visualization_parameters=None,
+                 tikhonov_term_enabled=True,
+                 gradient_kernel_enabled=True
                  ):
 
         """
@@ -62,6 +73,7 @@ class HierarchicalNonrigidSLAMOptimizer2d:
         represented by a single pixel in the highest level in the hierarchy
         :param rate: rate of gradient descent (update = gradient*factor)
         :param tikhonov_strength: strength of the tikhonov (i.e. similarity-based) regularizer for the warps
+        :param kernel: kernel used to convolve the gradient at each iteration
         :param maximum_warp_update_threshold: lower threshold on the maximum vector length (after which optimization terminates)
         :param maximum_iteration_count: top threshold on the number of iterations (after which optimization terminates)
         :@type verbosity_parameters: HierarchicalNonrigidSLAMOptimizer2d.VerbosityParameters
@@ -70,7 +82,20 @@ class HierarchicalNonrigidSLAMOptimizer2d:
         self.maximum_chunk_size = maximum_chunk_size
         self.rate = rate
         self.data_term_amplifier = data_term_amplifier
-        self.tikhonov_strength = tikhonov_strength
+
+        if tikhonov_term_enabled:
+            self.tikhonov_strength = tikhonov_strength
+            self.tikhonov_term_enabled = True if tikhonov_strength != 0.0 else False
+        else:
+            self.tikhonov_strength = 0.0
+            self.tikhonov_term_enabled = False
+        if gradient_kernel_enabled:
+            self.gradient_kernel = kernel
+            self.gradient_kernel_enabled = True if kernel is not None else False
+        else:
+            self.gradient_kernel = None
+            self.gradient_kernel_enabled = False
+
         self.maximum_warp_update_threshold = maximum_warp_update_threshold
         self.maximum_iteration_count = maximum_iteration_count
         if verbosity_parameters:
@@ -136,10 +161,14 @@ class HierarchicalNonrigidSLAMOptimizer2d:
 
     def __optimize_level(self, canonical_pyramid_level, live_pyramid_level,
                          live_gradient_x_level, live_gradient_y_level, warp_field):
-        
-        
+
         maximum_warp_update_length = np.finfo(np.float32).max
         iteration_count = 0
+
+        gradient = np.zeros_like(warp_field)
+        normalized_tikhonov_energy = 0
+        data_gradient = None
+        tikhonov_gradient = None
 
         while not self.__termination_conditions_reached(maximum_warp_update_length, iteration_count):
             # resample the live & gradients using current warps
@@ -148,38 +177,61 @@ class HierarchicalNonrigidSLAMOptimizer2d:
             resampled_live_gradient_y = resampling.resample_field_replacement(live_gradient_y_level, warp_field, 0.0)
 
             # see how badly our sampled values correspond to the canonical values at the same locations
-            # (warped_live - canonical) * warped_gradient(live)
-            diff = self.data_term_amplifier * (resampled_live - canonical_pyramid_level)
+            # data_gradient = (warped_live - canonical) * warped_gradient(live)
+            diff = (resampled_live - canonical_pyramid_level)
             data_gradient_x = diff * resampled_live_gradient_x
             data_gradient_y = diff * resampled_live_gradient_y
+            # this results in the data term gradient
+            data_gradient = np.dstack((data_gradient_x, data_gradient_y))
 
-            # TODO: Tikhonov & Sobolev regularization
+            if self.tikhonov_term_enabled:
+                # calculate tikhonov regularizer (laplacian of the previous update)
+                laplace_u = scipy.ndimage.laplace(gradient[:, :, 0])
+                laplace_v = scipy.ndimage.laplace(gradient[:, :, 1])
+                tikhonov_gradient = np.stack((laplace_u, laplace_v), axis=2)
+
+                if self.verbosity_parameters.print_iteration_tikhonov_energy:
+                    warp_gradient_u_x, warp_gradient_u_y = np.gradient(gradient[:, :, 0])
+                    warp_gradient_v_x, warp_gradient_v_y = np.gradient(gradient[:, :, 1])
+                    gradient_aggregate = \
+                        warp_gradient_u_x ** 2 + warp_gradient_v_x ** 2 + \
+                        warp_gradient_u_y ** 2 + warp_gradient_v_y ** 2
+                    normalized_tikhonov_energy = 1000000 * 0.5 * gradient_aggregate.mean()
+
+                gradient = self.data_term_amplifier * data_gradient - self.tikhonov_strength * tikhonov_gradient
+            else:
+                gradient = self.data_term_amplifier * data_gradient
+
+            if self.gradient_kernel_enabled:
+                convolution.convolve_with_kernel(gradient, self.gradient_kernel)
 
             # apply gradient-based update to existing warps
-            gradient_x = data_gradient_x
-            gradient_y = data_gradient_y
-            warp_update = self.rate * np.dstack((gradient_x, gradient_y))
-            warp_field -= warp_update
+            warp_field -= self.rate * gradient
 
             # perform termination condition updates
-            update_lengths = np.linalg.norm(warp_update, axis=2)
+            update_lengths = np.linalg.norm(gradient, axis=2)
             max_at = np.unravel_index(np.argmax(update_lengths), update_lengths.shape)
             maximum_warp_update_length = update_lengths[max_at]
 
+            # print output to stdout / log
             if self.verbosity_parameters.print_per_iteration_info:
                 print("%s[ITERATION %d COMPLETED]%s" % (printing.BOLD_LIGHT_CYAN, iteration_count, printing.RESET),
                       end="")
                 if self.verbosity_parameters.print_max_warp_update:
                     print(" max upd. l.: %f" % maximum_warp_update_length, end="")
                 if self.verbosity_parameters.print_iteration_data_energy:
-                    data_energy = (diff ** 2).sum()
-                    normalized_data_energy = data_energy * 1000000 / diff.size
+                    normalized_data_energy = 1000000 * (diff ** 2).mean()
                     print(" norm. data energy: %f" % normalized_data_energy, end="")
-
+                if self.verbosity_parameters.print_iteration_tikhonov_energy and self.tikhonov_term_enabled:
+                    print(" norm. tikhonov energy: %f" % normalized_tikhonov_energy, end="")
                 print()
-            self.visualizer.generate_per_iteration_visualizations(canonical_pyramid_level, resampled_live,
-                                                                  warp_field, self.hierarchy_level, iteration_count)
-            iteration_count += 1
+            inverse_tikhonov_gradient = None if tikhonov_gradient is None else -tikhonov_gradient
 
+            # save & show per-iteration visualizations
+            self.visualizer.generate_per_iteration_visualizations(self.hierarchy_level, iteration_count,
+                                                                  canonical_pyramid_level, resampled_live,
+                                                                  warp_field, data_gradient=data_gradient,
+                                                                  inverse_tikhonov_gradient=inverse_tikhonov_gradient)
+            iteration_count += 1
 
         return warp_field

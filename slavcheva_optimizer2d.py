@@ -210,7 +210,7 @@ class SlavchevaOptimizer2d:
 
         # ***
         if self.sobolev_smoothing_enabled:
-            convolve_with_kernel_preserve_zeros(self.gradient_field, self.sobolev_kernel)
+            convolve_with_kernel_preserve_zeros(self.gradient_field, self.sobolev_kernel, True)
 
         np.copyto(warp_field, -self.gradient_field * self.gradient_descent_rate)
         warp_lengths = np.linalg.norm(warp_field, axis=2)
@@ -303,7 +303,7 @@ class SlavchevaOptimizer2d:
                 self.gradient_field[y, x] = gradient
 
         if self.sobolev_smoothing_enabled:
-            convolve_with_kernel_preserve_zeros(self.gradient_field, self.sobolev_kernel)
+            convolve_with_kernel_preserve_zeros(self.gradient_field, self.sobolev_kernel, True)
 
         max_warp = 0.0
         max_warp_location = -1
