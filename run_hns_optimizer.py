@@ -17,13 +17,12 @@
 # stdlib
 import sys
 # local
-import hns_optimizer2d as hnso
-import hns_visualizer as hnsov
-import dataset as ds
-import tsdf_field_generation as tsdf
-import field_resampling as resampling
+from nonrigid_opt import hns_visualizer as hnsov, hns_optimizer2d as hnso
+from experiment import dataset as ds
+from tsdf import generation as tsdf
+from utils import field_resampling as resampling
 import utils.sampling as sampling
-from sobolev_filter import generate_1d_sobolev_kernel
+from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1

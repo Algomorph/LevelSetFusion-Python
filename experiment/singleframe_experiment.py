@@ -22,15 +22,15 @@ import os
 # libraries
 import numpy as np
 # local
-from data_term import DataTermMethod
-from dataset import datasets, PredefinedDatasetEnum, MaskedImageBasedSingleFrameDataset, ImageBasedSingleFrameDataset
-from slavcheva_visualizer import SlavchevaVisualizer
-from smoothing_term import SmoothingTermMethod
-from tsdf_field_generation import generate_initial_orthographic_2d_tsdf_fields, DepthInterpolationMethod
-from slavcheva_optimizer2d import SlavchevaOptimizer2d, AdaptiveLearningRateMethod, ComputeMethod
-from sobolev_filter import generate_1d_sobolev_kernel
+from nonrigid_opt.data_term import DataTermMethod
+from experiment.dataset import datasets, PredefinedDatasetEnum, MaskedImageBasedSingleFrameDataset, ImageBasedSingleFrameDataset
+from nonrigid_opt.slavcheva_visualizer import SlavchevaVisualizer
+from nonrigid_opt.smoothing_term import SmoothingTermMethod
+from tsdf.generation import generate_initial_orthographic_2d_tsdf_fields, DepthInterpolationMethod
+from nonrigid_opt.slavcheva_optimizer2d import SlavchevaOptimizer2d, AdaptiveLearningRateMethod, ComputeMethod
+from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
 from utils.visualization import visualize_and_save_initial_fields, visualize_final_fields
-import experiment_shared_routines as shared
+from experiment import experiment_shared_routines as shared
 
 
 def perform_single_test(depth_interpolation_method=DepthInterpolationMethod.NONE, out_path="output/out2D",

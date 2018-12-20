@@ -19,17 +19,17 @@ from unittest import TestCase
 import numpy as np
 
 # test targets
-from data_term import DataTermMethod
-from slavcheva_optimizer2d import SlavchevaOptimizer2d, ComputeMethod, AdaptiveLearningRateMethod
+from nonrigid_opt.data_term import DataTermMethod
+from nonrigid_opt.slavcheva_optimizer2d import SlavchevaOptimizer2d, ComputeMethod, AdaptiveLearningRateMethod
 import utils.sampling as sampling
-from slavcheva_visualizer import SlavchevaVisualizer
-from smoothing_term import SmoothingTermMethod
-from sobolev_filter import generate_1d_sobolev_kernel
+from nonrigid_opt.slavcheva_visualizer import SlavchevaVisualizer
+from nonrigid_opt.smoothing_term import SmoothingTermMethod
+from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
 
 
 def make_optimizer(compute_method, field_size, max_iterations=1):
     view_scaling_factor = 1024 // field_size
-    optimizer = SlavchevaOptimizer2d(out_path="test_non_rigid_out",
+    optimizer = SlavchevaOptimizer2d(out_path="output/test_non_rigid_out",
                                      field_size=field_size,
                                      default_value=1,
 
@@ -103,7 +103,6 @@ class TestNonRigidOptimization(TestCase):
         live_field = live_field_template.copy()
         optimizer.optimize(live_field, canonical_field)
         self.assertTrue(np.allclose(live_field, expected_live_field_out))
-
 
     def test_nonrigid_optimization02(self):
         sampling.set_focus_coordinates(0, 0)

@@ -24,10 +24,10 @@ from enum import Enum
 import argparse
 
 # local
-from data_term import DataTermMethod
-from multiframe_experiment import perform_multiple_tests, OptimizerChoice
-from singleframe_experiment import perform_single_test
-from tsdf_field_generation import DepthInterpolationMethod
+from nonrigid_opt.data_term import DataTermMethod
+from experiment.multiframe_experiment import perform_multiple_tests, OptimizerChoice
+from experiment.singleframe_experiment import perform_single_test
+from tsdf.generation import DepthInterpolationMethod
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1

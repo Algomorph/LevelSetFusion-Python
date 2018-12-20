@@ -16,16 +16,13 @@
 
 # stdlib
 from unittest import TestCase
-import pytest
 
 # libraries
 import numpy as np
 
 # test targets
-import hns_optimizer2d as hnso
-import dataset as ds
-import tsdf_field_generation as tsdf
-import field_resampling as resampling
+from nonrigid_opt import hns_optimizer2d as hnso
+from utils import field_resampling as resampling
 from tests.hnso_fixtures import live_field, canonical_field, warp_field, final_live_field
 
 

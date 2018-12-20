@@ -15,7 +15,7 @@
 #  ================================================================
 from unittest import TestCase
 import numpy as np
-import field_resampling as ipt
+from utils import field_resampling as ipt
 
 import level_set_fusion_optimization as cpp_extension
 

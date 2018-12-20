@@ -16,16 +16,15 @@
 
 # HNS = hierarchical nonrigid optimizer
 # stdlib
-import math
 # libraries
 import numpy as np
 import scipy.ndimage
 # local
 from utils.pyramid import ScalarFieldPyramid2d
-import field_resampling as resampling
+from utils import field_resampling as resampling
 import utils.printing as printing
 import math_utils.convolution as convolution
-from hns_visualizer import HNSOVisualizer
+from nonrigid_opt.hns_visualizer import HNSOVisualizer
 
 
 class HierarchicalNonrigidSLAMOptimizer2d:

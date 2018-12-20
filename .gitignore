@@ -146,7 +146,7 @@ cmake-build-debug/
 input/
 output/
 output/out2D_01/
-test_non_rigid_out/
+output/test_non_rigid_out/
 
 build/
 cpp/.cproject

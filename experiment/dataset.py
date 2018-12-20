@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 import cv2
 import numpy as np
 from calib.camerarig import DepthCameraRig
-import tsdf_field_generation as tsdf_gen
+from tsdf import generation as tsdf_gen
 
 
 class PredefinedDatasetEnum(Enum):
