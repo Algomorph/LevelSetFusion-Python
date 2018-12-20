@@ -29,7 +29,7 @@ before_script:
   - python3 -m pip install --user git+https://github.com/mnick/scikit-tensor.git
   - mkdir -p ~/.config/matplotlib/
   - touch ~/.config/matplotlib/matplotlibrc
-  - 'echo "backend : agg" > matplotlibrc'
+  - 'echo "backend : agg" > ~/.config/matplotlib/matplotlibrc'
 
 script:
    # build C++ module
