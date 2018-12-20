@@ -1,4 +1,4 @@
-PyQt5==5.11.3
+PyQt5
 pytest==3.9.3
 numpy==1.15.4
 opencv-python==3.4.4.19
@@ -6,6 +6,7 @@ pandas==0.23.4
 matplotlib==2.1.1
 lxml==4.2.1
 scipy==1.1.0
-# reenable this after the "pip installation for scikit-tensor" issue is fixed,
-# see https://github.com/mnick/scikit-tensor/issues/34
+-e git+https://github.com/mnick/scikit-tensor.git
+# Change previous entry to this after the "pip installation for scikit-tensor" issue is fixed;
+# see https://github.com/mnick/scikit-tensor/issues/34:
 # scikit-tensor==0.1
