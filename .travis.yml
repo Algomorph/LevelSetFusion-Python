@@ -25,6 +25,7 @@ before_script:
   - sudo -H python3 get-pip.py
   - python3 -m pip --version
   - python3 -m pip install --user -r requirements.txt
+  - python3 -m pip show PyQt5
   # TODO: fix the bug in scikit-tensor installer (maybe?) to allow it to be added to requirements.txt for pip
   - python3 -m pip install --user git+https://github.com/mnick/scikit-tensor.git
 
