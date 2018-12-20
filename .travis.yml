@@ -27,6 +27,9 @@ before_script:
   - python3 -m pip install --user -r requirements.txt
   # TODO: fix the bug in scikit-tensor installer (maybe?) to allow it to be added to requirements.txt for pip
   - python3 -m pip install --user git+https://github.com/mnick/scikit-tensor.git
+  - mkdir -p ~/.config/matplotlib/
+  - touch ~/.config/matplotlib/matplotlibrc
+  - echo "backend : Agg" >> ~/.config/matplotlib/matplotlibrc
 
 script:
    # build C++ module
