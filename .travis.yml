@@ -14,24 +14,25 @@ addons:
         - libpython3-dev
         - python3-numpy
         - python3-tk
+
+# have to use pre-installed python 3.5, specifying 3.5 installs a different version that has no headers and makes the
+# cpp module build fail
 #python:
 #  - "3.5"
 before_script:
   - wget https://bootstrap.pypa.io/get-pip.py
   - python3 --version
   - sudo -H python3 get-pip.py
-  - pip3 --version
+  - python3 -m pip --version
   - python3 -m pip install --user -r requirements.txt
+  # TODO: fix the bug in scikit-tensor installer (maybe?) to allow it to be added to requirements.txt for pip
   - python3 -m pip install --user git+https://github.com/mnick/scikit-tensor.git
 
 script:
    # build C++ module
-  - sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 1
-  - sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.5 10
   - export CXX=g++-7
   - ${CXX} --version
   - cmake --version
-  - python --version
   - git submodule update --init
   - cd cpp
   - mkdir build
