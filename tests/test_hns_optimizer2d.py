@@ -32,6 +32,7 @@ class HNSOptimizerTest(TestCase):
             rate=0.2,
             data_term_amplifier=1.0,
             maximum_warp_update_threshold=0.001,
+            maximum_iteration_count=100,
             tikhonov_term_enabled=False,
             kernel=None,
             verbosity_parameters=hnso.HierarchicalNonrigidSLAMOptimizer2d.VerbosityParameters(
