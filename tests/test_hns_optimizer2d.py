@@ -24,6 +24,8 @@ import numpy as np
 from nonrigid_opt import hns_optimizer2d as hnso
 from utils import field_resampling as resampling
 from tests.hnso_fixtures import live_field, canonical_field, warp_field, final_live_field
+# C++ extension
+import level_set_fusion_optimization as cpp_extension
 
 
 class HNSOptimizerTest(TestCase):
@@ -40,5 +42,21 @@ class HNSOptimizerTest(TestCase):
             ))
         warp_field_out = optimizer.optimize(canonical_field, live_field)
         final_live_resampled = resampling.resample_field(live_field, warp_field_out)
+
         self.assertTrue(np.allclose(warp_field_out, warp_field))
         self.assertTrue(np.allclose(final_live_resampled, final_live_field))
+
+        optimizer = cpp_extension.HierarchicalOptimizer(
+            tikhonov_term_enabled=False,
+            gradient_kernel_enabled=False,
+            maximum_chunk_size=8,
+            rate=0.2,
+            maximum_iteration_count=100,
+            maximum_warp_update_threshold=0.001,
+            data_term_amplifier=1.0
+        )
+
+        warp_field_out = optimizer.optimize(canonical_field, live_field)
+        final_live_resampled = resampling.resample_field(live_field, warp_field_out)
+        self.assertTrue(np.allclose(warp_field_out, warp_field, atol=10e-6))
+        self.assertTrue(np.allclose(final_live_resampled, final_live_field, atol=10e-6))
