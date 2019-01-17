@@ -13,6 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #  ================================================================
+import numpy as np
 
 
 class Point2d:
@@ -26,11 +27,15 @@ class Point2d:
         else:
             self.x = x
             self.y = y
+        self.__array = np.array([self.x, self.y])
 
     def __repr__(self):
         if self.x % 1.0 == 0 and self.y % 1.0 == 0:
             return "[{:d},{:d}]".format(int(self.x), int(self.y))
         return "[{:>03.2f},{:>03.2f}]".format(self.x, self.y)
+
+    def dot(self, other):
+        return self.__array.dot(other.__array)
 
     def __add__(self, other):
         return Point2d(self.x + other.x, self.y + other.y)
