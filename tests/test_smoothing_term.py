@@ -16,7 +16,7 @@
 
 from unittest import TestCase
 import numpy as np
-import smoothing_term as st
+from nonrigid_opt import smoothing_term as st
 from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union
 
 

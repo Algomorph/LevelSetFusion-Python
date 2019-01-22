@@ -19,7 +19,7 @@
 
 import sys
 from calib.camerarig import DepthCameraRig
-from tsdf_field_generation import generate_2d_tsdf_field_from_depth_image_no_interpolation
+from tsdf.generation import generate_2d_tsdf_field_from_depth_image_no_interpolation
 from utils.visualization import process_cv_esc, sdf_field_to_image
 import cv2
 

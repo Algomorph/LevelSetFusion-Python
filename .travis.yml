@@ -1,0 +1,47 @@
+language: python
+
+os: linux
+dist: xenial
+sudo: true
+addons:
+   apt:
+     sources:
+        - ubuntu-toolchain-r-test
+     packages:
+        - cmake-data
+        - cmake
+        - g++-7
+        - libpython3-dev
+        - python3-numpy
+        - python3-tk
+
+# have to use pre-installed python 3.5, specifying 3.5 installs a different version that has no headers and makes the
+# cpp module build fail
+#python:
+#  - "3.5"
+before_script:
+  - wget https://bootstrap.pypa.io/get-pip.py
+  - python3 --version
+  - sudo -H python3 get-pip.py
+  - python3 -m pip --version
+  - python3 -m pip install --user -r requirements.txt
+  # TODO: fix the bug in scikit-tensor installer (maybe?) to allow it to be added to requirements.txt for pip
+  - python3 -m pip install --user git+https://github.com/mnick/scikit-tensor.git
+  - mkdir -p ~/.config/matplotlib/
+  - touch ~/.config/matplotlib/matplotlibrc
+  - 'echo "backend : agg" > ~/.config/matplotlib/matplotlibrc'
+
+script:
+   # build C++ module
+  - export CXX=g++-7
+  - ${CXX} --version
+  - cmake --version
+  - git submodule update --init
+  - cd cpp
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make
+  - sudo make install
+  - cd ../..
+  - python3 -m pytest tests

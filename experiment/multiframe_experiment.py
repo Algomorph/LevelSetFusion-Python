@@ -20,8 +20,6 @@
 import os
 import os.path
 import gc
-from enum import Enum
-import re
 
 # libraries
 import cv2
@@ -30,16 +28,16 @@ from matplotlib import pyplot as plt
 import pandas as pd
 
 # local
-from build_optimizer import OptimizerChoice, build_optimizer
-from data_term import DataTermMethod
-from dataset import ImageBasedSingleFrameDataset, MaskedImageBasedSingleFrameDataset
-from tsdf_field_generation import DepthInterpolationMethod
+from experiment.build_optimizer import OptimizerChoice, build_optimizer
+from nonrigid_opt.data_term import DataTermMethod
+from experiment.dataset import ImageBasedSingleFrameDataset, MaskedImageBasedSingleFrameDataset
+from tsdf.generation import DepthInterpolationMethod
 from utils.point2d import Point2d
 from utils.printing import *
 from utils.visualization import save_initial_fields, save_final_fields, rescale_depth_to_8bit, highlight_row_on_gray, \
-    sdf_field_to_image, save_tiled_tsdf_comparison_image, plot_warp_statistics
+    save_tiled_tsdf_comparison_image, plot_warp_statistics
 import utils.sampling as sampling
-import experiment_shared_routines as shared
+from experiment import experiment_shared_routines as shared
 
 
 def log_convergence_status(log, convergence_status, canonical_frame_index, live_frame_index, pixel_row_index):

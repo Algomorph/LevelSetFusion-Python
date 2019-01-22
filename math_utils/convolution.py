@@ -44,7 +44,28 @@ def convolve_with_kernel_x(vector_field, kernel):
     return x_convolved
 
 
-def convolve_with_kernel_preserve_zeros(vector_field, kernel=sobolev_kernel_1d):
+def convolve_with_kernel(vector_field, kernel=sobolev_kernel_1d, print_focus_coord_info=False):
+    x_convolved = np.zeros_like(vector_field)
+    y_convolved = np.zeros_like(vector_field)
+    focus_coordinates = get_focus_coordinates()
+
+    for x in range(vector_field.shape[1]):
+        y_convolved[:, x, 0] = np.convolve(vector_field[:, x, 0], kernel, mode='same')
+        y_convolved[:, x, 1] = np.convolve(vector_field[:, x, 1], kernel, mode='same')
+
+    for y in range(vector_field.shape[0]):
+        x_convolved[y, :, 0] = np.convolve(y_convolved[y, :, 0], kernel, mode='same')
+        x_convolved[y, :, 1] = np.convolve(y_convolved[y, :, 1], kernel, mode='same')
+
+    np.copyto(vector_field, x_convolved)
+    if print_focus_coord_info:
+        new_gradient_at_focus = vector_field[focus_coordinates[1], focus_coordinates[0]]
+        print(" H1 grad: {:s}[{:f} {:f}{:s}]".format(BOLD_GREEN, -new_gradient_at_focus[0], -new_gradient_at_focus[1],
+                                                     RESET), sep='', end='')
+    return vector_field
+
+
+def convolve_with_kernel_preserve_zeros(vector_field, kernel=sobolev_kernel_1d, print_focus_coord_info=False):
     x_convolved = np.zeros_like(vector_field)
     y_convolved = np.zeros_like(vector_field)
     focus_coordinates = get_focus_coordinates()
@@ -58,7 +79,8 @@ def convolve_with_kernel_preserve_zeros(vector_field, kernel=sobolev_kernel_1d):
         x_convolved[y, :, 1] = np.convolve(y_convolved[y, :, 1], kernel, mode='same')
     x_convolved[zero_check] = 0.0
     np.copyto(vector_field, x_convolved)
-    new_gradient_at_focus = vector_field[focus_coordinates[1], focus_coordinates[0]]
-    print(" H1 grad: {:s}[{:f} {:f}{:s}]".format(BOLD_GREEN, -new_gradient_at_focus[0], -new_gradient_at_focus[1],
-                                                 RESET), sep='', end='')
+    if print_focus_coord_info:
+        new_gradient_at_focus = vector_field[focus_coordinates[1], focus_coordinates[0]]
+        print(" H1 grad: {:s}[{:f} {:f}{:s}]".format(BOLD_GREEN, -new_gradient_at_focus[0], -new_gradient_at_focus[1],
+                                                     RESET), sep='', end='')
     return vector_field

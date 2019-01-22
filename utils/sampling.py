@@ -242,8 +242,8 @@ def bilinear_sample_at_replacement(field, x=0, y=0, point=None, replacement=1):
         x = point.x
         y = point.y
 
-    if x < 0 or x >= field.shape[1] or y < 0 or y >= field.shape[0]:
-        return 1
+    # if x < 0 or x >= field.shape[1] or y < 0 or y >= field.shape[0]:
+    #     return replacement
 
     point = Point2d(x, y)
 

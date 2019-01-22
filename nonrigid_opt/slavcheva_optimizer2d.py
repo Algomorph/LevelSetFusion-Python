@@ -23,7 +23,6 @@ import numpy as np
 import os.path
 
 from math_utils.convolution import convolve_with_kernel_preserve_zeros
-import cv2
 
 # local
 from utils.tsdf_set_routines import set_zeros_for_values_outside_narrow_band_union, voxel_is_outside_narrow_band_union
@@ -33,11 +32,9 @@ from utils.point2d import Point2d
 from utils.printing import *
 from utils.sampling import focus_coordinates_match, get_focus_coordinates
 from utils.tsdf_set_routines import value_outside_narrow_band
-from field_resampling import resample_warped_live, get_and_print_interpolation_data
-import data_term as dt
-from level_set_term import level_set_term_at_location
-import smoothing_term as st
-import slavcheva_visualizer as viz
+from utils.field_resampling import resample_warped_live, get_and_print_interpolation_data
+from nonrigid_opt.level_set_term import level_set_term_at_location
+from nonrigid_opt import slavcheva_visualizer as viz, data_term as dt, smoothing_term as st
 
 # C++ extension
 import level_set_fusion_optimization as cpp_extension
@@ -210,7 +207,7 @@ class SlavchevaOptimizer2d:
 
         # ***
         if self.sobolev_smoothing_enabled:
-            convolve_with_kernel_preserve_zeros(self.gradient_field, self.sobolev_kernel)
+            convolve_with_kernel_preserve_zeros(self.gradient_field, self.sobolev_kernel, True)
 
         np.copyto(warp_field, -self.gradient_field * self.gradient_descent_rate)
         warp_lengths = np.linalg.norm(warp_field, axis=2)
@@ -303,7 +300,7 @@ class SlavchevaOptimizer2d:
                 self.gradient_field[y, x] = gradient
 
         if self.sobolev_smoothing_enabled:
-            convolve_with_kernel_preserve_zeros(self.gradient_field, self.sobolev_kernel)
+            convolve_with_kernel_preserve_zeros(self.gradient_field, self.sobolev_kernel, True)
 
         max_warp = 0.0
         max_warp_location = -1

@@ -70,6 +70,17 @@ class FieldPyramidTest(TestCase):
         self.assertEqual(pyramid.levels[1][1, 0], l1_10)
         self.assertEqual(pyramid.levels[1][0, 1], l1_01)
         self.assertEqual(pyramid.levels[1][1, 1], l1_11)
-        self.assertEqual(pyramid.levels[0][0, 0], 5.0/4)
+        self.assertEqual(pyramid.levels[0][0, 0], 5.0 / 4)
 
-
+    def test_construct_small_pyramid(self):
+        tile = np.array([[1, 2, 5, 6, -1, -2, -5, -6],
+                         [3, 4, 7, 8, -3, -4, -7, -8],
+                         [-1, -2, -5, -6, 1, 2, 5, 6],
+                         [-3, -4, -7, -8, 3, 4, 7, 8],
+                         [1, 2, 5, 6, 5, 5, 5, 5],
+                         [3, 4, 7, 8, 5, 5, 5, 5],
+                         [-1, -2, -5, -6, 5, 5, 5, 5],
+                         [-3, -4, -7, -8, 5, 5, 5, 5]], dtype=np.float32)
+        field = np.tile(tile, (2, 2))  # results in shape 16 x 16
+        pyramid = ScalarFieldPyramid2d(field)
+        self.assertEqual(len(pyramid.levels), 4)
