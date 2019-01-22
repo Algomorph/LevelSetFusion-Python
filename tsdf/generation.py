@@ -345,3 +345,87 @@ def generate_initial_orthographic_2d_tsdf_fields(field_size=128, narrow_band_wid
                                            borderType=cv2.BORDER_REPLICATE)
 
     return live_field, canonical_field
+
+
+def generate_3d_tsdf_field_from_depth_image(depth_image, camera,
+                                            camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                            field_size=128, default_value=1, voxel_size=0.004,
+                                            array_offset=np.array([-64, -64, 64]),
+                                            narrow_band_width_voxels=20, back_cutoff_voxels=np.inf):
+    """
+    Assumes camera is at array_offset voxels relative to sdf grid
+    :param narrow_band_width_voxels:
+    :param array_offset:
+    :param camera_extrinsic_matrix: matrix representing transformation of the camera (incl. rotation and translation)
+    [ R | T]
+    [ 0 | 1]
+    :param voxel_size: voxel size, in meters
+    :param default_value: default initial TSDF value
+    :param field_size:
+    :param depth_image:
+    :type depth_image: np.ndarray
+    :param camera:
+    :type camera: calib.camera.DepthCamera
+    :param image_y_coordinate:
+    :type image_y_coordinate: int
+    :return:
+    """
+    # TODO: use back_cutoff_voxels for additional limit on
+    # "if signed_distance_to_voxel_along_camera_ray < -narrow_band_half_width" (maybe?)
+
+    if default_value == 1:
+        field = np.ones((field_size, field_size, field_size), dtype=np.float32)
+    elif default_value == 0:
+        field = np.zeros((field_size, field_size, field_size), dtype=np.float32)
+    else:
+        field = np.ndarray((field_size, field_size, field_size), dtype=np.float32)
+        field.fill(default_value)
+
+    projection_matrix = camera.intrinsics.intrinsic_matrix
+
+    depth_ratio = camera.depth_unit_ratio
+    narrow_band_half_width = narrow_band_width_voxels / 2 * voxel_size  # in metric units
+
+    w_voxel = 1.0
+
+    for z_field in range(field_size):
+        for y_field in range(field_size):
+            for x_field in range(field_size):
+
+                x_voxel = (x_field + array_offset[0]) * voxel_size
+                y_voxel = (y_field + array_offset[1]) * voxel_size
+                z_voxel = (z_field + array_offset[2]) * voxel_size
+
+                point = np.array([[x_voxel, y_voxel, z_voxel, w_voxel]], dtype=np.float32).T
+                point_in_camera_space = camera_extrinsic_matrix.dot(point).flatten()
+
+                if point_in_camera_space[2] <= 0:
+                    continue
+
+                image_x_coordinate = int(
+                    projection_matrix[0, 0] * point_in_camera_space[0] / point_in_camera_space[2]
+                    + projection_matrix[0, 2] + 0.5)
+                image_y_coordinate = int(
+                    projection_matrix[1, 1] * point_in_camera_space[1] / point_in_camera_space[2]
+                    + projection_matrix[1, 2] + 0.5
+                )
+
+                if image_x_coordinate < 0 or image_x_coordinate >= depth_image.shape[1] \
+                        or image_y_coordinate < 0 or image_y_coordinate >= depth_image.shape[0]:
+                    continue
+
+                depth = depth_image[image_y_coordinate, image_x_coordinate] * depth_ratio
+
+                if depth <= 0.0:
+                    continue
+
+                signed_distance_to_voxel_along_camera_ray = depth - point_in_camera_space[2]
+
+                if signed_distance_to_voxel_along_camera_ray < -narrow_band_half_width:
+                    field[y_field, x_field] = -1.0
+                elif signed_distance_to_voxel_along_camera_ray > narrow_band_half_width:
+                    field[y_field, x_field] = 1.0
+                else:
+                    field[y_field, x_field] = signed_distance_to_voxel_along_camera_ray / narrow_band_half_width
+
+    return field
