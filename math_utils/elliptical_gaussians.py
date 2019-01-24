@@ -17,6 +17,11 @@
 import numpy as np
 import math
 import cv2
+# import matplotlib as mpl
+import matplotlib.pyplot as plt
+
+
+# from matplotlib import cm
 
 
 class ImplicitEllipse:
@@ -33,22 +38,24 @@ class ImplicitEllipse:
             self.B = B
             self.C = C
             self.conic_matrix = self.Q = np.array([[A, B / 2], [B / 2, C]])
+
         self.F = F
 
     def get_bounds(self):
         if abs(float(self.B)) < 10e-6:
-            x_max = math.sqrt(self.F / self.A)
-            y_max = math.sqrt(self.F / self.C)
+            max_x = math.sqrt(self.F / self.A)
+            max_y = math.sqrt(self.F / self.C)
         else:
-            x_max = math.sqrt(self.F / ((4 * self.A * self.C ** 2) / (self.B ** 2) - self.C))
-            y_max = math.sqrt(self.F / ((4 * self.A ** 2 * self.C) / (self.B ** 2) - self.A))
+            B_squared = self.B ** 2
+            max_x = math.sqrt(self.F * B_squared / (4 * self.A * self.C ** 2 - self.C * B_squared))
+            max_y = math.sqrt(self.F / (self.A - B_squared / (4 * self.C)))
 
-        x_min = -x_max
-        y_min = -y_max
-        return np.array([[x_min, x_max],
-                         [y_min, y_max]])
+        min_x = -max_x
+        min_y = -max_y
+        return np.array([[min_x, max_x],
+                         [min_y, max_y]])
 
-    def visualize(self, scale=100, margin=5):
+    def visualize(self, scale=100, margin=5, draw_axes=True):
         image_bounds = (self.get_bounds() * scale).astype(np.int32)
         # set both dimensions to largest one, to make the picture square
         if image_bounds[0, 1] > image_bounds[1, 1]:
@@ -62,6 +69,10 @@ class ImplicitEllipse:
         image_bounds += center_offset
         image_shape = (image_bounds[1, 1], image_bounds[0, 1], 3)
         image = np.ones(image_shape, np.uint8) * 255
+
+        if draw_axes:
+            image[:, center_offset[0]] = (0, 0, 0)
+            image[center_offset[1], :] = (0, 0, 0)
 
         for x_pixel in range(margin, image_shape[1] - margin):
             x_point = float(x_pixel - center_offset[0]) / scale
@@ -131,10 +142,47 @@ def implicit_ellipse_from_radii_and_angle2(radius_a, radius_b, angle):
 
 
 class EllipticalGaussian:
-    def __init__(self, ellipse):
+    def __init__(self, ellipse, extra_coefficient=1.0):
         self.ellipse = ellipse
-        self.V = np.linalg.inv(ellipse)
-        self.normalization_factor = 1 / (2 * math.pi * np.linalg.det(self.V) ** (1 / 2))
+        self.V = self.covariance_matrix = np.linalg.inv(ellipse.Q)
+        self.coefficient = extra_coefficient * 1 / (2 * math.pi * math.sqrt(np.linalg.det(self.V)))
 
     def compute(self, point):
-        return self.normalization_factor * np.exp((-1 / 2) * point.T.dot(self.ellipse.Q).dot(point))
+        return self.coefficient * np.exp((-1 / 2) * point.T.dot(self.ellipse.Q).dot(point))
+
+    def visualize(self, scale=100, margin=5):
+        image_bounds = (self.ellipse.get_bounds() * scale).astype(np.int32)
+        # set both dimensions to largest one, to make the picture square
+        if image_bounds[0, 1] > image_bounds[1, 1]:
+            image_bounds[1, :] = image_bounds[0, :]
+        else:
+            image_bounds[0, :] = image_bounds[1, :]
+
+        image_bounds[:, 0] -= margin
+        image_bounds[:, 1] += margin
+        center_offset = image_bounds[:, 1].copy().reshape(-1, 1)
+        image_bounds += center_offset
+        image_shape = (image_bounds[1, 1], image_bounds[0, 1])
+        float_image = np.zeros(image_shape, np.float64)
+
+        for y_pixel in range(margin, image_shape[0] - margin):
+            for x_pixel in range(margin, image_shape[1] - margin):
+                point = np.array([[float(y_pixel - center_offset[1]) / scale],
+                                  [float(x_pixel - center_offset[0]) / scale]])
+                value = self.compute(point)
+                float_image[y_pixel, x_pixel] = value
+
+        # normalize:
+        print(float_image.sum())
+        float_image /= float_image.max()
+        color_map = plt.get_cmap("viridis")
+        heatmap = np.flip(color_map(float_image)[:, :, :3].copy(), axis=2)
+        cv2.imshow("gaussian", heatmap)
+        cv2.waitKey()
+
+    def transformed(self, matrix):
+        inv_matrix = np.linalg.inv(matrix)
+        new_ellipse_Q = inv_matrix.dot(self.ellipse.Q).dot(inv_matrix.T)
+        ellipse = ImplicitEllipse(Q=new_ellipse_Q)
+        factor = 1.0 / np.linalg.det(inv_matrix)
+        return EllipticalGaussian(ellipse, factor)

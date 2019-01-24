@@ -19,16 +19,29 @@ import math_utils.elliptical_gaussians as eg
 import math
 import numpy as np
 
-
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1
 
 
 def main():
-    #ellipse = eg.implicit_ellipse_from_radii_and_angle(1, 2, math.pi / 2, 1)
-    ellipse = eg.implicit_ellipse_from_radii_and_angle(1, 2, math.pi/4, 1)
-    ellipse.visualize(scale=100, margin=5)
+    ellipse0 = eg.implicit_ellipse_from_radii_and_angle(1, 2, 0, 1)
+    ellipse1 = eg.implicit_ellipse_from_radii_and_angle(1, 2, math.pi / 2, 1)
+    ellipse2 = eg.implicit_ellipse_from_radii_and_angle(1, 2, math.pi / 4, 1)
 
+    gaussian = eg.EllipticalGaussian(ellipse2)
+    gaussian.visualize()
+
+
+    #ellipse2.visualize(scale=100, margin=5)
+
+
+    # print(ellipse0.get_tight_bounds())
+    # print(ellipse1.get_tight_bounds())
+    # print(ellipse2.get_tight_bounds())
+
+    #print(ellipse0.get_bounds1())
+    #print(ellipse1.get_bounds1())
+    #print(ellipse2.get_bounds1())
 
     return EXIT_CODE_SUCCESS
 

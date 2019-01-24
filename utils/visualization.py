@@ -19,7 +19,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
-
 from utils.point2d import Point2d
 from utils.sampling import get_focus_coordinates
 
