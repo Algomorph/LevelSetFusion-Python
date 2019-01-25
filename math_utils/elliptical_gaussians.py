@@ -167,18 +167,26 @@ class EllipticalGaussian:
 
         for y_pixel in range(margin, image_shape[0] - margin):
             for x_pixel in range(margin, image_shape[1] - margin):
-                point = np.array([[float(y_pixel - center_offset[1]) / scale],
-                                  [float(x_pixel - center_offset[0]) / scale]])
-                value = self.compute(point)
+                point = np.array([[float(x_pixel - center_offset[0]) / scale],
+                                  [float(y_pixel - center_offset[1]) / scale]])
+                value = self.compute(point)[0][0]
                 float_image[y_pixel, x_pixel] = value
 
-        # normalize:
-        print(float_image.sum())
         float_image /= float_image.max()
         color_map = plt.get_cmap("viridis")
         heatmap = np.flip(color_map(float_image)[:, :, :3].copy(), axis=2)
         cv2.imshow("gaussian", heatmap)
         cv2.waitKey()
+
+    def integral_riemann_approximation(self):
+        bounds = self.ellipse.get_bounds()
+        sum = 0.0
+        for y in np.arange(bounds[1, 0], bounds[1, 1], 0.01):
+            for x in np.arange(bounds[0, 0], bounds[0, 1], 0.01):
+                point = np.array([[x], [y]])
+                value = self.compute(point)[0][0]
+                sum += value*0.01*0.01
+        return sum
 
     def transformed(self, matrix):
         inv_matrix = np.linalg.inv(matrix)

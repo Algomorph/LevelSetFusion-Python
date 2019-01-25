@@ -45,3 +45,6 @@ script:
   - sudo make install
   - cd ../..
   - python3 -m pytest tests
+
+install:
+  - ls

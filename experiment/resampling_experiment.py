@@ -27,21 +27,16 @@ def main():
     ellipse0 = eg.implicit_ellipse_from_radii_and_angle(1, 2, 0, 1)
     ellipse1 = eg.implicit_ellipse_from_radii_and_angle(1, 2, math.pi / 2, 1)
     ellipse2 = eg.implicit_ellipse_from_radii_and_angle(1, 2, math.pi / 4, 1)
+    # ellipse2.visualize(scale=100, margin=5)
+    circle0 = eg.implicit_ellipse_from_radii_and_angle(1, 1, 0, 1)
 
-    gaussian = eg.EllipticalGaussian(ellipse2)
-    gaussian.visualize()
+    gaussian0 = eg.EllipticalGaussian(ellipse2)
+    #gaussian0.visualize()
+    print(gaussian0.integral_riemann_approximation())
 
-
-    #ellipse2.visualize(scale=100, margin=5)
-
-
-    # print(ellipse0.get_tight_bounds())
-    # print(ellipse1.get_tight_bounds())
-    # print(ellipse2.get_tight_bounds())
-
-    #print(ellipse0.get_bounds1())
-    #print(ellipse1.get_bounds1())
-    #print(ellipse2.get_bounds1())
+    gaussian1 = eg.EllipticalGaussian(circle0)
+    gaussian1.visualize()
+    print(gaussian1.integral_riemann_approximation())
 
     return EXIT_CODE_SUCCESS
 
