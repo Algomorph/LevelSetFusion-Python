@@ -3,15 +3,99 @@
 #  Rigid alignment algorithm implementation based on SDF-2-SDF paper.
 #  ================================================================
 
+# stdlib
+import sys
 
 import numpy as np
 import cv2
-import math
 import matplotlib.pyplot as plt
-from transformation import twist_vector_to_matrix
+
+# local
+from rigid_opt import sdf_2_sdf_visualizer as sdf2sdfv, sdf_2_sdf_optimizer2d as sdf2sdfo
+from rigid_opt.transformation import twist_vector_to_matrix
+from experiment import dataset as ds
+from tsdf import generation as tsdf
+from utils import field_resampling as resampling
+import utils.sampling as sampling
+from tsdf import generation as tsdf_gen
+from calib.camera import Camera, DepthCamera
+from calib.geom import Pose
+
+EXIT_CODE_SUCCESS = 0
+EXIT_CODE_FAILURE = 1
+
+
+class ImageBasedSingleFrameDataset:
+    def __init__(self, first_frame_path, second_frame_path, image_pixel_row, field_size, offset, camera):
+        self.first_frame_path = first_frame_path
+        self.second_frame_path = second_frame_path
+        self.image_pixel_row = image_pixel_row
+        self.field_size = field_size
+        self.offset = offset
+        self.depth_camera = camera
+
+    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
+        depth_image0 = cv2.imread(self.first_frame_path, cv2.IMREAD_GRAYSCALE).astype(float)
+        max_depth = np.iinfo(np.uint16).max
+        canonical_field = \
+            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image0, self.depth_camera, self.image_pixel_row,
+                                                             field_size=self.field_size, array_offset=self.offset,
+                                                             narrow_band_width_voxels=.5,
+                                                             depth_interpolation_method=method)
+        depth_image1 = cv2.imread(self.second_frame_path, cv2.IMREAD_GRAYSCALE).astype(float)
+        depth_image1[depth_image1 == 0] = max_depth
+        live_field = \
+            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image1, self.depth_camera, self.image_pixel_row,
+                                                             field_size=self.field_size, array_offset=self.offset,
+                                                             narrow_band_width_voxels=1.,
+                                                             depth_interpolation_method=method)
+        return live_field, canonical_field
 
 
 def main():
+    canonical_frame_path = "../Data/Synthetic_Kenny_Circle/depth_000000.exr"
+    live_frame_path = "../Data/Synthetic_Kenny_Circle/depth_000003.exr"
+    image_pixel_row = 240
+
+    intrinsic_matrix = np.matrix([[570.3999633789062, 0, 320],  # FX = 570.3999633789062 CX = 320.0
+                                  [0, 570.3999633789062, 240],  # FY = 570.3999633789062 CY = 240.0
+                                  [0, 0, 1]], dtype=np.float32)
+    camera = DepthCamera(intrinsics=DepthCamera.Intrinsics(resolution=(640, 480),
+                                                           intrinsic_matrix=intrinsic_matrix))
+    offset = np.array([-34, -34, 34])
+    data_to_use = ImageBasedSingleFrameDataset(
+        canonical_frame_path,  # dataset from original sdf2sdf paper, reference frame
+        live_frame_path,  # dataset from original sdf2sdf paper, current frame
+        image_pixel_row, 68, offset, camera
+    )
+
+    live_depth_image = cv2.imread(live_frame_path, -1)
+    live_depth_image = cv2.cvtColor(live_depth_image, cv2.COLOR_BGR2GRAY)
+    live_depth_image1d = live_depth_image.astype(float)[image_pixel_row]
+
+    depth_interpolation_method = tsdf.DepthInterpolationMethod.NONE
+    out_path = "output/sdf2sdf"
+    sampling.set_focus_coordinates(0, 0)
+    generate_test_data = False
+    live_field, canonical_field = data_to_use.generate_2d_sdf_fields(method=depth_interpolation_method)
+    print(canonical_field.max(), canonical_field.min())
+
+    optimizer = sdf2sdfo.Sdf2SdfOptimizer2d(
+        verbosity_parameters=sdf2sdfo.Sdf2SdfOptimizer2d.VerbosityParameters(print_iteration_energy=True),
+        visualization_parameters=sdf2sdfv.Sdf2SdfVisualizer.Parameters(out_path=out_path)
+        )
+    optimizer.optimize(live_depth_image1d, canonical_field, live_field, camera, offset, iteration=10)
+
+    return EXIT_CODE_SUCCESS
+
+
+
+
+
+
+
+
+
     DIMENSION = 2 # 2D case
     filename0 = "../Data/Synthetic_Kenny_Circle/depth_000000.exr" # dataset from original sdf2sdf paper, referance
     filename1 = "../Data/Synthetic_Kenny_Circle/depth_000003.exr" # dataset from original sdf2sdf paper, current
@@ -23,16 +107,16 @@ def main():
     SCALE = 0.001 # from depth value to meter
     ROWSLICE = int(CY)
 
-    DELTA = .002 # trancated SDF threshold
-    ETA = .01 # thickness of surface
-    L = .004 # side length
-    BETA = 0.5 # step size of twist
+    DELTA = .002  # truncated SDF threshold
+    ETA = .01  # thickness of surface
+    L = .004  # side length
+    BETA = 0.5  # step size of twist
 
     # load image and find the corresponding points in space
-    depthImage0 = load_exr_file(filename0, SCALE, DIMENSION, ROWSLICE) # load the depth image, (640, )
+    depthImage0 = load_exr_file(filename0, SCALE, DIMENSION, ROWSLICE)  # load the depth image, (640, )
     # print depthImage0
     depthImage1 = load_exr_file(filename1, SCALE, DIMENSION, ROWSLICE)
-    reverseProjection0 = calculateReverseProjection(depthImage0, FX, CX) # get location of point in space for each pixel, (x, z), (640, 2)
+    reverseProjection0 = calculateReverseProjection(depthImage0, FX, CX)  # get location of point in space for each pixel, (x, z), (640, 2)
     reverseProjection1 = calculateReverseProjection(depthImage1, FX, CX)
     # print reverseProjection0
 
@@ -159,7 +243,7 @@ def SDFGradient(depthImage, voxel, twist, delta, eta, fx, cx): # gradient respec
     preX = voxel
     preX[0] = voxel[0] - epsilon # at X direction
     prePhi, preWeight = SDFAndWeight(depthImage, preX, twist, delta, eta, fx, cx, False)
-    postX = voxel;
+    postX = voxel
     postX[0] = voxel[0] + epsilon # at X direction
     postPhi, postWeight = SDFAndWeight(depthImage, postX, twist, delta, eta, fx, cx, False)
     if (postPhi < -1 ) or (prePhi < -1):
@@ -167,10 +251,10 @@ def SDFGradient(depthImage, voxel, twist, delta, eta, fx, cx): # gradient respec
     else:
         gradient[0, 0] = (postPhi - prePhi)/ (2. * epsilon)
 
-    preZ = voxel;
+    preZ = voxel
     preZ[1] = voxel[1] - epsilon # at Z direction
     prePhi, preWeight = SDFAndWeight(depthImage, preZ, twist, delta, eta, fx, cx, False)
-    postZ = voxel;
+    postZ = voxel
     postZ[1] = voxel[1] + epsilon # at Z direction
     postPhi, postWeight = SDFAndWeight(depthImage, postZ, twist, delta, eta, fx, cx, False)
     if postPhi < -1 or prePhi < -1:
