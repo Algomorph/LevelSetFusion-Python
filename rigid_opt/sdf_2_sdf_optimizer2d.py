@@ -89,16 +89,17 @@ class Sdf2SdfOptimizer2d:
             vector_b = np.zeros((3, 1))
             # energy = 0.  # Energy term
             canonical_weight = (canonical_field > -eta).astype(np.int)
-            live_field = affine_of_voxel2d(live_field, twist, depth_image1d, camera, offset, voxel_size)
+            live_field = affine_of_voxel2d(live_field, twist, depth_image1d, camera, offset, voxel_size,
+                                           camera_extrinsic_matrix=np.eye(3, dtype=np.float32),
+                                           narrow_band_width_voxels=1.)
             live_weight = (live_field > -eta).astype(np.int)
             live_gradient = GradientField().calculate(live_field, twist)
             # print(live_gradient.min(), live_gradient.max())
-            for x in range(live_field.shape[0]):
-                for z in range(live_field.shape[1]):
-                    matrix_a += np.dot(live_gradient[x, z][:, None], live_gradient[x, z][None, :])
-                    vector_b += (canonical_field[x, z] - live_field[x, z] +
-                                 np.dot(live_gradient[x, z].reshape((1, -1)), twist)) \
-                                * live_gradient[x, z].reshape((1, -1)).T
+            for i in range(live_field.shape[0]):
+                for j in range(live_field.shape[1]):
+                    matrix_a += np.dot(live_gradient[i, j][:, None], live_gradient[i, j][None, :])
+                    vector_b += (canonical_field[i, j] - live_field[i, j] +
+                                 np.dot(live_gradient[i, j][None, :], twist)) * live_gradient[i, j][:, None]
             energy = np.sum((canonical_field * canonical_weight - live_field * live_weight) ** 2)
             if self.verbosity_parameters.print_per_iteration_info:
                 print("%s[ITERATION %d COMPLETED]%s" % (printing.BOLD_LIGHT_CYAN, iteration_count, printing.RESET),
@@ -113,6 +114,10 @@ class Sdf2SdfOptimizer2d:
 
             twist_star = np.dot(np.linalg.inv(matrix_a), vector_b)
             twist += .5 * np.subtract(twist_star, twist)
+
+            if self.verbosity_parameters.print_max_warp_update:
+                print("optimal twist: %f, %f, %f" % (twist_star[0], twist_star[1], twist_star[2]), end="")
+                print("")
 
         return
 

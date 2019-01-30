@@ -22,10 +22,19 @@ def twist_vector_to_matrix(twist):
 
     return twist_matrix_homo  # 3 by 3 matrix
 
+def transformation_matrix_to_vector_field(field, twist, depth_image, camera, array_offset, voxel_size,
+                      camera_extrinsic_matrix=np.eye(3, dtype=np.float32),
+                      narrow_band_width_voxels=1):
+    # convert a transformation matrix in 2d world/camera space to vector field for sdf live field
+    vector_field = np.zeros_like(field)
+
+
+    return
+
 
 def affine_of_voxel2d(field, twist, depth_image, camera, array_offset, voxel_size,
                       camera_extrinsic_matrix=np.eye(3, dtype=np.float32),
-                      narrow_band_width_voxels=1):
+                      narrow_band_width_voxels=1.):
     twist = twist_vector_to_matrix(twist)
     projection_matrix = camera.intrinsics.intrinsic_matrix
     depth_ratio = camera.depth_unit_ratio
@@ -40,8 +49,9 @@ def affine_of_voxel2d(field, twist, depth_image, camera, array_offset, voxel_siz
             z_voxel = (y_field + array_offset[2]) * voxel_size  # acts as "Z" coordinate
 
             point = np.array([[x_voxel, z_voxel, w_voxel]], dtype=np.float32).T
-            point = np.dot(twist, point)
-            point_in_camera_space = camera_extrinsic_matrix.dot(point).flatten()
+            twisted_point = np.dot(twist, point)
+            not_twisted = np.allclose(twisted_point, point, atol=0.00001)
+            point_in_camera_space = camera_extrinsic_matrix.dot(twisted_point).flatten()
 
             if point_in_camera_space[1] <= 0:
                 continue
@@ -63,11 +73,11 @@ def affine_of_voxel2d(field, twist, depth_image, camera, array_offset, voxel_siz
             signed_distance_to_voxel_along_camera_ray = depth - point_in_camera_space[1]
             # print(signed_distance_to_voxel_along_camera_ray, point_in_camera_space[1])
             if signed_distance_to_voxel_along_camera_ray < -narrow_band_half_width:
-                twisted_field[x_field, y_field] = -1.0
+                twisted_field[y_field, x_field] = -1.0
             elif signed_distance_to_voxel_along_camera_ray > narrow_band_half_width:
-                twisted_field[x_field, y_field] = 1.0
+                twisted_field[y_field, x_field] = 1.0
             else:
-                twisted_field[x_field, y_field] = signed_distance_to_voxel_along_camera_ray / narrow_band_half_width
+                twisted_field[y_field, x_field] = signed_distance_to_voxel_along_camera_ray / narrow_band_half_width
                 # print(signed_distance_to_voxel_along_camera_ray)
     # print(twisted_field == field)
     return twisted_field
