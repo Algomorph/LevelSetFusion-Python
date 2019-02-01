@@ -14,29 +14,73 @@
 #  limitations under the License.
 #  ================================================================
 
+# stdlib
 import sys
-import math_utils.elliptical_gaussians as eg
-import math
+
+# libs
 import numpy as np
+
+# local
+import tsdf.ewa as ewa
+import tsdf.generation as gen
+import experiment.dataset as data
+import utils.visualization as viz
+
+# =========
+import cv2
+import matplotlib.pyplot as plt
+
+from calib.camerarig import DepthCameraRig
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1
 
 
 def main():
-    ellipse0 = eg.implicit_ellipse_from_radii_and_angle(1, 2, 0, 1)
-    ellipse1 = eg.implicit_ellipse_from_radii_and_angle(1, 2, math.pi / 2, 1)
-    ellipse2 = eg.implicit_ellipse_from_radii_and_angle(1, 2, math.pi / 4, 1)
-    # ellipse2.visualize(scale=100, margin=5)
-    circle0 = eg.implicit_ellipse_from_radii_and_angle(1, 1, 0, 1)
+    data_to_use = data.PredefinedDatasetEnum.ZIGZAG064
+    save_profile = False
+    fraction_field = True
+    if save_profile:
+        im = cv2.imread("/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/depth/depth_00064.png",
+                        cv2.IMREAD_UNCHANGED)
+        sl = im[200]
+        plt.figure(figsize=(40, 30))
+        plt.plot(sl, "k")
+        filename = "../output/image_slice_plot.png"
+        plt.savefig(filename)
+        plt.clf()
+        plt.close("all")
+    else:
+        depth_interpolation_method = gen.DepthInterpolationMethod.EWA
+        # depth_interpolation_method = gen.DepthInterpolationMethod.NONE
+        if fraction_field:
+            voxel_size = 0.004
+            field_size = 16
+            rig = DepthCameraRig.from_infinitam_format(
+                "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt")
+            depth_camera = rig.depth_camera
 
-    gaussian0 = eg.EllipticalGaussian(ellipse2)
-    #gaussian0.visualize()
-    print(gaussian0.integral_riemann_approximation())
+            depth_image0 = cv2.imread(
+                "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00064.png",
+                cv2.IMREAD_UNCHANGED)
+            max_depth = np.iinfo(np.uint16).max
+            depth_image0[depth_image0 == 0] = max_depth
+            print("Camera intrinsic matrix:")
+            print(repr(depth_camera.intrinsics.intrinsic_matrix))
+            field = \
+                gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, 200,
+                                                            field_size=field_size,
+                                                            array_offset=np.array([94, -256, 804]),
+                                                            depth_interpolation_method=depth_interpolation_method,
+                                                            voxel_size=voxel_size)
 
-    gaussian1 = eg.EllipticalGaussian(circle0)
-    gaussian1.visualize()
-    print(gaussian1.integral_riemann_approximation())
+        else:
+            field = data.datasets[data_to_use].generate_2d_sdf_canonical(method=depth_interpolation_method)
+            # chunk = field[324:340, 350:366].copy()
+            # print(repr(chunk))
+        #print(repr(field))
+        viz.visualize_field(field, view_scaling_factor=2)
+
 
     return EXIT_CODE_SUCCESS
 

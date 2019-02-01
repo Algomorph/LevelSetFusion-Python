@@ -36,6 +36,11 @@ class PredefinedDatasetEnum(Enum):
     SYNTHETIC3D_PLANE_AWAY = 20
     SYNTHETIC3D_PLANE_AWAY_512 = 21
 
+    ZIGZAG001 = 30
+    ZIGZAG064 = 33
+    ZIGZAG124 = 35
+    ZIGZAG248 = 39
+
     REAL3D_SNOOPY_SET01 = 100
     REAL3D_SNOOPY_SET02 = 101
     REAL3D_SNOOPY_SET03 = 102
@@ -63,7 +68,8 @@ class HardcodedSingleFrameDataset(SingleFrameDataset):
 
 
 class ImageBasedSingleFrameDataset(SingleFrameDataset):
-    def __init__(self, calibration_file_path, first_frame_path, second_frame_path, image_pixel_row, field_size, offset):
+    def __init__(self, calibration_file_path, first_frame_path, second_frame_path, image_pixel_row, field_size, offset,
+                 voxel_size=0.004):
         super(ImageBasedSingleFrameDataset).__init__()
         self.calibration_file_path = calibration_file_path
         self.first_frame_path = first_frame_path
@@ -71,8 +77,9 @@ class ImageBasedSingleFrameDataset(SingleFrameDataset):
         self.image_pixel_row = image_pixel_row
         self.field_size = field_size
         self.offset = offset
+        self.voxel_size = voxel_size
 
-    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
+    def generate_2d_sdf_canonical(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
         rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
         depth_camera = rig.depth_camera
         depth_image0 = cv2.imread(self.first_frame_path, cv2.IMREAD_UNCHANGED)
@@ -81,19 +88,32 @@ class ImageBasedSingleFrameDataset(SingleFrameDataset):
         canonical_field = \
             tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, self.image_pixel_row,
                                                              field_size=self.field_size, array_offset=self.offset,
-                                                             depth_interpolation_method=method)
+                                                             depth_interpolation_method=method,
+                                                             voxel_size=self.voxel_size)
+        return canonical_field
+
+    def generate_2d_sdf_live(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
+        rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
+        depth_camera = rig.depth_camera
         depth_image1 = cv2.imread(self.second_frame_path, cv2.IMREAD_UNCHANGED)
+        max_depth = np.iinfo(np.uint16).max
         depth_image1[depth_image1 == 0] = max_depth
         live_field = \
             tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image1, depth_camera, self.image_pixel_row,
                                                              field_size=self.field_size, array_offset=self.offset,
-                                                             depth_interpolation_method=method)
+                                                             depth_interpolation_method=method,
+                                                             voxel_size=self.voxel_size)
+        return live_field
+
+    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
+        live_field = self.generate_2d_sdf_live(method)
+        canonical_field = self.generate_2d_sdf_canonical(method)
         return live_field, canonical_field
 
 
 class MaskedImageBasedSingleFrameDataset(SingleFrameDataset):
     def __init__(self, calibration_file_path, first_frame_path, first_mask_path, second_frame_path, second_mask_path,
-                 image_pixel_row, field_size, offset):
+                 image_pixel_row, field_size, offset, voxel_size=0.004):
         super(ImageBasedSingleFrameDataset).__init__()
         self.calibration_file_path = calibration_file_path
         self.first_frame_path = first_frame_path
@@ -103,6 +123,7 @@ class MaskedImageBasedSingleFrameDataset(SingleFrameDataset):
         self.image_pixel_row = image_pixel_row
         self.field_size = field_size
         self.offset = offset
+        self.voxel_size = voxel_size
 
     def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
         rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
@@ -128,6 +149,30 @@ class MaskedImageBasedSingleFrameDataset(SingleFrameDataset):
 
 
 datasets = {
+    PredefinedDatasetEnum.ZIGZAG001: ImageBasedSingleFrameDataset(
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt",
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00000.png",
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00001.png",
+        200, 512, np.array([-256, -256, 640])
+    ),
+    PredefinedDatasetEnum.ZIGZAG064: ImageBasedSingleFrameDataset(
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt",
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00064.png",
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00065.png",
+        200, 512, np.array([-256, -256, 480])
+    ),
+    PredefinedDatasetEnum.ZIGZAG124: ImageBasedSingleFrameDataset(
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt",
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00124.png",
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00125.png",
+        200, 512, np.array([-256, -256, 360])
+    ),
+    PredefinedDatasetEnum.ZIGZAG248: ImageBasedSingleFrameDataset(
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt",
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00248.png",
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00249.png",
+        200, 512, np.array([-256, -256, 256])
+    ),
     PredefinedDatasetEnum.SYNTHETIC3D_SUZANNE_AWAY: ImageBasedSingleFrameDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/input/depth_00000.png",

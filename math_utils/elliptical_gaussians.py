@@ -47,7 +47,10 @@ class ImplicitEllipse:
             max_y = math.sqrt(self.F / self.C)
         else:
             B_squared = self.B ** 2
-            max_x = math.sqrt(self.F * B_squared / (4 * self.A * self.C ** 2 - self.C * B_squared))
+            # The following is equivalent:
+            # max_x = math.sqrt(self.F / ((4 * self.A ** 2 * self.C) / B_squared - self.A))
+            # max_y = math.sqrt(self.F / (self.C - B_squared / (4 * self.A)))
+            max_x = math.sqrt(self.F / (4 * self.A * self.C ** 2) / B_squared - self.C)
             max_y = math.sqrt(self.F / (self.A - B_squared / (4 * self.C)))
 
         min_x = -max_x
@@ -142,13 +145,18 @@ def implicit_ellipse_from_radii_and_angle2(radius_a, radius_b, angle):
 
 
 class EllipticalGaussian:
-    def __init__(self, ellipse, extra_coefficient=1.0):
+    def __init__(self, ellipse):
+        """
+        :type ellipse: ImplicitEllipse
+        :param ellipse: ellipse to use for computation
+        """
         self.ellipse = ellipse
-        self.V = self.covariance_matrix = np.linalg.inv(ellipse.Q)
-        self.coefficient = extra_coefficient * 1 / (2 * math.pi * math.sqrt(np.linalg.det(self.V)))
 
-    def compute(self, point):
-        return self.coefficient * np.exp((-1 / 2) * point.T.dot(self.ellipse.Q).dot(point))
+    def get_distance_from_center_squared(self, point):
+        return point.T.dot(self.ellipse.Q).dot(point)[0][0]
+
+    def compute(self, distance_from_center_squared):
+        return math.exp((-1 / 2) * distance_from_center_squared)
 
     def visualize(self, scale=100, margin=5):
         image_bounds = (self.ellipse.get_bounds() * scale).astype(np.int32)
@@ -169,7 +177,8 @@ class EllipticalGaussian:
             for x_pixel in range(margin, image_shape[1] - margin):
                 point = np.array([[float(x_pixel - center_offset[0]) / scale],
                                   [float(y_pixel - center_offset[1]) / scale]])
-                value = self.compute(point)[0][0]
+                dist_sq = self.get_distance_from_center_squared(point)
+                value = self.compute(dist_sq)
                 float_image[y_pixel, x_pixel] = value
 
         float_image /= float_image.max()
@@ -179,18 +188,20 @@ class EllipticalGaussian:
         cv2.waitKey()
 
     def integral_riemann_approximation(self):
-        bounds = self.ellipse.get_bounds()
+        standard_deviations = self.ellipse.F
+        bounds = self.ellipse.get_bounds() * standard_deviations
         sum = 0.0
         for y in np.arange(bounds[1, 0], bounds[1, 1], 0.01):
             for x in np.arange(bounds[0, 0], bounds[0, 1], 0.01):
                 point = np.array([[x], [y]])
-                value = self.compute(point)[0][0]
-                sum += value*0.01*0.01
+                if np.linalg.norm(point) < standard_deviations:
+                    dist_sq = self.get_distance_from_center_squared(point)
+                    value = self.compute(dist_sq)
+                    sum += value * 0.01 * 0.01
         return sum
 
     def transformed(self, matrix):
         inv_matrix = np.linalg.inv(matrix)
         new_ellipse_Q = inv_matrix.dot(self.ellipse.Q).dot(inv_matrix.T)
         ellipse = ImplicitEllipse(Q=new_ellipse_Q)
-        factor = 1.0 / np.linalg.det(inv_matrix)
-        return EllipticalGaussian(ellipse, factor)
+        return EllipticalGaussian(ellipse)
