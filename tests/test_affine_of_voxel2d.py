@@ -2,7 +2,7 @@
 from unittest import TestCase
 import numpy as np
 import math
-from rigid_opt.sdf_gradient_wrt_twist import GradientField
+from rigid_opt.sdf_gradient_field import GradientField
 from rigid_opt.transformation import twist_vector_to_matrix, affine_of_voxel2d
 from calib.camera import Camera, DepthCamera
 

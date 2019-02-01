@@ -12,12 +12,10 @@ import matplotlib.pyplot as plt
 
 # local
 from rigid_opt import sdf_2_sdf_visualizer as sdf2sdfv, sdf_2_sdf_optimizer2d as sdf2sdfo
+from rigid_opt.sdf_generation import ImageBasedSingleFrameDataset
 from rigid_opt.transformation import twist_vector_to_matrix
-from experiment import dataset as ds
 from tsdf import generation as tsdf
-from utils import field_resampling as resampling
 import utils.sampling as sampling
-from tsdf import generation as tsdf_gen
 from calib.camera import Camera, DepthCamera
 from calib.geom import Pose
 
@@ -25,44 +23,7 @@ EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1
 
 
-class ImageBasedSingleFrameDataset:
-    def __init__(self, first_frame_path, second_frame_path, image_pixel_row, field_size, offset, camera):
-        self.first_frame_path = first_frame_path
-        self.second_frame_path = second_frame_path
-        self.image_pixel_row = image_pixel_row
-        self.field_size = field_size
-        self.offset = offset
-        self.depth_camera = camera
 
-    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
-
-        depth_image0 = cv2.imread(self.first_frame_path, -1)
-        depth_image0 = cv2.cvtColor(depth_image0, cv2.COLOR_BGR2GRAY)
-        depth_image0 = depth_image0.astype(float) # convert to meters
-
-        # max_depth = np.iinfo(np.uint16).max
-        # depth_image0[depth_image0 == 0] = max_depth
-        canonical_field = \
-            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image0, self.depth_camera, self.image_pixel_row,
-                                                             field_size=self.field_size,
-                                                             # default_value=-999.,
-                                                             array_offset=self.offset,
-                                                             narrow_band_width_voxels=1.,
-                                                             depth_interpolation_method=method)
-
-        depth_image1 = cv2.imread(self.first_frame_path, -1)
-        depth_image1 = cv2.cvtColor(depth_image1, cv2.COLOR_BGR2GRAY)
-        depth_image1 = depth_image1.astype(float)  # convert to meters
-
-        # depth_image1[depth_image1 == 0] = max_depth
-        live_field = \
-            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image1, self.depth_camera, self.image_pixel_row,
-                                                             field_size=self.field_size,
-                                                             # default_value=-999.,
-                                                             array_offset=self.offset,
-                                                             narrow_band_width_voxels=1.,
-                                                             depth_interpolation_method=method)
-        return live_field, canonical_field
 
 
 def main():
@@ -75,30 +36,26 @@ def main():
                                   [0, 0, 1]], dtype=np.float32)
     camera = DepthCamera(intrinsics=DepthCamera.Intrinsics(resolution=(480, 640),
                                                            intrinsic_matrix=intrinsic_matrix))
+    field_size = 32
     offset = np.array([-16, -16, 104])
     data_to_use = ImageBasedSingleFrameDataset(
         canonical_frame_path,  # dataset from original sdf2sdf paper, reference frame
         live_frame_path,  # dataset from original sdf2sdf paper, current frame
-        image_pixel_row, 32, offset, camera
+        image_pixel_row, field_size, offset, camera
     )
-
-    live_depth_image = cv2.imread(live_frame_path, -1)
-    live_depth_image = cv2.cvtColor(live_depth_image, cv2.COLOR_BGR2GRAY)
-    live_depth_image1d = live_depth_image.astype(float)[image_pixel_row] # convert to meters
 
     depth_interpolation_method = tsdf.DepthInterpolationMethod.NONE
     out_path = "output/sdf2sdf"
     sampling.set_focus_coordinates(0, 0)
     generate_test_data = False
-    live_field, canonical_field = data_to_use.generate_2d_sdf_fields(method=depth_interpolation_method)
-    print(canonical_field.max(), canonical_field.min())
-
+    narrow_band_width_voxels=1.
+    iteration = 20
     optimizer = sdf2sdfo.Sdf2SdfOptimizer2d(
         verbosity_parameters=sdf2sdfo.Sdf2SdfOptimizer2d.VerbosityParameters(print_max_warp_update=True,
                                                                              print_iteration_energy=True),
         visualization_parameters=sdf2sdfv.Sdf2SdfVisualizer.Parameters(out_path=out_path)
         )
-    optimizer.optimize(live_depth_image1d, canonical_field, live_field, camera, offset, iteration=10)
+    optimizer.optimize(data_to_use, narrow_band_width_voxels=narrow_band_width_voxels, iteration=iteration)
 
     return EXIT_CODE_SUCCESS
 
@@ -167,7 +124,7 @@ def main():
                 # print curGradient
                 matrixA += np.dot(curGradient.T, curGradient)
                 matrixb += (refSDF - curSDF + np.dot(curGradient, twist)) * curGradient.T
-                error += 0.5 * (refSDF * refWeight - curSDF * curWeight)**2
+                error += (refSDF * refWeight - curSDF * curWeight)**2
                 # print errors
         # print "A : \n", matrixA, "\n b : \n", matrixb
         # errorArray[iter] = error

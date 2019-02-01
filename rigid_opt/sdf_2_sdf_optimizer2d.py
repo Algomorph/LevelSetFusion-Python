@@ -14,11 +14,11 @@ import os.path
 import cv2
 
 # local
-from rigid_opt.transformation import twist_vector_to_matrix, affine_of_voxel2d
-from rigid_opt.sdf_gradient_wrt_twist import GradientField
+from rigid_opt.sdf_gradient_field import GradientField
 import utils.printing as printing
 from rigid_opt.sdf_2_sdf_visualizer import Sdf2SdfVisualizer
-
+from rigid_opt.sdf_generation import ImageBasedSingleFrameDataset
+from tsdf import generation as tsdf_gen
 
 class Sdf2SdfOptimizer2d:
     """
@@ -61,46 +61,53 @@ class Sdf2SdfOptimizer2d:
         self.visualizer = None
 
     def optimize(self,
-                 depth_image1d,
-                 canonical_field,
-                 live_field,
-                 camera,
-                 offset,
+                 data_to_use,
                  eta=.01,
-                 iteration=60,
-                 voxel_size=0.004
+                 voxel_size=0.004,
+                 narrow_band_width_voxels=20.,
+                 iteration = 60,
                  ):
         """
         Optimization algorithm
-        :param canonical_field:
-        :param live_field:
+        :param data_to_use:
         :param eta: thickness of surface, used to determine reliability of sdf field
         :param iteration: total number of iterations
+        :param voxel_size: voxel side length
+        :param narrow_band_width_voxels:
         :return:
         """
 
-        final_canonical_field = np.copy(canonical_field)
-        canonical_weight = np.ones_like(canonical_field)
-        live_weight = np.ones_like(live_field)
-
+        canonical_field = data_to_use.generate_2d_canonical_field(narrow_band_width_voxels=narrow_band_width_voxels,
+                                                                  method=tsdf_gen.DepthInterpolationMethod.NONE)
+        offset = data_to_use.offset
         twist = np.zeros((3, 1))
         for iteration_count in range(iteration):
             matrix_a = np.zeros((3, 3))
             vector_b = np.zeros((3, 1))
             # energy = 0.  # Energy term
             canonical_weight = (canonical_field > -eta).astype(np.int)
-            live_field = affine_of_voxel2d(live_field, twist, depth_image1d, camera, offset, voxel_size,
-                                           camera_extrinsic_matrix=np.eye(3, dtype=np.float32),
-                                           narrow_band_width_voxels=1.)
+            # live_field = affine_of_voxel2d(live_field, twist, depth_image1d, camera, offset, voxel_size,
+            #                                camera_extrinsic_matrix=np.eye(3, dtype=np.float32),
+            #                                narrow_band_width_voxels=1.)
+            twist_3d = np.array([twist[0],
+                                 [0.],
+                                 twist[1],
+                                 [0.],
+                                 twist[2],
+                                 [0.]], dtype=np.float32)
+            live_field = data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
+                                                            method=tsdf_gen.DepthInterpolationMethod.NONE,
+                                                            apply_transformation=True, twist=twist_3d)
             live_weight = (live_field > -eta).astype(np.int)
-            live_gradient = GradientField().calculate(live_field, twist)
-            # print(live_gradient.min(), live_gradient.max())
+            live_gradient = GradientField().calculate(live_field, twist, array_offset=offset, voxel_size=voxel_size)
+
             for i in range(live_field.shape[0]):
                 for j in range(live_field.shape[1]):
                     matrix_a += np.dot(live_gradient[i, j][:, None], live_gradient[i, j][None, :])
                     vector_b += (canonical_field[i, j] - live_field[i, j] +
                                  np.dot(live_gradient[i, j][None, :], twist)) * live_gradient[i, j][:, None]
-            energy = np.sum((canonical_field * canonical_weight - live_field * live_weight) ** 2)
+
+            energy = 0.5 * np.sum((canonical_field * canonical_weight - live_field * live_weight) ** 2)
             if self.verbosity_parameters.print_per_iteration_info:
                 print("%s[ITERATION %d COMPLETED]%s" % (printing.BOLD_LIGHT_CYAN, iteration_count, printing.RESET),
                       end="")
@@ -116,7 +123,8 @@ class Sdf2SdfOptimizer2d:
             twist += .5 * np.subtract(twist_star, twist)
 
             if self.verbosity_parameters.print_max_warp_update:
-                print("optimal twist: %f, %f, %f" % (twist_star[0], twist_star[1], twist_star[2]), end="")
+                print("optimal twist: %f, %f, %f, twist: %f, %f, %f"
+                      % (twist_star[0], twist_star[1], twist_star[2], twist[0], twist[1], twist[2]), end="")
                 print("")
 
         return
