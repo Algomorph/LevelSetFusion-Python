@@ -42,5 +42,9 @@ class TsdfTest(TestCase):
                                                             field_size=16,
                                                             array_offset=np.array([94, -256, 804]),
                                                             voxel_size=0.004)
-        print(repr(field))
+
         self.assertTrue(np.allclose(field, data.out_sdf_field))
+        field2 = ewa.generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, 1,
+                                                                     field_size=16,
+                                                                     array_offset=np.array([94, -256, 804]),
+                                                                     voxel_size=0.004)

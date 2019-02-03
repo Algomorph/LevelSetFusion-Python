@@ -17,6 +17,9 @@
 import numpy as np
 import math_utils.elliptical_gaussians as eg
 
+# C++ extension
+import level_set_fusion_optimization as cpp_extension
+
 
 # TODO: WIP
 
@@ -139,6 +142,18 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                     field[y_field, x_field] = signed_distance_to_voxel_along_camera_ray / narrow_band_half_width
 
     return field
+
+
+def generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, image_y_coordinate,
+                                                    camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                                    field_size=128, default_value=1, voxel_size=0.004,
+                                                    array_offset=np.array([-64, -64, 64]),
+                                                    narrow_band_width_voxels=20, back_cutoff_voxels=np.inf):
+    cpp_extension.generate_2d_tsdf_field_from_depth_image_ewa(image_y_coordinate, depth_image,
+                                                              camera.depth_unit_ratio,
+                                                              camera.intrinsics.intrinsic_matrix,
+                                                              camera_extrinsic_matrix, array_offset, field_size,
+                                                              voxel_size, narrow_band_width_voxels)
 
 
 def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coordinate,
