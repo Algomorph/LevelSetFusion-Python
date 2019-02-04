@@ -15,7 +15,7 @@ import utils.visualization as viz
 class Sdf2SdfVisualizer:
 
     class Parameters:
-        def __init__(self, out_path="output/sdf2sdf_optimizer/", view_scaling_fator=8,
+        def __init__(self, out_path="output/sdf2sdf_optimizer/", view_scaling_factor=8,
                      show_live_progression=False,
                      save_live_progression=False,
                      save_initial_fields=False,
@@ -23,7 +23,7 @@ class Sdf2SdfVisualizer:
                      save_warp_field_progression=False,
                      save_data_gradients=False):
             self.out_path = out_path
-            self.view_scaling_factor = view_scaling_fator
+            self.view_scaling_factor = view_scaling_factor
             self.show_live_progress = show_live_progression
 
             self.save_live_field_progression = save_live_progression
@@ -46,6 +46,7 @@ class Sdf2SdfVisualizer:
         # initialize video-writers
         self.live_progression_writer = None
         self.warp_video_writer2D = None
+        self.data_gradient_video_writer2D = None
 
         if self.parameters.using_output_folder:
             if not os.path.exists(self.parameters.out_path):
@@ -72,17 +73,14 @@ class Sdf2SdfVisualizer:
             viz.save_initial_fields(canonical_field, live_field, self.parameters.out_path,
                                     self.parameters.view_scaling_factor)
 
-    def generate_post_optimization_visualizations(self, canonical_field, live_field, warp_field):
+    def generate_post_optimization_visualizations(self, canonical_field, live_field):
         if self.parameters.save_final_fields:
             viz.save_final_fields(canonical_field, live_field, self.parameters.out_path,
                                   self.parameters.view_scaling_factor)
 
-    def generate_per_iteration_visualizations(self, hierarchy_level_index, iteration_number,
-                                              canonical_field, live_field, warp_field,
-                                              data_gradient=None):
-        level_scaling = 2 ** (self.level_count - hierarchy_level_index - 1)
+    def generate_per_iteration_visualizations(self, live_field):
         if self.parameters.save_live_field_progression:
-            live_field_out = viz.sdf_field_to_image(live_field, self.parameters.view_scaling_factor * level_scaling)
+            live_field_out = viz.sdf_field_to_image(live_field, self.parameters.view_scaling_factor)
             self.live_progression_writer.write(live_field_out)
 
         if self.parameters.save_warp_field_progression:

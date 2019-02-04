@@ -10,6 +10,7 @@ import cv2
 # local
 from tsdf import generation as tsdf_gen
 
+
 class ImageBasedSingleFrameDataset:
     def __init__(self, first_frame_path, second_frame_path, image_pixel_row, field_size, offset, camera):
         self.first_frame_path = first_frame_path

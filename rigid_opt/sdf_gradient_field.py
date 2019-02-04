@@ -8,8 +8,7 @@ import numpy as np
 
 # local
 from rigid_opt.transformation import twist_vector_to_matrix
-from rigid_opt.sdf_generation import ImageBasedSingleFrameDataset
-from tsdf import generation as tsdf_gen
+
 
 class GradientField:
     def __init__(self):

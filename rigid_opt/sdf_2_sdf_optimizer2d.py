@@ -3,22 +3,15 @@
 #  Rigid alignment algorithm implementation based on SDF-2-SDF paper.
 #  ================================================================
 
-# stdlib
-from enum import Enum
-from inspect import currentframe, getframeinfo
-
 # common libs
 import numpy as np
-import scipy.ndimage
-import os.path
-import cv2
 
 # local
 from rigid_opt.sdf_gradient_field import GradientField
 import utils.printing as printing
 from rigid_opt.sdf_2_sdf_visualizer import Sdf2SdfVisualizer
-from rigid_opt.sdf_generation import ImageBasedSingleFrameDataset
 from tsdf import generation as tsdf_gen
+
 
 class Sdf2SdfOptimizer2d:
     """
@@ -65,7 +58,7 @@ class Sdf2SdfOptimizer2d:
                  eta=.01,
                  voxel_size=0.004,
                  narrow_band_width_voxels=20.,
-                 iteration = 60,
+                 iteration=60,
                  ):
         """
         Optimization algorithm
@@ -79,16 +72,19 @@ class Sdf2SdfOptimizer2d:
 
         canonical_field = data_to_use.generate_2d_canonical_field(narrow_band_width_voxels=narrow_band_width_voxels,
                                                                   method=tsdf_gen.DepthInterpolationMethod.NONE)
+        live_field = data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
+                                                        method=tsdf_gen.DepthInterpolationMethod.NONE)
+        field_size = canonical_field.shape[0]
         offset = data_to_use.offset
         twist = np.zeros((3, 1))
+
+        self.visualizer = Sdf2SdfVisualizer(parameters=self.visualization_parameters, field_size=field_size)
+        self.visualizer.generate_pre_optimization_visualizations(canonical_field, live_field)
+
         for iteration_count in range(iteration):
             matrix_a = np.zeros((3, 3))
             vector_b = np.zeros((3, 1))
-            # energy = 0.  # Energy term
             canonical_weight = (canonical_field > -eta).astype(np.int)
-            # live_field = affine_of_voxel2d(live_field, twist, depth_image1d, camera, offset, voxel_size,
-            #                                camera_extrinsic_matrix=np.eye(3, dtype=np.float32),
-            #                                narrow_band_width_voxels=1.)
             twist_3d = np.array([twist[0],
                                  [0.],
                                  twist[1],
@@ -127,35 +123,16 @@ class Sdf2SdfOptimizer2d:
                       % (twist_star[0], twist_star[1], twist_star[2], twist[0], twist[1], twist[2]), end="")
                 print("")
 
-        return
+            self.visualizer.generate_per_iteration_visualizations(
+                data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
+                                                   method=tsdf_gen.DepthInterpolationMethod.NONE,
+                                                   apply_transformation=True, twist=np.array([twist[0],
+                                                                                              [0.],
+                                                                                              twist[1],
+                                                                                              [0.],
+                                                                                              twist[2],
+                                                                                              [0.]], dtype=np.float32)))
 
-        # twist = np.zeros((3, 1))
-        # ref_weight, cur_weight = 1, 1
-        # for iter in range(15):
-        #     matrix_A = np.zeros((3, 3))
-        #     vector_b = np.zeros((3, 1))
-        #     error = 0.
-        #     for i in range(canonical_field.shape[1]):
-        #         for j in range(canonical_field.shape[0]):
-        #             ref_sdf = canonical_field[j, i]
-        #             if ref_sdf < -eta:
-        #                 ref_weight = 0
-        #             # apply twist to live_field
-        #             cur_idx = np.delete(np.dot(twist_vector_to_matrix(twist), np.array([[i], [j], [1]])), 2)
-        #             cur_sdf = live_field[int(cur_idx[1]), int(cur_idx[0])]
-        #             if cur_sdf < -eta:
-        #                 cur_weight = 0
-        #             final_live_field[j, i] = cur_sdf
-        #
-        #             if ref_sdf < -1 or cur_sdf < -1:
-        #                 continue
-        #             cur_gradient = sdf_gradient_wrt_to_twist(live_field, j, i, twist)
-        #             matrix_A += np.dot(cur_gradient.T, cur_gradient)
-        #             vector_b += (ref_sdf - cur_sdf + np.dot(cur_gradient, twist)) * cur_gradient.T
-        #             error += (ref_sdf * ref_weight - cur_sdf * cur_weight) ** 2
-        #
-        #     twist_star = np.dot(np.linalg.inv(matrix_A), vector_b)  # optimal solution
-        #     twist += .5 * np.subtract(twist_star, twist)
-        #     print("error(/E_geom): ", error, "at iteration ", iter)
-        #     print("twist vector is \n", twist)
-        # return final_canonical_field, twist, error
+        self.visualizer.generate_post_optimization_visualizations(canonical_field, live_field)
+        del self.visualizer
+        return twist
