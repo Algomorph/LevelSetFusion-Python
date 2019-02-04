@@ -19,6 +19,7 @@ import numpy as np
 import calib.camera as cam
 import tests.ewa_test_data as data
 import tsdf.ewa as ewa
+import level_set_fusion_optimization as cpp_module
 
 
 class TsdfTest(TestCase):
@@ -44,7 +45,10 @@ class TsdfTest(TestCase):
                                                             voxel_size=0.004)
 
         self.assertTrue(np.allclose(field, data.out_sdf_field))
+
         field2 = ewa.generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, 1,
                                                                      field_size=16,
-                                                                     array_offset=np.array([94, -256, 804]),
+                                                                     array_offset=np.array([94, -256, 804],
+                                                                                           dtype=np.int32),
                                                                      voxel_size=0.004)
+        self.assertTrue(np.allclose(field2, data.out_sdf_field, atol=2e-5))
