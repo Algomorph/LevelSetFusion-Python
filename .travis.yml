@@ -13,7 +13,11 @@ addons:
         - g++-7
         - libpython3-dev
         - python3-numpy
+        - python3-numpy-dbg
         - python3-tk
+        - libeigen3-dev
+        - libboost-python-dev
+        - libboost-test-dev
 
 # have to use pre-installed python 3.5, specifying 3.5 installs a different version that has no headers and makes the
 # cpp module build fail
@@ -40,11 +44,11 @@ script:
   - cd cpp
   - mkdir build
   - cd build
-  - cmake ..
+  - cmake -DHUNTER_ENABLED=OFF ..
   - make
   - sudo make install
   - cd ../..
   - python3 -m pytest tests
 
 install:
-  - ls
+  - echo "placeholder install script (to disable default)"
