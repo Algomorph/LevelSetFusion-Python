@@ -20,11 +20,12 @@ from unittest import TestCase
 import numpy as np
 # test targets
 import math_utils.convolution as mc
-import utils.sampling as samplig
+import utils.sampling as sampling
 
-class ConvolutionTestCase(TestCase):
+
+class ConvolutionTest(TestCase):
     def test_convolution(self):
-        samplig.set_focus_coordinates(0,0)
+        sampling.set_focus_coordinates(0, 0)
         field = np.array([1, 4, 7, 2, 5, 8, 3, 6, 9], dtype=np.float32).reshape(3, 3)
         vector_field = np.dstack([field] * 2)
         kernel = np.array([1, 2, 3])
@@ -37,7 +38,7 @@ class ConvolutionTestCase(TestCase):
 
     def test_convolution2(self):
         # corresponds to convolution_test02 in C++
-        samplig.set_focus_coordinates(0, 0)
+        sampling.set_focus_coordinates(0, 0)
         vector_field = np.array([[[0., 0.],
                                   [0., 0.],
                                   [-0.35937524, -0.18750024],
