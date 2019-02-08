@@ -155,6 +155,8 @@ def generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, image_y
                                                     field_size=128, default_value=1, voxel_size=0.004,
                                                     array_offset=np.array([-64, -64, 64], dtype=np.int32),
                                                     narrow_band_width_voxels=20, back_cutoff_voxels=np.inf):
+    if type(array_offset) != np.ndarray:
+        array_offset = np.array(array_offset).astype(np.int32)
     return cpp_extension.generate_2d_tsdf_field_from_depth_image_ewa(image_y_coordinate,
                                                                      depth_image,
                                                                      camera.depth_unit_ratio,
@@ -165,6 +167,44 @@ def generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, image_y
                                                                      field_size,
                                                                      voxel_size,
                                                                      narrow_band_width_voxels)
+
+
+def generate_3d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera,
+                                                    camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                                    field_shape=np.array([128, 128, 128], dtype=np.int32),
+                                                    default_value=1, voxel_size=0.004,
+                                                    array_offset=np.array([-64, -64, 64], dtype=np.int32),
+                                                    narrow_band_width_voxels=20, back_cutoff_voxels=np.inf):
+    if type(field_shape) != np.ndarray:
+        field_shape = np.array(field_shape).astype(np.int32)
+    if type(array_offset) != np.ndarray:
+        array_offset = np.array(array_offset).astype(np.int32)
+    return cpp_extension.generate_3d_tsdf_field_from_depth_image_ewa(depth_image,
+                                                                     camera.depth_unit_ratio,
+                                                                     camera.intrinsics.intrinsic_matrix.astype(
+                                                                         np.float32),
+                                                                     camera_extrinsic_matrix.astype(np.float32),
+                                                                     array_offset,
+                                                                     field_shape,
+                                                                     voxel_size,
+                                                                     narrow_band_width_voxels)
+
+
+def generate_3d_tsdf_ewa_cpp_viz(depth_image, camera, field,
+                                 camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                 voxel_size=0.004,
+                                 array_offset=np.array([-64, -64, 64], dtype=np.int32), scale=20):
+    if type(array_offset) != np.ndarray:
+        array_offset = np.array(array_offset).astype(np.int32)
+    return cpp_extension.generate_3d_tsdf_field_from_depth_image_ewa_viz(depth_image,
+                                                                         camera.depth_unit_ratio,
+                                                                         field,
+                                                                         camera.intrinsics.intrinsic_matrix.astype(
+                                                                             np.float32),
+                                                                         camera_extrinsic_matrix.astype(np.float32),
+                                                                         array_offset,
+                                                                         voxel_size,
+                                                                         scale)
 
 
 def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coordinate,

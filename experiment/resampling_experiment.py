@@ -63,10 +63,9 @@ def main():
             depth_image0 = cv2.imread(
                 "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00064.png",
                 cv2.IMREAD_UNCHANGED)
+
             max_depth = np.iinfo(np.uint16).max
             depth_image0[depth_image0 == 0] = max_depth
-            print("Camera intrinsic matrix:")
-            print(repr(depth_camera.intrinsics.intrinsic_matrix))
             field = \
                 gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, 200,
                                                             field_size=field_size,
@@ -76,9 +75,7 @@ def main():
 
         else:
             field = data.datasets[data_to_use].generate_2d_sdf_canonical(method=depth_interpolation_method)
-            # chunk = field[324:340, 350:366].copy()
-            # print(repr(chunk))
-        #print(repr(field))
+
         viz.visualize_field(field, view_scaling_factor=2)
 
 
