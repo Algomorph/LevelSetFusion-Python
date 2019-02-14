@@ -136,9 +136,9 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                         depth_sum += weight * surface_depth
                         weights_sum += weight
 
-                final_depth = depth_sum / weights_sum
                 if depth_sum <= 0.0:
                     continue
+                final_depth = depth_sum / weights_sum
 
                 signed_distance = final_depth - voxel_camera[2]
 

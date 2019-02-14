@@ -23,7 +23,7 @@ import level_set_fusion_optimization as cpp_module
 
 
 class TsdfTest(TestCase):
-    def test_ewa_tsdf_generation(self):
+    def test_2D_ewa_tsdf_generation(self):
         depth_image = np.zeros((3, 640), dtype=np.uint16)
         depth_image[:] = np.iinfo(np.uint16).max
         depth_image_region = np.array([[3233, 3246, 3243, 3256, 3253, 3268, 3263, 3279, 3272, 3289, 3282,
@@ -51,4 +51,9 @@ class TsdfTest(TestCase):
                                                                      array_offset=np.array([94, -256, 804],
                                                                                            dtype=np.int32),
                                                                      voxel_size=0.004)
-        self.assertTrue(np.allclose(field2, data.out_sdf_field, atol=2e-5))
+        self.assertTrue(np.allclose(field2, data.out_sdf_field, atol=3e-5))
+
+    def test_3D_ewa_tsdf_generation(self):
+        
+
+
