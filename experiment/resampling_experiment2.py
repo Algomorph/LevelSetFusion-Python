@@ -16,9 +16,13 @@
 
 # stdlib
 import sys
+import os.path
 
 # libs
 import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+
 
 # local
 import tsdf.ewa as ewa
@@ -27,8 +31,6 @@ import experiment.dataset as data
 import utils.visualization as viz
 
 # =========
-import cv2
-import matplotlib.pyplot as plt
 
 from calib.camerarig import DepthCameraRig
 
@@ -39,15 +41,20 @@ EXIT_CODE_FAILURE = 1
 def main():
     data_to_use = data.PredefinedDatasetEnum.ZIGZAG064
 
-    array_offset = np.array([-256, -256, 480], dtype=np.int32)
+    #array_offset = np.array([-256, -256, 480], dtype=np.int32) # zigzag 64
+    array_offset = np.array([-256, -256, 0], dtype=np.int32)  # zigzag2 108
     field_size = np.array([512, 512, 512], dtype=np.int32)
     voxel_size = 0.004
     rig = DepthCameraRig.from_infinitam_format(
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt")
     depth_camera = rig.depth_camera
     depth_interpolation_method = gen.DepthInterpolationMethod.EWA
+    # depth_image0 = cv2.imread(
+    #     "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00064.png",
+    #     cv2.IMREAD_UNCHANGED)
     depth_image0 = cv2.imread(
-        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00064.png",
+        #"/media/algomorph/Data/Reconstruction/synthetic_data/zigzag2/input/depth_00000.png",
+        "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag2/input/depth_00108.png",
         cv2.IMREAD_UNCHANGED)
     max_depth = np.iinfo(np.uint16).max
     depth_image0[depth_image0 == 0] = max_depth
@@ -63,7 +70,9 @@ def main():
                                                  field=field,
                                                  voxel_size=voxel_size,
                                                  array_offset=array_offset)
-    cv2.imwrite("output/ewa_sampling_viz.png", viz_image)
+    # print(viz_image.shape, viz_image.dtype)
+    # resized = cv2.resize(viz_image, (2400, 3200))
+    cv2.imwrite("../output/ewa_sampling_viz.png", viz_image)
 
     return EXIT_CODE_SUCCESS
 

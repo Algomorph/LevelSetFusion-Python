@@ -87,10 +87,10 @@ class ImplicitEllipse:
                 continue
             addand = math.sqrt(under_root)
 
-            denominator = (-b - addand)
-            y_0 = denominator / (2 * a) if abs(denominator) > 10e-6 else 0.0
-            denominator = (-b + addand)
-            y_1 = denominator / (2 * a) if abs(denominator) > 10e-6 else 0.0
+            numerator = (-b - addand)
+            y_0 = numerator / (2 * a)
+            numerator = (-b + addand)
+            y_1 = numerator / (2 * a)
             y_pixel_0 = int(y_0 * scale + center_offset[1] + 0.5)
             y_pixel_1 = int(y_1 * scale + center_offset[1] + 0.5)
             image[y_pixel_0, x_pixel] = (0, 0, 0)
@@ -108,10 +108,10 @@ class ImplicitEllipse:
                 continue
             addand = math.sqrt(under_root)
 
-            denominator = (-b - addand)
-            x_0 = denominator / (2 * a) if abs(denominator) > 10e-8 else 0.0
-            denominator = (-b + addand)
-            x_1 = denominator / (2 * a) if abs(denominator) > 10e-8 else 0.0
+            numerator = (-b - addand)
+            x_0 = numerator / (2 * a)
+            numerator = (-b + addand)
+            x_1 = numerator / (2 * a)
             x_pixel_0 = int(x_0 * scale + center_offset[1] + 0.5)
             x_pixel_1 = int(x_1 * scale + center_offset[1] + 0.5)
             image[y_pixel, x_pixel_0] = (0, 0, 0)

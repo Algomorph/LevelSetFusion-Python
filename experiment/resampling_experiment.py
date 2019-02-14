@@ -39,10 +39,15 @@ EXIT_CODE_FAILURE = 1
 def main():
     data_to_use = data.PredefinedDatasetEnum.ZIGZAG064
     save_profile = False
-    fraction_field = True
+    fraction_field = False
+    #image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00108.png"
+    image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag2/input/depth_00108.png"
+    # image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/depth/depth_00064.png"
+    #depth_interpolation_method = gen.DepthInterpolationMethod.EWA
+    depth_interpolation_method = gen.DepthInterpolationMethod.NONE
+
     if save_profile:
-        im = cv2.imread("/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/depth/depth_00064.png",
-                        cv2.IMREAD_UNCHANGED)
+        im = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
         sl = im[200]
         plt.figure(figsize=(40, 30))
         plt.plot(sl, "k")
@@ -51,8 +56,7 @@ def main():
         plt.clf()
         plt.close("all")
     else:
-        depth_interpolation_method = gen.DepthInterpolationMethod.EWA
-        # depth_interpolation_method = gen.DepthInterpolationMethod.NONE
+
         if fraction_field:
             voxel_size = 0.004
             field_size = 16
@@ -60,9 +64,7 @@ def main():
                 "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt")
             depth_camera = rig.depth_camera
 
-            depth_image0 = cv2.imread(
-                "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00064.png",
-                cv2.IMREAD_UNCHANGED)
+            depth_image0 = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
 
             max_depth = np.iinfo(np.uint16).max
             depth_image0[depth_image0 == 0] = max_depth
@@ -74,10 +76,26 @@ def main():
                                                             voxel_size=voxel_size)
 
         else:
-            field = data.datasets[data_to_use].generate_2d_sdf_canonical(method=depth_interpolation_method)
+            voxel_size = 0.004
+            field_size = 512
+            rig = DepthCameraRig.from_infinitam_format(
+                "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt")
+            depth_camera = rig.depth_camera
+
+            depth_image0 = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+
+            max_depth = np.iinfo(np.uint16).max
+            depth_image0[depth_image0 == 0] = max_depth
+            #z_offset = 480 # zigzag - 64
+            z_offset = 0 # zigzag2 - 108
+            field = \
+                gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, 200,
+                                                            field_size=field_size,
+                                                            array_offset=np.array([-256, -256, z_offset]),
+                                                            depth_interpolation_method=depth_interpolation_method,
+                                                            voxel_size=voxel_size)
 
         viz.visualize_field(field, view_scaling_factor=2)
-
 
     return EXIT_CODE_SUCCESS
 

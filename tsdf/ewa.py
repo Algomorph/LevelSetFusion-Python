@@ -69,9 +69,9 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
 
     squared_radius_threshold = 4.0
 
-    for z_field in range(field_size):
+    for x_field in range(field_size):
         for y_field in range(field_size):
-            for x_field in range(field_size):
+            for z_field in range(field_size):
 
                 x_voxel = (x_field + array_offset[0]) * voxel_size
                 y_voxel = (y_field + array_offset[1]) * voxel_size
@@ -87,18 +87,20 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                 ray_distance = np.linalg.norm(voxel_camera)
                 # squared distance along optical axis from camera to voxel
                 z_cam_squared = voxel_camera[2] ** 2
+                inv_z_cam = 1 / voxel_camera[2]
 
                 projection_jacobian = \
-                    np.array([[1 / voxel_camera[2], 0, -voxel_camera[0] / z_cam_squared],
-                              [0, 1 / voxel_camera[2], -voxel_camera[1] / z_cam_squared],
+                    np.array([[inv_z_cam, 0, -voxel_camera[0] / z_cam_squared],
+                              [0, inv_z_cam, -voxel_camera[1] / z_cam_squared],
                               [voxel_camera[0] / ray_distance, voxel_camera[1] / ray_distance,
                                voxel_camera[2] / ray_distance]])
 
                 remapped_covariance = projection_jacobian.dot(covariance_camera_space) \
                     .dot(projection_jacobian.T)
 
-                # Q = np.linalg.inv(remapped_covariance[0:3, 0:3]) + np.eye(2)
-                Q = remapped_covariance[0:3, 0:3] + np.eye(2)
+                # TODO: inv troubles?
+                Q = np.linalg.inv(remapped_covariance[0:3, 0:3]) + np.eye(2)
+                # Q = remapped_covariance[0:3, 0:3] + np.eye(2)
                 gaussian = eg.EllipticalGaussian(eg.ImplicitEllipse(Q=Q, F=squared_radius_threshold))
 
                 voxel_image = (camera_intrinsic_matrix.dot(voxel_camera) / voxel_camera[2])[:2]
@@ -141,11 +143,11 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                 signed_distance = final_depth - voxel_camera[2]
 
                 if signed_distance < -narrow_band_half_width:
-                    field[y_field, x_field] = -1.0
+                    field[x_field, y_field, z_field] = -1.0
                 elif signed_distance > narrow_band_half_width:
-                    field[y_field, x_field] = 1.0
+                    field[x_field, y_field, z_field] = 1.0
                 else:
-                    field[y_field, x_field] = signed_distance / narrow_band_half_width
+                    field[x_field, y_field, z_field] = signed_distance / narrow_band_half_width
 
     return field
 
