@@ -21,9 +21,9 @@ def main():
     live_frame_path = "../Data/Synthetic_Kenny_Circle/depth_000003.exr"
     image_pixel_row = 240
 
-    intrinsic_matrix = np.matrix([[570.3999633789062, 0, 320],  # FX = 570.3999633789062 CX = 320.0
-                                  [0, 570.3999633789062, 240],  # FY = 570.3999633789062 CY = 240.0
-                                  [0, 0, 1]], dtype=np.float32)
+    intrinsic_matrix = np.array([[570.3999633789062, 0, 320],  # FX = 570.3999633789062 CX = 320.0
+                                 [0, 570.3999633789062, 240],  # FY = 570.3999633789062 CY = 240.0
+                                 [0, 0, 1]], dtype=np.float32)
     camera = DepthCamera(intrinsics=DepthCamera.Intrinsics(resolution=(480, 640),
                                                            intrinsic_matrix=intrinsic_matrix))
     field_size = 32
