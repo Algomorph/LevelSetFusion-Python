@@ -27,7 +27,9 @@ def main():
     camera = DepthCamera(intrinsics=DepthCamera.Intrinsics(resolution=(480, 640),
                                                            intrinsic_matrix=intrinsic_matrix))
     field_size = 32
-    offset = np.array([-16, -16, 104])
+    # offset = np.array([-16, -16, 102.875])
+    offset = np.array([-16, -16, 93.4375])
+
     data_to_use = ImageBasedSingleFrameDataset(
         canonical_frame_path,  # dataset from original sdf2sdf paper, reference frame
         live_frame_path,  # dataset from original sdf2sdf paper, current frame
@@ -35,9 +37,9 @@ def main():
     )
 
     # depth_interpolation_method = tsdf.DepthInterpolationMethod.NONE
-    out_path = "output/sdf2sdf"
+    out_path = "output/sdf_2_sdf"
     sampling.set_focus_coordinates(0, 0)
-    narrow_band_width_voxels=1.
+    narrow_band_width_voxels = 2.
     iteration = 40
     optimizer = sdf2sdfo.Sdf2SdfOptimizer2d(
         verbosity_parameters=sdf2sdfo.Sdf2SdfOptimizer2d.VerbosityParameters(

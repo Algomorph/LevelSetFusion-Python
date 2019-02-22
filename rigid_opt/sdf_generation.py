@@ -20,7 +20,6 @@ class ImageBasedSingleFrameDataset:
         self.offset = offset
         self.depth_camera = camera
 
-
     def generate_2d_sdf_fields(self, narrow_band_width_voxels=20., method=tsdf_gen.DepthInterpolationMethod.NONE):
         canonical_field = self.generate_2d_canonical_field(narrow_band_width_voxels=narrow_band_width_voxels,
                                                            method=method)
@@ -32,7 +31,7 @@ class ImageBasedSingleFrameDataset:
 
         depth_image0 = cv2.imread(self.first_frame_path, -1)
         depth_image0 = cv2.cvtColor(depth_image0, cv2.COLOR_BGR2GRAY)
-        depth_image0 = depth_image0.astype(float) # convert to meters
+        depth_image0 = depth_image0.astype(float) # cm
 
         # max_depth = np.iinfo(np.uint16).max
         # depth_image0[depth_image0 == 0] = max_depth
@@ -50,12 +49,53 @@ class ImageBasedSingleFrameDataset:
                                apply_transformation=False, twist=np.zeros((6, 1))):
         depth_image1 = cv2.imread(self.second_frame_path, -1)
         depth_image1 = cv2.cvtColor(depth_image1, cv2.COLOR_BGR2GRAY)
-        depth_image1 = depth_image1.astype(float)  # convert to meters
+        depth_image1 = depth_image1.astype(float)  # cm
+
 
         # max_depth = np.iinfo(np.uint16).max
         # depth_image1[depth_image1 == 0] = max_depth
         live_field = \
             tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image1, self.depth_camera, self.image_pixel_row,
+                                                             field_size=self.field_size,
+                                                             # default_value=-999.,
+                                                             array_offset=self.offset,
+                                                             narrow_band_width_voxels=narrow_band_width_voxels,
+                                                             depth_interpolation_method=method,
+                                                             apply_transformation=apply_transformation, twist=twist)
+        return live_field
+
+
+class ArrayBasedSingleFrameDataset:
+    def __init__(self, depth_image0, depth_image1, image_pixel_row, field_size, offset, camera):
+        self.depth_image0 = depth_image0
+        self.depth_image1 = depth_image1
+        self.image_pixel_row = image_pixel_row
+        self.field_size = field_size
+        self.offset = offset
+        self.depth_camera = camera
+
+    def generate_2d_sdf_fields(self, narrow_band_width_voxels=20., method=tsdf_gen.DepthInterpolationMethod.NONE):
+        canonical_field = self.generate_2d_canonical_field(narrow_band_width_voxels=narrow_band_width_voxels,
+                                                           method=method)
+        live_field = self.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
+                                                 method=method)
+        return live_field, canonical_field
+
+    def generate_2d_canonical_field(self, narrow_band_width_voxels=20., method=tsdf_gen.DepthInterpolationMethod.NONE):
+        canonical_field = \
+            tsdf_gen.generate_2d_tsdf_field_from_depth_image(self.depth_image0, self.depth_camera, self.image_pixel_row,
+                                                             field_size=self.field_size,
+                                                             # default_value=-999.,
+                                                             array_offset=self.offset,
+                                                             narrow_band_width_voxels=narrow_band_width_voxels,
+                                                             depth_interpolation_method=method)
+        return canonical_field
+
+    def generate_2d_live_field(self, method=tsdf_gen.DepthInterpolationMethod.NONE,
+                               narrow_band_width_voxels=20.,
+                               apply_transformation=False, twist=np.zeros((6, 1))):
+        live_field = \
+            tsdf_gen.generate_2d_tsdf_field_from_depth_image(self.depth_image1, self.depth_camera, self.image_pixel_row,
                                                              field_size=self.field_size,
                                                              # default_value=-999.,
                                                              array_offset=self.offset,
