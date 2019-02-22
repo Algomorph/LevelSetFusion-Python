@@ -4,7 +4,6 @@ from calib.camera import DepthCamera
 from rigid_opt import sdf_2_sdf_visualizer as sdf2sdfv, sdf_2_sdf_optimizer2d as sdf2sdfo
 from rigid_opt.sdf_generation import ImageBasedSingleFrameDataset
 import utils.sampling as sampling
-import math
 
 
 class MyTestCase(TestCase):
@@ -40,8 +39,8 @@ class MyTestCase(TestCase):
             ),
             visualization_parameters=sdf2sdfv.Sdf2SdfVisualizer.Parameters(
                 out_path=out_path,
-                save_initial_fields=True,
-                save_final_fields=True,
+                save_initial_fields=False,
+                save_final_fields=False,
                 save_live_progression=True
             )
         )
