@@ -1,7 +1,7 @@
 # import unittest
 from unittest import TestCase
 import numpy as np
-from rigid_opt.sdf_gradient_field import GradientField
+from rigid_opt.sdf_gradient_field import calculate_gradient_wrt_twist
 from rigid_opt.transformation import twist_vector_to_matrix
 
 
@@ -72,7 +72,7 @@ class MyTestCase(TestCase):
                                  [0.]])
         offset = np.array([-1, -1, 1])
         voxel_size = 1
-        gradient_field = GradientField().calculate(live_field,
+        gradient_field = calculate_gradient_wrt_twist(live_field,
                                                    twist_vector,
                                                    array_offset=offset,
                                                    voxel_size=voxel_size)
@@ -96,7 +96,7 @@ class MyTestCase(TestCase):
 
         offset = np.array([-1, -1, 1])
         voxel_size = 1
-        gradient_field = GradientField().calculate(live_field,
+        gradient_field = calculate_gradient_wrt_twist(live_field,
                                                    twist_vector,
                                                    array_offset=offset,
                                                    voxel_size=voxel_size)
@@ -120,7 +120,7 @@ class MyTestCase(TestCase):
 
         offset = np.array([-1, -1, 1])
         voxel_size = 2
-        gradient_field = GradientField().calculate(live_field,
+        gradient_field = calculate_gradient_wrt_twist(live_field,
                                                    twist_vector,
                                                    array_offset=offset,
                                                    voxel_size=voxel_size)
@@ -144,7 +144,7 @@ class MyTestCase(TestCase):
 
         offset = np.array([-1, -1, 1])
         voxel_size = 1
-        gradient_field = GradientField().calculate(live_field,
+        gradient_field = calculate_gradient_wrt_twist(live_field,
                                                    twist_vector,
                                                    array_offset=offset,
                                                    voxel_size=voxel_size)
@@ -168,7 +168,7 @@ class MyTestCase(TestCase):
 
         offset = np.array([-1, -1, 1])
         voxel_size = 1
-        gradient_field = GradientField().calculate(live_field,
+        gradient_field = calculate_gradient_wrt_twist(live_field,
                                                    twist_vector,
                                                    array_offset=offset,
                                                    voxel_size=voxel_size)
@@ -192,7 +192,7 @@ class MyTestCase(TestCase):
 
         offset = np.array([-1, -1, 1])
         voxel_size = 0.5
-        gradient_field = GradientField().calculate(live_field,
+        gradient_field = calculate_gradient_wrt_twist(live_field,
                                                    twist_vector,
                                                    array_offset=offset,
                                                    voxel_size=voxel_size)

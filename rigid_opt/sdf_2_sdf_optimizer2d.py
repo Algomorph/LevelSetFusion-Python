@@ -7,7 +7,7 @@
 import numpy as np
 
 # local
-from rigid_opt.sdf_gradient_field import GradientField
+from rigid_opt.sdf_gradient_field import calculate_gradient_wrt_twist
 import utils.printing as printing
 from rigid_opt.sdf_2_sdf_visualizer import Sdf2SdfVisualizer
 from tsdf import generation as tsdf_gen
@@ -95,7 +95,7 @@ class Sdf2SdfOptimizer2d:
                                                             method=tsdf_gen.DepthInterpolationMethod.NONE,
                                                             apply_transformation=True, twist=twist_3d)
             live_weight = (live_field > -eta).astype(np.int)
-            live_gradient = GradientField().calculate(live_field, twist, array_offset=offset, voxel_size=voxel_size)
+            live_gradient = calculate_gradient_wrt_twist(live_field, twist, array_offset=offset, voxel_size=voxel_size)
 
             for i in range(live_field.shape[0]):
                 for j in range(live_field.shape[1]):
