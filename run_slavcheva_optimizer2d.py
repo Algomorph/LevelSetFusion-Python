@@ -52,11 +52,11 @@ def main():
                         help="output path for multiple_tests mode")
     parser.add_argument("-c", "--calibration", type=str,
                         default=
-                        "../Data/Reconstruction/real_data/"
+                        "/media/algomorph/Data/Reconstruction/real_data/"
                         "KillingFusion Snoopy/snoopy_calib.txt",
                         help="Path to the camera calibration file to use unless using a predefined dataset")
     parser.add_argument("-f", "--frames", type=str,
-                        default="../Data/Reconstruction/real_data/KillingFusion Snoopy/frames",
+                        default="/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames",
                         help="Path to the depth frames. Frame image files should have names "
                              "that follow depth_{:0>6d}.png pattern, i.e. depth_000000.png")
     parser.add_argument("-cfi", "--canonical_frame_index", type=int, default=-1,
