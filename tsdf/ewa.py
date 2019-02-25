@@ -67,6 +67,8 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
     covariance_camera_space = camera_rotation_matrix.dot(covariance_voxel_sphere_world_space) \
         .dot(camera_rotation_matrix.T)
 
+    image_space_scaling_matrix = camera.intrinsics.intrinsic_matrix[0:2, 0:2]
+
     squared_radius_threshold = 4.0
 
     for x_field in range(field_size):
@@ -99,8 +101,9 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                     .dot(projection_jacobian.T)
 
                 # TODO: inv troubles?
-                Q = np.linalg.inv(remapped_covariance[0:3, 0:3]) + np.eye(2)
-                # Q = remapped_covariance[0:3, 0:3] + np.eye(2)
+                final_covariance = image_space_scaling_matrix.dot(remapped_covariance[0:2, 0:2]).dot(
+                    image_space_scaling_matrix.T) + np.eye(2)
+                Q = np.linalg.inv(final_covariance)
                 gaussian = eg.EllipticalGaussian(eg.ImplicitEllipse(Q=Q, F=squared_radius_threshold))
 
                 voxel_image = (camera_intrinsic_matrix.dot(voxel_camera) / voxel_camera[2])[:2]
@@ -254,6 +257,7 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
     covariance_voxel_sphere_world_space = np.eye(3) * voxel_size
     covariance_camera_space = camera_rotation_matrix.dot(covariance_voxel_sphere_world_space) \
         .dot(camera_rotation_matrix.T)
+    image_space_scaling_matrix = camera_intrinsic_matrix[0:2, 0:2].copy()
 
     squared_radius_threshold = 4.0
 
@@ -282,8 +286,9 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
                 .dot(projection_jacobian.T)
 
             # TODO: why is inverse not working? inverse covariance image space
-            # Q = np.linalg.inv(remapped_covariance[0:2, 0:2]) + np.eye(2)
-            Q = remapped_covariance[0:2, 0:2] + np.eye(2)
+            final_covariance = image_space_scaling_matrix.dot(remapped_covariance[0:2, 0:2]).dot(
+                image_space_scaling_matrix.T) + np.eye(2)
+            Q = np.linalg.inv(final_covariance)
             gaussian = eg.EllipticalGaussian(eg.ImplicitEllipse(Q=Q, F=squared_radius_threshold))
 
             voxel_image = (camera_intrinsic_matrix.dot(voxel_camera) / voxel_camera[2])[:2]

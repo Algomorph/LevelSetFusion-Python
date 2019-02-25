@@ -54,6 +54,7 @@ class TsdfTest(TestCase):
         self.assertTrue(np.allclose(field2, data.out_sdf_field, atol=3e-5))
 
     def test_3D_ewa_tsdf_generation(self):
-        
+        pass
+
 
 

@@ -50,7 +50,7 @@ class ImplicitEllipse:
             # The following is equivalent:
             # max_x = math.sqrt(self.F / ((4 * self.A ** 2 * self.C) / B_squared - self.A))
             # max_y = math.sqrt(self.F / (self.C - B_squared / (4 * self.A)))
-            max_x = math.sqrt(self.F / (4 * self.A * self.C ** 2) / B_squared - self.C)
+            max_x = math.sqrt(self.F / ((4 * self.A * self.C ** 2) / B_squared - self.C))
             max_y = math.sqrt(self.F / (self.A - B_squared / (4 * self.C)))
 
         min_x = -max_x

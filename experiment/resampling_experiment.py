@@ -43,8 +43,8 @@ def main():
     #image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00108.png"
     image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag2/input/depth_00108.png"
     # image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/depth/depth_00064.png"
-    #depth_interpolation_method = gen.DepthInterpolationMethod.EWA
-    depth_interpolation_method = gen.DepthInterpolationMethod.NONE
+    #depth_interpolation_method = gen.DepthInterpolationMethod.NONE
+    depth_interpolation_method = gen.DepthInterpolationMethod.EWA
 
     if save_profile:
         im = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
