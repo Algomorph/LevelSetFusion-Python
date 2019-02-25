@@ -9,8 +9,8 @@ import utils.sampling as sampling
 class MyTestCase(TestCase):
 
     def test_sdf_2_sdf_optimizer01(self):
-        canonical_frame_path = "input/depth_000000.exr"
-        live_frame_path = "input/depth_000003.exr"
+        canonical_frame_path = "testdata/depth_000000.exr"
+        live_frame_path = "testdata/depth_000003.exr"
         image_pixel_row = 240
 
         intrinsic_matrix = np.array([[570.3999633789062, 0, 320],  # FX = 570.3999633789062 CX = 320.0
