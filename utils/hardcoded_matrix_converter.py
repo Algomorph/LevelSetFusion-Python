@@ -58,9 +58,13 @@ numpy_to_cpp_type_mappings = {
     (1, "float32"): ("eig::MatrixXf", np.float32),
     (1, "float64"): ("eig::MatrixXd", np.float64),
     (1, "int32"): ("eig::MatrixXi", np.int32),
+    (1, "uint8"): ("eig::Matrix<unsigned char, eig::Dynamic, eig::Dynamic>", np.uint8),
+    (1, "uint16"): ("eig::Matrix<unsigned short, eig::Dynamic, eig::Dynamic>", np.uint16),
     (2, "float32"): ("eig::MatrixXf", np.float32),
     (2, "float64"): ("eig::MatrixXd", np.float64),
     (2, "int32"): ("eig::MatrixXi", np.int32),
+    (2, "uint8"): ("eig::Matrix<unsigned char, eig::Dynamic, eig::Dynamic>", np.uint8),
+    (2, "uint16"): ("eig::Matrix<unsigned short, eig::Dynamic, eig::Dynamic>", np.uint16),
     (3, "float32"): ("math::MatrixXv2f", np.float32),
     (4, "float32"): ("math::MatrixXm2f", np.float32),
 }
@@ -115,13 +119,13 @@ def parse_numpy_dimensions_and_type(value_text, value_count):
                     "not currently supported in Python-2-CPP conversion")
             dimensions = [row_count, column_count, dimension_3, dimension_4]
     element_and_matrix_type = ("MatrixXd", np.float64)
-    search_result = re.findall(re.compile(r'float32|int32|float64|int34'), value_text)
+    search_result = re.findall(re.compile(r'float32|int32|float64|int34|uint16|uint8'), value_text)
     if search_result:
         element_and_matrix_type = numpy_to_cpp_type_mappings[len(dimensions), search_result[0]]
     else:
         if len(dimensions) > 2:
-            raise ValueError("Matrices of higher dimensions (3,4) need to be explicitly typed. "
-                             "Currently, only the float32 type is supported.")
+            raise ValueError("Tensors of higher dimensions (3,4) need to be explicitly typed. "
+                             "Currently, only the float32 type is supported for tensors of higher dimensions than 2.")
     return tuple(dimensions), element_and_matrix_type[1], element_and_matrix_type[0]
 
 

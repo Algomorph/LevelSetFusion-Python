@@ -225,6 +225,8 @@ class Camera(object):
         """
         if resolution is None:
             resolution = DEFAULT_RESOLUTION
+            if intrinsics is not None and intrinsics.resolution is not None:
+                resolution = intrinsics.resolution
         if intrinsics is None:
             self.intrinsics = Camera.Intrinsics(resolution)
         else:

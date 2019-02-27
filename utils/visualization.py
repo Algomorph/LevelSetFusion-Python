@@ -19,7 +19,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from matplotlib.ticker import LinearLocator, FormatStrFormatter
-
 from utils.point2d import Point2d
 from utils.sampling import get_focus_coordinates
 
@@ -286,6 +285,14 @@ def visualzie_and_save_energy_and_max_warp_progression(log, out_path):
     plt.clf()
     plt.close('all')
 
+
+def visualize_field(field, view_scaling_factor=8, mark_focus=False):
+    field = sdf_field_to_image(field, scale=view_scaling_factor)
+    if mark_focus:
+        field = mark_focus_coordinate_on_sdf_image(field)
+    cv2.imshow("canonical SDF", field)
+    process_cv_esc()
+    cv2.destroyAllWindows()
 
 def visualize_and_save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor=8):
     canonical_visualized = sdf_field_to_image(canonical_field, scale=view_scaling_factor)

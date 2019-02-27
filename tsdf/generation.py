@@ -6,9 +6,11 @@ from enum import Enum
 
 # libraries
 import numpy as np
+
 # local
 from utils.point2d import Point2d
 import utils.sampling as sampling
+import tsdf.ewa as ewa
 
 IGNORE_OPENCV = False
 
@@ -21,7 +23,9 @@ except ImportError:
 class DepthInterpolationMethod:
     NONE = 0
     BILINEAR_IMAGE_SPACE = 1
-    BILINEAR_TSDF_SPACE = 1
+    BILINEAR_TSDF_SPACE = 2
+    EWA = 3
+    EWA_CPP = 4
 
 
 def generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space(depth_image, camera, image_y_coordinate,
@@ -235,7 +239,9 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
 tsdf_from_depth_image_generation_functions = {
     DepthInterpolationMethod.NONE: generate_2d_tsdf_field_from_depth_image_no_interpolation,
     DepthInterpolationMethod.BILINEAR_IMAGE_SPACE: generate_2d_tsdf_field_from_depth_image_bilinear_image_space,
-    DepthInterpolationMethod.BILINEAR_TSDF_SPACE: generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space
+    DepthInterpolationMethod.BILINEAR_TSDF_SPACE: generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space,
+    DepthInterpolationMethod.EWA: ewa.generate_2d_tsdf_field_from_depth_image_ewa,
+    DepthInterpolationMethod.EWA_CPP: ewa.generate_2d_tsdf_field_from_depth_image_ewa_cpp
 }
 
 
