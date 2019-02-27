@@ -37,14 +37,17 @@ EXIT_CODE_FAILURE = 1
 
 
 def main():
-    data_to_use = data.PredefinedDatasetEnum.ZIGZAG064
     save_profile = False
     fraction_field = False
-    #image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00108.png"
-    image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag2/input/depth_00108.png"
-    # image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/depth/depth_00064.png"
-    #depth_interpolation_method = gen.DepthInterpolationMethod.NONE
-    depth_interpolation_method = gen.DepthInterpolationMethod.EWA
+
+    if fraction_field:
+        image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/depth/depth_00064.png"
+    else:
+        image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag2/input/depth_00108.png"
+
+    # depth_interpolation_method = gen.DepthInterpolationMethod.NONE
+    # depth_interpolation_method = gen.DepthInterpolationMethod.EWA
+    depth_interpolation_method = gen.DepthInterpolationMethod.EWA_CPP
 
     if save_profile:
         im = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
@@ -74,6 +77,7 @@ def main():
                                                             array_offset=np.array([94, -256, 804]),
                                                             depth_interpolation_method=depth_interpolation_method,
                                                             voxel_size=voxel_size)
+            print(repr(field))
 
         else:
             voxel_size = 0.004
@@ -86,14 +90,15 @@ def main():
 
             max_depth = np.iinfo(np.uint16).max
             depth_image0[depth_image0 == 0] = max_depth
-            #z_offset = 480 # zigzag - 64
-            z_offset = 0 # zigzag2 - 108
+            # z_offset = 480 # zigzag - 64
+            z_offset = 0  # zigzag2 - 108
             field = \
                 gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, 200,
                                                             field_size=field_size,
                                                             array_offset=np.array([-256, -256, z_offset]),
                                                             depth_interpolation_method=depth_interpolation_method,
                                                             voxel_size=voxel_size)
+            print(field[103:119, 210:226].shape)
 
         viz.visualize_field(field, view_scaling_factor=2)
 

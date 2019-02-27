@@ -21,6 +21,18 @@ import math_utils.elliptical_gaussians as eg
 import level_set_fusion_optimization as cpp_extension
 
 
+def find_sampling_bounds_helper(bounds, depth_image):
+    (start_x, start_y) = np.floor(bounds[:, 0]).astype(np.int32)
+    (end_x, end_y) = (np.ceil(bounds[:, 1]) + 1).astype(np.int32)
+
+    if end_y <= 0 or start_y > depth_image.shape[0] or end_x <= 0 or start_x > depth_image.shape[1]:
+        return None
+    start_y = max(0, start_y)
+    end_y = min(depth_image.shape[0], end_y)
+    start_x = max(0, start_x)
+    end_x = min(depth_image.shape[1], end_x)
+    return start_x, end_x, start_y, end_y
+
 def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                                                 camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
                                                 field_size=128, default_value=1, voxel_size=0.004,
@@ -69,7 +81,7 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
 
     image_space_scaling_matrix = camera.intrinsics.intrinsic_matrix[0:2, 0:2]
 
-    squared_radius_threshold = 4.0
+    squared_radius_threshold = 4.0 * voxel_size
 
     for x_field in range(field_size):
         for y_field in range(field_size):
@@ -100,7 +112,6 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                 remapped_covariance = projection_jacobian.dot(covariance_camera_space) \
                     .dot(projection_jacobian.T)
 
-                # TODO: inv troubles?
                 final_covariance = image_space_scaling_matrix.dot(remapped_covariance[0:2, 0:2]).dot(
                     image_space_scaling_matrix.T) + np.eye(2)
                 Q = np.linalg.inv(final_covariance)
@@ -110,15 +121,12 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                 voxel_image = voxel_image.reshape(-1, 1)
 
                 bounds = gaussian.ellipse.get_bounds() + voxel_image
-                (start_x, start_y) = (bounds[:, 0] + 0.5).astype(np.int32)
-                (end_x, end_y) = (bounds[:, 1] + 1.5).astype(np.int32)
 
-                if end_y <= 0 or start_y > depth_image.shape[0] or end_x <= 0 or start_x > depth_image.shape[1]:
+                result = find_sampling_bounds_helper(bounds, depth_image)
+                if result is None:
                     continue
-                start_y = max(0, start_y)
-                end_y = min(depth_image.shape[0], end_y)
-                start_x = max(0, start_x)
-                end_x = min(depth_image.shape[1], end_x)
+                else:
+                    (start_x, end_x, start_y, end_y) = result
 
                 weights_sum = 0.0
                 depth_sum = 0
@@ -209,7 +217,8 @@ def generate_3d_tsdf_ewa_cpp_viz(depth_image, camera, field,
                                                                          camera_extrinsic_matrix.astype(np.float32),
                                                                          array_offset,
                                                                          voxel_size,
-                                                                         scale)
+                                                                         scale,
+                                                                         0.1)
 
 
 def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coordinate,
@@ -236,7 +245,7 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
     :type image_y_coordinate: int
     :return:
     """
-    # TODO: use back_cutoff_voxels for additional limit on
+    # TODO: use back_cutoff_voxels for additional limit
 
     if default_value == 1:
         field = np.ones((field_size, field_size), dtype=np.float32)
@@ -259,7 +268,7 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
         .dot(camera_rotation_matrix.T)
     image_space_scaling_matrix = camera_intrinsic_matrix[0:2, 0:2].copy()
 
-    squared_radius_threshold = 4.0
+    squared_radius_threshold = 4.0 * voxel_size
 
     for y_field in range(field_size):
         for x_field in range(field_size):
@@ -285,7 +294,6 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
             remapped_covariance = projection_jacobian.dot(covariance_camera_space) \
                 .dot(projection_jacobian.T)
 
-            # TODO: why is inverse not working? inverse covariance image space
             final_covariance = image_space_scaling_matrix.dot(remapped_covariance[0:2, 0:2]).dot(
                 image_space_scaling_matrix.T) + np.eye(2)
             Q = np.linalg.inv(final_covariance)
@@ -296,15 +304,12 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
             voxel_image = voxel_image.reshape(-1, 1)
 
             bounds = gaussian.ellipse.get_bounds() + voxel_image
-            (start_x, start_y) = (bounds[:, 0] + 0.5).astype(np.int32)
-            (end_x, end_y) = (bounds[:, 1] + 1.5).astype(np.int32)
 
-            if end_y <= 0 or start_y > depth_image.shape[0] or end_x <= 0 or start_x > depth_image.shape[1]:
+            result = find_sampling_bounds_helper(bounds, depth_image)
+            if result is None:
                 continue
-            start_y = max(0, start_y)
-            end_y = min(depth_image.shape[0], end_y)
-            start_x = max(0, start_x)
-            end_x = min(depth_image.shape[1], end_x)
+            else:
+                (start_x, end_x, start_y, end_y) = result
 
             weights_sum = 0.0
             depth_sum = 0.0

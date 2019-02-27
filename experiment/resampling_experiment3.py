@@ -23,6 +23,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
+
 # local
 import tsdf.ewa as ewa
 import tsdf.generation as gen
@@ -38,19 +39,13 @@ EXIT_CODE_FAILURE = 1
 
 
 def main():
-    # array_offset = np.array([-256, -256, 480], dtype=np.int32) # zigzag 64
-    array_offset = np.array([-256, -256, 0], dtype=np.int32)  # zigzag2 108
-    field_size = np.array([512, 512, 512], dtype=np.int32)
+    array_offset = np.array([-46, -8, 105], dtype=np.int32)  # zigzag2 108
+    field_size = np.array([16, 1, 16], dtype=np.int32)
     voxel_size = 0.004
     rig = DepthCameraRig.from_infinitam_format(
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt")
     depth_camera = rig.depth_camera
-    depth_interpolation_method = gen.DepthInterpolationMethod.EWA
-    # depth_image0 = cv2.imread(
-    #     "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00064.png",
-    #     cv2.IMREAD_UNCHANGED)
     depth_image0 = cv2.imread(
-        # "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag2/input/depth_00000.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag2/input/depth_00108.png",
         cv2.IMREAD_UNCHANGED)
     max_depth = np.iinfo(np.uint16).max
@@ -62,14 +57,8 @@ def main():
                                                             array_offset=array_offset,
                                                             voxel_size=voxel_size,
                                                             narrow_band_width_voxels=20)
-    viz_image = ewa.generate_3d_tsdf_ewa_cpp_viz(depth_image=depth_image0,
-                                                 camera=depth_camera,
-                                                 field=field,
-                                                 voxel_size=voxel_size,
-                                                 array_offset=array_offset)
-    # print(viz_image.shape, viz_image.dtype)
-    # resized = cv2.resize(viz_image, (2400, 3200))
-    cv2.imwrite("../output/ewa_sampling_viz.png", viz_image)
+    print(field.shape)
+    print(repr(field.reshape(16,16)))
 
     return EXIT_CODE_SUCCESS
 
