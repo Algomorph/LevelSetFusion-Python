@@ -31,7 +31,7 @@ class ImplicitEllipse:
             self.A = Q[0, 0]
             self.B = Q[0, 1] * 2
             self.C = Q[1, 1]
-            if Q[0, 1] != Q[1, 0]:
+            if abs(Q[0, 1] - Q[1, 0]) > 1e-6:
                 raise ValueError("Conic matrix should be symmetric! Given: {:s}".format(str(Q)))
         else:
             self.A = A

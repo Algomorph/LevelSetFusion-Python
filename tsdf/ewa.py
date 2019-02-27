@@ -33,9 +33,11 @@ def find_sampling_bounds_helper(bounds, depth_image):
     end_x = min(depth_image.shape[1], end_x)
     return start_x, end_x, start_y, end_y
 
+
 def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                                                 camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
-                                                field_size=128, default_value=1, voxel_size=0.004,
+                                                field_shape=np.array([128, 128, 128]), default_value=1,
+                                                voxel_size=0.004,
                                                 array_offset=np.array([-64, -64, 64]),
                                                 narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
                                                 visualize_samples=True):
@@ -48,7 +50,7 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
     [ 0 | 1]
     :param voxel_size: voxel size, in meters
     :param default_value: default initial TSDF value
-    :param field_size:
+    :param field_shape:
     :param depth_image:
     :type depth_image: np.ndarray
     :param camera:
@@ -61,11 +63,11 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
     # "if signed_distance < -narrow_band_half_width" (maybe?)
 
     if default_value == 1:
-        field = np.ones((field_size, field_size, field_size), dtype=np.float32)
+        field = np.ones(field_shape, dtype=np.float32)
     elif default_value == 0:
-        field = np.zeros((field_size, field_size, field_size), dtype=np.float32)
+        field = np.zeros(field_shape, dtype=np.float32)
     else:
-        field = np.ndarray((field_size, field_size, field_size), dtype=np.float32)
+        field = np.ndarray(field_shape, dtype=np.float32)
         field.fill(default_value)
 
     camera_intrinsic_matrix = camera.intrinsics.intrinsic_matrix
@@ -83,9 +85,9 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
 
     squared_radius_threshold = 4.0 * voxel_size
 
-    for x_field in range(field_size):
-        for y_field in range(field_size):
-            for z_field in range(field_size):
+    for x_field in range(field_shape[2]):
+        for y_field in range(field_shape[1]):
+            for z_field in range(field_shape[0]):
 
                 x_voxel = (x_field + array_offset[0]) * voxel_size
                 y_voxel = (y_field + array_offset[1]) * voxel_size
@@ -154,11 +156,11 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                 signed_distance = final_depth - voxel_camera[2]
 
                 if signed_distance < -narrow_band_half_width:
-                    field[x_field, y_field, z_field] = -1.0
+                    field[z_field, y_field, x_field] = -1.0
                 elif signed_distance > narrow_band_half_width:
-                    field[x_field, y_field, z_field] = 1.0
+                    field[z_field, y_field, x_field] = 1.0
                 else:
-                    field[x_field, y_field, z_field] = signed_distance / narrow_band_half_width
+                    field[z_field, y_field, x_field] = signed_distance / narrow_band_half_width
 
     return field
 
@@ -197,8 +199,8 @@ def generate_3d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera,
                                                                      camera.intrinsics.intrinsic_matrix.astype(
                                                                          np.float32),
                                                                      camera_extrinsic_matrix.astype(np.float32),
-                                                                     array_offset,
-                                                                     field_shape,
+                                                                     array_offset.astype(np.int32),
+                                                                     field_shape.astype(np.int32),
                                                                      voxel_size,
                                                                      narrow_band_width_voxels)
 

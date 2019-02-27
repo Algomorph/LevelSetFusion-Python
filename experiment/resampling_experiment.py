@@ -98,7 +98,8 @@ def main():
                                                             array_offset=np.array([-256, -256, z_offset]),
                                                             depth_interpolation_method=depth_interpolation_method,
                                                             voxel_size=voxel_size)
-            print(field[103:119, 210:226].shape)
+            print(repr(field[103:119, 210:226]))
+            # print(repr(field[102:120, 209:226]))
 
         viz.visualize_field(field, view_scaling_factor=2)
 

@@ -57,8 +57,9 @@ def main():
                                                             array_offset=array_offset,
                                                             voxel_size=voxel_size,
                                                             narrow_band_width_voxels=20)
-    print(field.shape)
-    print(repr(field.reshape(16,16)))
+    print(repr(field))
+    #chunk = np.moveaxis(field, (0,1,2), (2,1,0))
+    #print(repr(chunk.reshape(16,16)))
 
     return EXIT_CODE_SUCCESS
 

@@ -24,6 +24,17 @@ import cv2
 
 
 class TsdfTest(TestCase):
+
+    @staticmethod
+    def image_load_helper(filename):
+        path = os.path.join("tests/test_data", filename)
+        if not os.path.exists(path):
+            path = os.path.join("test_data", filename)
+        depth_image = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        max_depth = np.iinfo(np.uint16).max
+        depth_image[depth_image == 0] = max_depth
+        return depth_image
+
     def test_2D_ewa_tsdf_generation1(self):
         depth_image = np.zeros((3, 640), dtype=np.uint16)
         depth_image[:] = np.iinfo(np.uint16).max
@@ -44,23 +55,14 @@ class TsdfTest(TestCase):
                                                             field_size=16,
                                                             array_offset=np.array([94, -256, 804]),
                                                             voxel_size=0.004)
-        self.assertTrue(np.allclose(field, data.out_sdf_field1, atol=2e-5))
+        self.assertTrue(np.allclose(field, data.out_sdf_field, atol=2e-5))
 
         field2 = ewa.generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, 1,
                                                                      field_size=16,
                                                                      array_offset=np.array([94, -256, 804],
                                                                                            dtype=np.int32),
                                                                      voxel_size=0.004)
-        self.assertTrue(np.allclose(field2, data.out_sdf_field1, atol=1e-6))
-
-    def image_load_helper(self, filename):
-        path = os.path.join("tests/test_data", filename)
-        if not os.path.exists(path):
-            path = os.path.join("test_data", filename)
-        depth_image = cv2.imread(path, cv2.IMREAD_UNCHANGED)
-        max_depth = np.iinfo(np.uint16).max
-        depth_image[depth_image == 0] = max_depth
-        return depth_image
+        self.assertTrue(np.allclose(field2, data.out_sdf_field, atol=1e-6))
 
     def test_2d_ewa_tsdf_generation2(self):
         filename = "zigzag2_depth_00108.png"
@@ -76,7 +78,7 @@ class TsdfTest(TestCase):
                                                                      array_offset=np.array([-256, -256, 0]),
                                                                      voxel_size=0.004)
         chunk = field2[103:119, 210:226].copy()
-        self.assertTrue(np.allclose(chunk, data.out_sdf_chunk1))
+        self.assertTrue(np.allclose(chunk, data.out_sdf_chunk))
 
         field = \
             ewa.generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, 200,
@@ -84,5 +86,32 @@ class TsdfTest(TestCase):
                                                             array_offset=np.array([-256, -256, 0]),
                                                             voxel_size=0.004)
         chunk = field[103:119, 210:226].copy()
-        self.assertTrue(np.allclose(chunk, data.out_sdf_chunk1))
+        self.assertTrue(np.allclose(chunk, data.out_sdf_chunk))
 
+    def test_3d_ewa_tsdf_generation(self):
+        filename = "zigzag2_depth_00108.png"
+        depth_image = self.image_load_helper(filename)
+        array_offset = np.array([-46, -8, 105], dtype=np.int32)
+        field_shape = np.array([16, 1, 16], dtype=np.int32)
+        camera_intrisic_matrix = np.array([[700., 0., 320.],
+                                           [0., 700., 240.],
+                                           [0., 0., 1.]])
+        camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 480), intrinsic_matrix=camera_intrisic_matrix),
+                                 depth_unit_ratio=0.001)
+
+        field2 = ewa.generate_3d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera,
+                                                                     field_shape=field_shape,
+                                                                     array_offset=array_offset,
+                                                                     voxel_size=0.004)
+        self.assertTrue(np.allclose(field2, data.sdf_3d_slice))
+
+        field = \
+            ewa.generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
+                                                            field_shape=field_shape,
+                                                            array_offset=array_offset,
+                                                            voxel_size=0.004)
+        print(field.reshape(16,16))
+        print("--------------------")
+        print(field2.reshape(16, 16))
+
+        self.assertTrue(np.allclose(field, data.sdf_3d_slice))
