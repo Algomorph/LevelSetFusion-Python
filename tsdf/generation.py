@@ -143,7 +143,9 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
                                                              camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
                                                              field_size=128, default_value=1, voxel_size=0.004,
                                                              array_offset=np.array([-64, -64, 64]),
-                                                             narrow_band_width_voxels=20, back_cutoff_voxels=np.inf):
+                                                             narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
+                                                             apply_transformation=False,
+                                                             twist=np.zeros((6, 1), dtype=np.float32)):
     """
     Assumes camera is at array_offset voxels relative to sdf grid
     :param narrow_band_width_voxels:
@@ -160,6 +162,10 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
     :type camera: calib.camera.DepthCamera
     :param image_y_coordinate:
     :type image_y_coordinate: int
+    :param apply_transformation:
+    :type apply_transformation: boolean
+    :param twist: transformation vector
+    :type twist: np.array (6, 1)
     :return:
     """
     # TODO: use back_cutoff_voxels for additional limit on
@@ -186,6 +192,14 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
             z_voxel = (y_field + array_offset[2]) * voxel_size  # acts as "Z" coordinate
 
             point = np.array([[x_voxel, y_voxel, z_voxel, w_voxel]], dtype=np.float32).T
+
+            if apply_transformation:
+                twist_matrix = cv2.Rodrigues(twist[3:6])[0]
+                twist_matrix = np.concatenate((twist_matrix, np.zeros((1, 3))), axis=0)
+                twist_matrix = np.concatenate((twist_matrix,
+                                              np.array([twist[0], twist[1], twist[2], [1]])), axis=1)
+                point = np.dot(twist_matrix, point)
+
             point_in_camera_space = camera_extrinsic_matrix.dot(point).flatten()
 
             if point_in_camera_space[2] <= 0:
@@ -195,10 +209,17 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
                 projection_matrix[0, 0] * point_in_camera_space[0] / point_in_camera_space[2]
                 + projection_matrix[0, 2] + 0.5)
 
-            if image_x_coordinate < 0 or image_x_coordinate >= depth_image.shape[1]:
-                continue
+            if depth_image.ndim > 1:
+                if image_x_coordinate < 0 or image_x_coordinate >= depth_image.shape[1]:
+                    continue
 
-            depth = depth_image[image_y_coordinate, image_x_coordinate] * depth_ratio
+                depth = depth_image[image_y_coordinate, image_x_coordinate] * depth_ratio
+
+            else:
+                if image_x_coordinate < 0 or image_x_coordinate >= depth_image.shape[0]:
+                    continue
+
+                depth = depth_image[image_x_coordinate] * depth_ratio
 
             if depth <= 0.0:
                 continue
@@ -229,10 +250,12 @@ def generate_2d_tsdf_field_from_depth_image(depth_image, camera, image_y_coordin
                                             field_size=128, default_value=1, voxel_size=0.004,
                                             array_offset=np.array([-64, -64, 64]),
                                             narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                            depth_interpolation_method=DepthInterpolationMethod.NONE):
+                                            depth_interpolation_method=DepthInterpolationMethod.NONE,
+                                            apply_transformation=False, twist=np.zeros((6, 1))):
+    # TODO: transformation of voxel can only apply with none interpolation method
     return tsdf_from_depth_image_generation_functions[depth_interpolation_method](
         depth_image, camera, image_y_coordinate, camera_extrinsic_matrix, field_size, default_value,
-        voxel_size, array_offset, narrow_band_width_voxels, back_cutoff_voxels)
+        voxel_size, array_offset, narrow_band_width_voxels, back_cutoff_voxels, apply_transformation, twist)
 
 
 def add_surface_to_2d_tsdf_field_sample(field, consecutive_surface_points, narrow_band_width_voxels=20,
