@@ -13,13 +13,25 @@ addons:
         - g++-7
         - libpython3-dev
         - python3-numpy
+        - python3-numpy-dbg
         - python3-tk
+        #- libeigen3-dev
+        - libboost-python-dev
+        - libboost-test-dev
 
+before_install:
+  - wget http://bitbucket.org/eigen/eigen/get/3.3.4.tar.bz2
+  - mv 3.3.4.tar.bz2 eigen3.3.4.tar.bz2
+  - tar -xvf eigen3.3.4.tar.bz2
+  - rm eigen3.3.4.tar.bz2
+  - mv eigen-eigen-* eigen
+  - export Eigen3_ROOT=`pwd`/eigen
 # have to use pre-installed python 3.5, specifying 3.5 installs a different version that has no headers and makes the
 # cpp module build fail
 #python:
 #  - "3.5"
 before_script:
+  # set up eigen 3.4
   - wget https://bootstrap.pypa.io/get-pip.py
   - python3 --version
   - sudo -H python3 get-pip.py
@@ -32,7 +44,7 @@ before_script:
   - 'echo "backend : agg" > ~/.config/matplotlib/matplotlibrc'
 
 script:
-   # build C++ module
+  # build C++ module
   - export CXX=g++-7
   - ${CXX} --version
   - cmake --version
@@ -40,8 +52,12 @@ script:
   - cd cpp
   - mkdir build
   - cd build
-  - cmake ..
+  - cmake -DHUNTER_ENABLED=OFF -DEIGEN3_INCLUDE_DIR=${Eigen3_ROOT} ..
   - make
   - sudo make install
   - cd ../..
+  # run python tests
   - python3 -m pytest tests
+
+install:
+  - echo "placeholder install script (to disable default)"
