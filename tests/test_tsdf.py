@@ -73,20 +73,26 @@ class TsdfTest(TestCase):
         camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 480), intrinsic_matrix=camera_intrisic_matrix),
                                  depth_unit_ratio=0.001)
 
+        offset_full_image = np.array([-256, -256, 0])
         field2 = ewa.generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, 200,
                                                                      field_size=512,
-                                                                     array_offset=np.array([-256, -256, 0]),
+                                                                     array_offset=offset_full_image,
                                                                      voxel_size=0.004)
-        chunk = field2[103:119, 210:226].copy()
+        chunk_x_start = 210
+        chunk_y_start = 103
+        chunk_size = 16
+        chunk = field2[chunk_y_start:chunk_y_start + chunk_size, chunk_x_start:chunk_x_start + chunk_size].copy()
         self.assertTrue(np.allclose(chunk, data.out_sdf_chunk))
+
+        offset_chunk_from_image = np.array([chunk_x_start, 0, chunk_y_start])
+        offset_chunk = offset_full_image + offset_chunk_from_image
 
         field = \
             ewa.generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, 200,
-                                                            field_size=512,
-                                                            array_offset=np.array([-256, -256, 0]),
+                                                            field_size=chunk_size,
+                                                            array_offset=offset_chunk,
                                                             voxel_size=0.004)
-        chunk = field[103:119, 210:226].copy()
-        self.assertTrue(np.allclose(chunk, data.out_sdf_chunk))
+        self.assertTrue(np.allclose(field, data.out_sdf_chunk, atol=2e-5))
 
     def test_3d_ewa_tsdf_generation(self):
         filename = "zigzag2_depth_00108.png"
@@ -110,8 +116,5 @@ class TsdfTest(TestCase):
                                                             field_shape=field_shape,
                                                             array_offset=array_offset,
                                                             voxel_size=0.004)
-        print(field.reshape(16,16))
-        print("--------------------")
-        print(field2.reshape(16, 16))
 
-        self.assertTrue(np.allclose(field, data.sdf_3d_slice))
+        self.assertTrue(np.allclose(field, data.sdf_3d_slice, atol=1.5e-5))

@@ -14,6 +14,9 @@
 #  limitations under the License.
 #  ================================================================
 
+# EWA = Elliptical Weighted Average, this module provides routines for EWA sampling of the depth image to generate
+# a TSDF
+
 import numpy as np
 import math_utils.elliptical_gaussians as eg
 
@@ -44,20 +47,18 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
     """
     Assumes camera is at array_offset voxels relative to sdf grid
     :param narrow_band_width_voxels: span (in voxels) where signed distance is between -1 and 1
-    :param array_offset:
+    :param array_offset: offset of the TSDF grid from the world origin
     :param camera_extrinsic_matrix: matrix representing transformation of the camera (incl. rotation and translation)
     [ R | T]
     [ 0 | 1]
     :param voxel_size: voxel size, in meters
     :param default_value: default initial TSDF value
-    :param field_shape:
-    :param depth_image:
+    :param field_shape: shape of the TSDF grid to generate
     :type depth_image: np.ndarray
-    :param camera:
+    :param depth_image: depth image to use
     :type camera: calib.camera.DepthCamera
-    :param image_y_coordinate:
-    :type image_y_coordinate: int
-    :return:
+    :param camera: camera used to generate the depth image
+    :return: resulting 3D TSDF
     """
     # TODO: use back_cutoff_voxels for additional limit on
     # "if signed_distance < -narrow_band_half_width" (maybe?)
@@ -156,11 +157,11 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                 signed_distance = final_depth - voxel_camera[2]
 
                 if signed_distance < -narrow_band_half_width:
-                    field[z_field, y_field, x_field] = -1.0
+                    field[x_field, y_field, z_field] = -1.0
                 elif signed_distance > narrow_band_half_width:
-                    field[z_field, y_field, x_field] = 1.0
+                    field[x_field, y_field, z_field] = 1.0
                 else:
-                    field[z_field, y_field, x_field] = signed_distance / narrow_band_half_width
+                    field[x_field, y_field, z_field] = signed_distance / narrow_band_half_width
 
     return field
 
@@ -245,7 +246,7 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
     :type camera: calib.camera.DepthCamera
     :param image_y_coordinate:
     :type image_y_coordinate: int
-    :return:
+    :return: resulting 2D TSDF
     """
     # TODO: use back_cutoff_voxels for additional limit
 
