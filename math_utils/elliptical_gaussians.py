@@ -50,13 +50,11 @@ class ImplicitEllipse:
             # The following is equivalent:
             # max_x = math.sqrt(self.F / ((4 * self.A ** 2 * self.C) / B_squared - self.A))
             # max_y = math.sqrt(self.F / (self.C - B_squared / (4 * self.A)))
-            max_x = math.sqrt(self.F / ((4 * self.A * self.C ** 2) / B_squared - self.C))
+            # max_x = math.sqrt(self.F / ((4 * self.A * self.C ** 2) / B_squared - self.C))
+            max_x = math.sqrt(self.F / (self.C - B_squared / (4 * self.A)))
             max_y = math.sqrt(self.F / (self.A - B_squared / (4 * self.C)))
 
-        min_x = -max_x
-        min_y = -max_y
-        return np.array([[min_x, max_x],
-                         [min_y, max_y]])
+        return np.array([max_x, max_y])
 
     def visualize(self, scale=100, margin=5, draw_axes=True):
         image_bounds = (self.get_bounds() * scale).astype(np.int32)

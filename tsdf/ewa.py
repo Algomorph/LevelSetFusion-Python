@@ -18,15 +18,18 @@
 # a TSDF
 
 import numpy as np
+import math
 import math_utils.elliptical_gaussians as eg
 
 # C++ extension
 import level_set_fusion_optimization as cpp_extension
 
 
-def find_sampling_bounds_helper(bounds, depth_image):
-    (start_x, start_y) = np.floor(bounds[:, 0]).astype(np.int32)
-    (end_x, end_y) = (np.ceil(bounds[:, 1]) + 1).astype(np.int32)
+def find_sampling_bounds_helper(bounds_max, depth_image, voxel_image):
+    start_x = int(voxel_image[0] - bounds_max[0])
+    end_x = int(voxel_image[0] + bounds_max[0] + 1)
+    start_y = int(voxel_image[1] - bounds_max[1])
+    end_y = int(voxel_image[1] + bounds_max[1] + 1)
 
     if end_y <= 0 or start_y > depth_image.shape[0] or end_x <= 0 or start_x > depth_image.shape[1]:
         return None
@@ -123,9 +126,9 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                 voxel_image = (camera_intrinsic_matrix.dot(voxel_camera) / voxel_camera[2])[:2]
                 voxel_image = voxel_image.reshape(-1, 1)
 
-                bounds = gaussian.ellipse.get_bounds() + voxel_image
+                bounds_max = gaussian.ellipse.get_bounds()
 
-                result = find_sampling_bounds_helper(bounds, depth_image)
+                result = find_sampling_bounds_helper(bounds_max, depth_image, voxel_image)
                 if result is None:
                     continue
                 else:
@@ -306,9 +309,9 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
             voxel_image[1] = image_y_coordinate
             voxel_image = voxel_image.reshape(-1, 1)
 
-            bounds = gaussian.ellipse.get_bounds() + voxel_image
+            bounds_max = gaussian.ellipse.get_bounds()
 
-            result = find_sampling_bounds_helper(bounds, depth_image)
+            result = find_sampling_bounds_helper(bounds_max, depth_image, voxel_image)
             if result is None:
                 continue
             else:

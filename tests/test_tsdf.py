@@ -67,6 +67,7 @@ class TsdfTest(TestCase):
     def test_2d_ewa_tsdf_generation2(self):
         filename = "zigzag2_depth_00108.png"
         depth_image = self.image_load_helper(filename)
+        test_full_image = False
         camera_intrisic_matrix = np.array([[700., 0., 320.],
                                            [0., 700., 240.],
                                            [0., 0., 1.]])
@@ -74,18 +75,25 @@ class TsdfTest(TestCase):
                                  depth_unit_ratio=0.001)
 
         offset_full_image = np.array([-256, -256, 0])
-        field2 = ewa.generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, 200,
-                                                                     field_size=512,
-                                                                     array_offset=offset_full_image,
-                                                                     voxel_size=0.004)
         chunk_x_start = 210
         chunk_y_start = 103
         chunk_size = 16
-        chunk = field2[chunk_y_start:chunk_y_start + chunk_size, chunk_x_start:chunk_x_start + chunk_size].copy()
-        self.assertTrue(np.allclose(chunk, data.out_sdf_chunk))
-
         offset_chunk_from_image = np.array([chunk_x_start, 0, chunk_y_start])
         offset_chunk = offset_full_image + offset_chunk_from_image
+
+        if test_full_image:
+            field2 = ewa.generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, 200,
+                                                                         field_size=512,
+                                                                         array_offset=offset_full_image,
+                                                                         voxel_size=0.004)
+
+            chunk = field2[chunk_y_start:chunk_y_start + chunk_size, chunk_x_start:chunk_x_start + chunk_size].copy()
+        else:
+            chunk = ewa.generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, 200,
+                                                                        field_size=chunk_size,
+                                                                        array_offset=offset_chunk,
+                                                                        voxel_size=0.004)
+        self.assertTrue(np.allclose(chunk, data.out_sdf_chunk))
 
         field = \
             ewa.generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, 200,
