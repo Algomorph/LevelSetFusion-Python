@@ -236,7 +236,7 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
     return field
 
 
-tsdf_from_depth_image_generation_functions = {
+tsdf_from_depth_image_generation_functions_2d = {
     DepthInterpolationMethod.NONE: generate_2d_tsdf_field_from_depth_image_no_interpolation,
     DepthInterpolationMethod.BILINEAR_IMAGE_SPACE: generate_2d_tsdf_field_from_depth_image_bilinear_image_space,
     DepthInterpolationMethod.BILINEAR_TSDF_SPACE: generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space,
@@ -252,8 +252,8 @@ def generate_2d_tsdf_field_from_depth_image(depth_image, camera, image_y_coordin
                                             narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
                                             depth_interpolation_method=DepthInterpolationMethod.NONE,
                                             apply_transformation=False, twist=np.zeros((6, 1))):
-    # TODO: transformation of voxel can only apply with none interpolation method
-    return tsdf_from_depth_image_generation_functions[depth_interpolation_method](
+    # TODO: voxel grid twist can only be applied with NONE as the interpolation method
+    return tsdf_from_depth_image_generation_functions_2d[depth_interpolation_method](
         depth_image, camera, image_y_coordinate, camera_extrinsic_matrix, field_size, default_value,
         voxel_size, array_offset, narrow_band_width_voxels, back_cutoff_voxels, apply_transformation, twist)
 

@@ -14,46 +14,64 @@
 #  limitations under the License.
 #  ================================================================
 
+# EWA = Elliptical Weighted Average, this module provides routines for EWA sampling of the depth image to generate
+# a TSDF
+
 import numpy as np
+import math
 import math_utils.elliptical_gaussians as eg
 
 # C++ extension
 import level_set_fusion_optimization as cpp_extension
 
 
+def find_sampling_bounds_helper(bounds_max, depth_image, voxel_image):
+    start_x = int(voxel_image[0] - bounds_max[0])
+    end_x = int(voxel_image[0] + bounds_max[0] + 1)
+    start_y = int(voxel_image[1] - bounds_max[1])
+    end_y = int(voxel_image[1] + bounds_max[1] + 1)
+
+    if end_y <= 0 or start_y > depth_image.shape[0] or end_x <= 0 or start_x > depth_image.shape[1]:
+        return None
+    start_y = max(0, start_y)
+    end_y = min(depth_image.shape[0], end_y)
+    start_x = max(0, start_x)
+    end_x = min(depth_image.shape[1], end_x)
+    return start_x, end_x, start_y, end_y
+
+
 def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                                                 camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
-                                                field_size=128, default_value=1, voxel_size=0.004,
+                                                field_shape=np.array([128, 128, 128]), default_value=1,
+                                                voxel_size=0.004,
                                                 array_offset=np.array([-64, -64, 64]),
                                                 narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
                                                 visualize_samples=True):
     """
     Assumes camera is at array_offset voxels relative to sdf grid
     :param narrow_band_width_voxels: span (in voxels) where signed distance is between -1 and 1
-    :param array_offset:
+    :param array_offset: offset of the TSDF grid from the world origin
     :param camera_extrinsic_matrix: matrix representing transformation of the camera (incl. rotation and translation)
     [ R | T]
     [ 0 | 1]
     :param voxel_size: voxel size, in meters
     :param default_value: default initial TSDF value
-    :param field_size:
-    :param depth_image:
+    :param field_shape: shape of the TSDF grid to generate
     :type depth_image: np.ndarray
-    :param camera:
+    :param depth_image: depth image to use
     :type camera: calib.camera.DepthCamera
-    :param image_y_coordinate:
-    :type image_y_coordinate: int
-    :return:
+    :param camera: camera used to generate the depth image
+    :return: resulting 3D TSDF
     """
     # TODO: use back_cutoff_voxels for additional limit on
     # "if signed_distance < -narrow_band_half_width" (maybe?)
 
     if default_value == 1:
-        field = np.ones((field_size, field_size, field_size), dtype=np.float32)
+        field = np.ones(field_shape, dtype=np.float32)
     elif default_value == 0:
-        field = np.zeros((field_size, field_size, field_size), dtype=np.float32)
+        field = np.zeros(field_shape, dtype=np.float32)
     else:
-        field = np.ndarray((field_size, field_size, field_size), dtype=np.float32)
+        field = np.ndarray(field_shape, dtype=np.float32)
         field.fill(default_value)
 
     camera_intrinsic_matrix = camera.intrinsics.intrinsic_matrix
@@ -67,11 +85,13 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
     covariance_camera_space = camera_rotation_matrix.dot(covariance_voxel_sphere_world_space) \
         .dot(camera_rotation_matrix.T)
 
-    squared_radius_threshold = 4.0
+    image_space_scaling_matrix = camera.intrinsics.intrinsic_matrix[0:2, 0:2]
 
-    for z_field in range(field_size):
-        for y_field in range(field_size):
-            for x_field in range(field_size):
+    squared_radius_threshold = 4.0 * voxel_size
+
+    for x_field in range(field_shape[2]):
+        for y_field in range(field_shape[1]):
+            for z_field in range(field_shape[0]):
 
                 x_voxel = (x_field + array_offset[0]) * voxel_size
                 y_voxel = (y_field + array_offset[1]) * voxel_size
@@ -87,33 +107,32 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                 ray_distance = np.linalg.norm(voxel_camera)
                 # squared distance along optical axis from camera to voxel
                 z_cam_squared = voxel_camera[2] ** 2
+                inv_z_cam = 1 / voxel_camera[2]
 
                 projection_jacobian = \
-                    np.array([[1 / voxel_camera[2], 0, -voxel_camera[0] / z_cam_squared],
-                              [0, 1 / voxel_camera[2], -voxel_camera[1] / z_cam_squared],
+                    np.array([[inv_z_cam, 0, -voxel_camera[0] / z_cam_squared],
+                              [0, inv_z_cam, -voxel_camera[1] / z_cam_squared],
                               [voxel_camera[0] / ray_distance, voxel_camera[1] / ray_distance,
                                voxel_camera[2] / ray_distance]])
 
                 remapped_covariance = projection_jacobian.dot(covariance_camera_space) \
                     .dot(projection_jacobian.T)
 
-                # Q = np.linalg.inv(remapped_covariance[0:3, 0:3]) + np.eye(2)
-                Q = remapped_covariance[0:3, 0:3] + np.eye(2)
+                final_covariance = image_space_scaling_matrix.dot(remapped_covariance[0:2, 0:2]).dot(
+                    image_space_scaling_matrix.T) + np.eye(2)
+                Q = np.linalg.inv(final_covariance)
                 gaussian = eg.EllipticalGaussian(eg.ImplicitEllipse(Q=Q, F=squared_radius_threshold))
 
                 voxel_image = (camera_intrinsic_matrix.dot(voxel_camera) / voxel_camera[2])[:2]
                 voxel_image = voxel_image.reshape(-1, 1)
 
-                bounds = gaussian.ellipse.get_bounds() + voxel_image
-                (start_x, start_y) = (bounds[:, 0] + 0.5).astype(np.int32)
-                (end_x, end_y) = (bounds[:, 1] + 1.5).astype(np.int32)
+                bounds_max = gaussian.ellipse.get_bounds()
 
-                if end_y <= 0 or start_y > depth_image.shape[0] or end_x <= 0 or start_x > depth_image.shape[1]:
+                result = find_sampling_bounds_helper(bounds_max, depth_image, voxel_image)
+                if result is None:
                     continue
-                start_y = max(0, start_y)
-                end_y = min(depth_image.shape[0], end_y)
-                start_x = max(0, start_x)
-                end_x = min(depth_image.shape[1], end_x)
+                else:
+                    (start_x, end_x, start_y, end_y) = result
 
                 weights_sum = 0.0
                 depth_sum = 0
@@ -134,18 +153,18 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                         depth_sum += weight * surface_depth
                         weights_sum += weight
 
-                final_depth = depth_sum / weights_sum
                 if depth_sum <= 0.0:
                     continue
+                final_depth = depth_sum / weights_sum
 
                 signed_distance = final_depth - voxel_camera[2]
 
                 if signed_distance < -narrow_band_half_width:
-                    field[y_field, x_field] = -1.0
+                    field[x_field, y_field, z_field] = -1.0
                 elif signed_distance > narrow_band_half_width:
-                    field[y_field, x_field] = 1.0
+                    field[x_field, y_field, z_field] = 1.0
                 else:
-                    field[y_field, x_field] = signed_distance / narrow_band_half_width
+                    field[x_field, y_field, z_field] = signed_distance / narrow_band_half_width
 
     return field
 
@@ -155,6 +174,8 @@ def generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, image_y
                                                     field_size=128, default_value=1, voxel_size=0.004,
                                                     array_offset=np.array([-64, -64, 64], dtype=np.int32),
                                                     narrow_band_width_voxels=20, back_cutoff_voxels=np.inf):
+    if type(array_offset) != np.ndarray:
+        array_offset = np.array(array_offset).astype(np.int32)
     return cpp_extension.generate_2d_tsdf_field_from_depth_image_ewa(image_y_coordinate,
                                                                      depth_image,
                                                                      camera.depth_unit_ratio,
@@ -165,6 +186,45 @@ def generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, image_y
                                                                      field_size,
                                                                      voxel_size,
                                                                      narrow_band_width_voxels)
+
+
+def generate_3d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera,
+                                                    camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                                    field_shape=np.array([128, 128, 128], dtype=np.int32),
+                                                    default_value=1, voxel_size=0.004,
+                                                    array_offset=np.array([-64, -64, 64], dtype=np.int32),
+                                                    narrow_band_width_voxels=20, back_cutoff_voxels=np.inf):
+    if type(field_shape) != np.ndarray:
+        field_shape = np.array(field_shape).astype(np.int32)
+    if type(array_offset) != np.ndarray:
+        array_offset = np.array(array_offset).astype(np.int32)
+    return cpp_extension.generate_3d_tsdf_field_from_depth_image_ewa(depth_image,
+                                                                     camera.depth_unit_ratio,
+                                                                     camera.intrinsics.intrinsic_matrix.astype(
+                                                                         np.float32),
+                                                                     camera_extrinsic_matrix.astype(np.float32),
+                                                                     array_offset.astype(np.int32),
+                                                                     field_shape.astype(np.int32),
+                                                                     voxel_size,
+                                                                     narrow_band_width_voxels)
+
+
+def generate_3d_tsdf_ewa_cpp_viz(depth_image, camera, field,
+                                 camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                 voxel_size=0.004,
+                                 array_offset=np.array([-64, -64, 64], dtype=np.int32), scale=20):
+    if type(array_offset) != np.ndarray:
+        array_offset = np.array(array_offset).astype(np.int32)
+    return cpp_extension.generate_3d_tsdf_field_from_depth_image_ewa_viz(depth_image,
+                                                                         camera.depth_unit_ratio,
+                                                                         field,
+                                                                         camera.intrinsics.intrinsic_matrix.astype(
+                                                                             np.float32),
+                                                                         camera_extrinsic_matrix.astype(np.float32),
+                                                                         array_offset,
+                                                                         voxel_size,
+                                                                         scale,
+                                                                         0.1)
 
 
 def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coordinate,
@@ -189,9 +249,9 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
     :type camera: calib.camera.DepthCamera
     :param image_y_coordinate:
     :type image_y_coordinate: int
-    :return:
+    :return: resulting 2D TSDF
     """
-    # TODO: use back_cutoff_voxels for additional limit on
+    # TODO: use back_cutoff_voxels for additional limit
 
     if default_value == 1:
         field = np.ones((field_size, field_size), dtype=np.float32)
@@ -212,8 +272,9 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
     covariance_voxel_sphere_world_space = np.eye(3) * voxel_size
     covariance_camera_space = camera_rotation_matrix.dot(covariance_voxel_sphere_world_space) \
         .dot(camera_rotation_matrix.T)
+    image_space_scaling_matrix = camera_intrinsic_matrix[0:2, 0:2].copy()
 
-    squared_radius_threshold = 4.0
+    squared_radius_threshold = 4.0 * voxel_size
 
     for y_field in range(field_size):
         for x_field in range(field_size):
@@ -239,25 +300,22 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
             remapped_covariance = projection_jacobian.dot(covariance_camera_space) \
                 .dot(projection_jacobian.T)
 
-            # TODO: why is inverse not working? inverse covariance image space
-            # Q = np.linalg.inv(remapped_covariance[0:2, 0:2]) + np.eye(2)
-            Q = remapped_covariance[0:2, 0:2] + np.eye(2)
+            final_covariance = image_space_scaling_matrix.dot(remapped_covariance[0:2, 0:2]).dot(
+                image_space_scaling_matrix.T) + np.eye(2)
+            Q = np.linalg.inv(final_covariance)
             gaussian = eg.EllipticalGaussian(eg.ImplicitEllipse(Q=Q, F=squared_radius_threshold))
 
             voxel_image = (camera_intrinsic_matrix.dot(voxel_camera) / voxel_camera[2])[:2]
             voxel_image[1] = image_y_coordinate
             voxel_image = voxel_image.reshape(-1, 1)
 
-            bounds = gaussian.ellipse.get_bounds() + voxel_image
-            (start_x, start_y) = (bounds[:, 0] + 0.5).astype(np.int32)
-            (end_x, end_y) = (bounds[:, 1] + 1.5).astype(np.int32)
+            bounds_max = gaussian.ellipse.get_bounds()
 
-            if end_y <= 0 or start_y > depth_image.shape[0] or end_x <= 0 or start_x > depth_image.shape[1]:
+            result = find_sampling_bounds_helper(bounds_max, depth_image, voxel_image)
+            if result is None:
                 continue
-            start_y = max(0, start_y)
-            end_y = min(depth_image.shape[0], end_y)
-            start_x = max(0, start_x)
-            end_x = min(depth_image.shape[1], end_x)
+            else:
+                (start_x, end_x, start_y, end_y) = result
 
             weights_sum = 0.0
             depth_sum = 0.0

@@ -31,7 +31,7 @@ class ImplicitEllipse:
             self.A = Q[0, 0]
             self.B = Q[0, 1] * 2
             self.C = Q[1, 1]
-            if Q[0, 1] != Q[1, 0]:
+            if abs(Q[0, 1] - Q[1, 0]) > 1e-6:
                 raise ValueError("Conic matrix should be symmetric! Given: {:s}".format(str(Q)))
         else:
             self.A = A
@@ -50,13 +50,11 @@ class ImplicitEllipse:
             # The following is equivalent:
             # max_x = math.sqrt(self.F / ((4 * self.A ** 2 * self.C) / B_squared - self.A))
             # max_y = math.sqrt(self.F / (self.C - B_squared / (4 * self.A)))
-            max_x = math.sqrt(self.F / (4 * self.A * self.C ** 2) / B_squared - self.C)
+            # max_x = math.sqrt(self.F / ((4 * self.A * self.C ** 2) / B_squared - self.C))
+            max_x = math.sqrt(self.F / (self.C - B_squared / (4 * self.A)))
             max_y = math.sqrt(self.F / (self.A - B_squared / (4 * self.C)))
 
-        min_x = -max_x
-        min_y = -max_y
-        return np.array([[min_x, max_x],
-                         [min_y, max_y]])
+        return np.array([max_x, max_y])
 
     def visualize(self, scale=100, margin=5, draw_axes=True):
         image_bounds = (self.get_bounds() * scale).astype(np.int32)
@@ -87,10 +85,10 @@ class ImplicitEllipse:
                 continue
             addand = math.sqrt(under_root)
 
-            denominator = (-b - addand)
-            y_0 = denominator / (2 * a) if abs(denominator) > 10e-6 else 0.0
-            denominator = (-b + addand)
-            y_1 = denominator / (2 * a) if abs(denominator) > 10e-6 else 0.0
+            numerator = (-b - addand)
+            y_0 = numerator / (2 * a)
+            numerator = (-b + addand)
+            y_1 = numerator / (2 * a)
             y_pixel_0 = int(y_0 * scale + center_offset[1] + 0.5)
             y_pixel_1 = int(y_1 * scale + center_offset[1] + 0.5)
             image[y_pixel_0, x_pixel] = (0, 0, 0)
@@ -108,10 +106,10 @@ class ImplicitEllipse:
                 continue
             addand = math.sqrt(under_root)
 
-            denominator = (-b - addand)
-            x_0 = denominator / (2 * a) if abs(denominator) > 10e-8 else 0.0
-            denominator = (-b + addand)
-            x_1 = denominator / (2 * a) if abs(denominator) > 10e-8 else 0.0
+            numerator = (-b - addand)
+            x_0 = numerator / (2 * a)
+            numerator = (-b + addand)
+            x_1 = numerator / (2 * a)
             x_pixel_0 = int(x_0 * scale + center_offset[1] + 0.5)
             x_pixel_1 = int(x_1 * scale + center_offset[1] + 0.5)
             image[y_pixel, x_pixel_0] = (0, 0, 0)
