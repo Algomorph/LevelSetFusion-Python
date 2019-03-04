@@ -46,21 +46,23 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
                                                 voxel_size=0.004,
                                                 array_offset=np.array([-64, -64, 64]),
                                                 narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                                visualize_samples=True):
+                                                gaussian_covariance_scale=1.0):
     """
     Assumes camera is at array_offset voxels relative to sdf grid
-    :param narrow_band_width_voxels: span (in voxels) where signed distance is between -1 and 1
-    :param array_offset: offset of the TSDF grid from the world origin
-    :param camera_extrinsic_matrix: matrix representing transformation of the camera (incl. rotation and translation)
-    [ R | T]
-    [ 0 | 1]
-    :param voxel_size: voxel size, in meters
-    :param default_value: default initial TSDF value
-    :param field_shape: shape of the TSDF grid to generate
     :type depth_image: np.ndarray
     :param depth_image: depth image to use
     :type camera: calib.camera.DepthCamera
     :param camera: camera used to generate the depth image
+    :param voxel_size: voxel size, in meters
+    :param array_offset: offset of the TSDF grid from the world origin
+    :param camera_extrinsic_matrix: matrix representing transformation of the camera (incl. rotation and translation)
+    [ R | T]
+    [ 0 | 1]
+    :param default_value: default initial TSDF value
+    :param field_shape: shape of the TSDF grid to generate
+    :param narrow_band_width_voxels: span (in voxels) where signed distance is between -1 and 1
+    :param back_cutoff_voxels: where to truncate the negative voxel values (currently not supported!)
+    :param gaussian_covariance_scale:
     :return: resulting 3D TSDF
     """
     # TODO: use back_cutoff_voxels for additional limit on
@@ -81,13 +83,13 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
     w_voxel = 1.0
 
     camera_rotation_matrix = camera_extrinsic_matrix[0:3, 0:3]
-    covariance_voxel_sphere_world_space = np.eye(3) * voxel_size
+    covariance_voxel_sphere_world_space = np.eye(3) * (gaussian_covariance_scale * voxel_size)
     covariance_camera_space = camera_rotation_matrix.dot(covariance_voxel_sphere_world_space) \
         .dot(camera_rotation_matrix.T)
 
     image_space_scaling_matrix = camera.intrinsics.intrinsic_matrix[0:2, 0:2]
 
-    squared_radius_threshold = 4.0 * voxel_size
+    squared_radius_threshold = 4.0 * gaussian_covariance_scale * voxel_size
 
     for x_field in range(field_shape[2]):
         for y_field in range(field_shape[1]):
@@ -173,7 +175,8 @@ def generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, image_y
                                                     camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
                                                     field_size=128, default_value=1, voxel_size=0.004,
                                                     array_offset=np.array([-64, -64, 64], dtype=np.int32),
-                                                    narrow_band_width_voxels=20, back_cutoff_voxels=np.inf):
+                                                    narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
+                                                    gaussian_covariance_scale=1.0):
     if type(array_offset) != np.ndarray:
         array_offset = np.array(array_offset).astype(np.int32)
     return cpp_extension.generate_2d_tsdf_field_from_depth_image_ewa(image_y_coordinate,
@@ -185,7 +188,8 @@ def generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, image_y
                                                                      array_offset.astype(np.int32),
                                                                      field_size,
                                                                      voxel_size,
-                                                                     narrow_band_width_voxels)
+                                                                     narrow_band_width_voxels,
+                                                                     gaussian_covariance_scale)
 
 
 def generate_3d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera,
@@ -193,7 +197,8 @@ def generate_3d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera,
                                                     field_shape=np.array([128, 128, 128], dtype=np.int32),
                                                     default_value=1, voxel_size=0.004,
                                                     array_offset=np.array([-64, -64, 64], dtype=np.int32),
-                                                    narrow_band_width_voxels=20, back_cutoff_voxels=np.inf):
+                                                    narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
+                                                    gaussian_covariance_scale=1.0):
     if type(field_shape) != np.ndarray:
         field_shape = np.array(field_shape).astype(np.int32)
     if type(array_offset) != np.ndarray:
@@ -206,13 +211,15 @@ def generate_3d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera,
                                                                      array_offset.astype(np.int32),
                                                                      field_shape.astype(np.int32),
                                                                      voxel_size,
-                                                                     narrow_band_width_voxels)
+                                                                     narrow_band_width_voxels,
+                                                                     gaussian_covariance_scale)
 
 
 def generate_3d_tsdf_ewa_cpp_viz(depth_image, camera, field,
                                  camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
                                  voxel_size=0.004,
-                                 array_offset=np.array([-64, -64, 64], dtype=np.int32), scale=20):
+                                 array_offset=np.array([-64, -64, 64], dtype=np.int32), scale=20,
+                                 gaussian_covariance_scale=1.0):
     if type(array_offset) != np.ndarray:
         array_offset = np.array(array_offset).astype(np.int32)
     return cpp_extension.generate_3d_tsdf_field_from_depth_image_ewa_viz(depth_image,
@@ -224,7 +231,8 @@ def generate_3d_tsdf_ewa_cpp_viz(depth_image, camera, field,
                                                                          array_offset,
                                                                          voxel_size,
                                                                          scale,
-                                                                         0.1)
+                                                                         0.1,
+                                                                         gaussian_covariance_scale)
 
 
 def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coordinate,
@@ -232,7 +240,7 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
                                                 field_size=128, default_value=1, voxel_size=0.004,
                                                 array_offset=np.array([-64, -64, 64]),
                                                 narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                                visualize_samples=False):
+                                                gaussian_covariance_scale=1.0):
     """
     Assumes camera is at array_offset voxels relative to sdf grid
     :param narrow_band_width_voxels:
@@ -269,12 +277,12 @@ def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coo
     y_voxel = 0
 
     camera_rotation_matrix = camera_extrinsic_matrix[0:3, 0:3]
-    covariance_voxel_sphere_world_space = np.eye(3) * voxel_size
+    covariance_voxel_sphere_world_space = np.eye(3) * (gaussian_covariance_scale * voxel_size)
     covariance_camera_space = camera_rotation_matrix.dot(covariance_voxel_sphere_world_space) \
         .dot(camera_rotation_matrix.T)
     image_space_scaling_matrix = camera_intrinsic_matrix[0:2, 0:2].copy()
 
-    squared_radius_threshold = 4.0 * voxel_size
+    squared_radius_threshold = 4.0 * gaussian_covariance_scale * voxel_size
 
     for y_field in range(field_size):
         for x_field in range(field_size):
