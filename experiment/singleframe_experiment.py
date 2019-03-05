@@ -26,14 +26,14 @@ from nonrigid_opt.data_term import DataTermMethod
 from experiment.dataset import datasets, PredefinedDatasetEnum, MaskedImageBasedSingleFrameDataset, ImageBasedSingleFrameDataset
 from nonrigid_opt.slavcheva_visualizer import SlavchevaVisualizer
 from nonrigid_opt.smoothing_term import SmoothingTermMethod
-from tsdf.generation import generate_initial_orthographic_2d_tsdf_fields, DepthInterpolationMethod
+from tsdf.generation import generate_initial_orthographic_2d_tsdf_fields, GenerationMethod
 from nonrigid_opt.slavcheva_optimizer2d import SlavchevaOptimizer2d, AdaptiveLearningRateMethod, ComputeMethod
 from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
 from utils.visualization import visualize_and_save_initial_fields, visualize_final_fields
 from experiment import experiment_shared_routines as shared
 
 
-def perform_single_test(depth_interpolation_method=DepthInterpolationMethod.NONE, out_path="output/out2D",
+def perform_single_test(depth_interpolation_method=GenerationMethod.NONE, out_path="output/out2D",
                         frame_path="", calibration_path="calib.txt", canonical_frame_index=-1, pixel_row_index=-1,
                         z_offset=128, draw_tsdfs_and_exit=False):
     visualize_and_save_initial_and_final_fields = False

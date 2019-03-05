@@ -52,7 +52,7 @@ class SingleFrameDataset(ABC):
         pass
 
     @abstractmethod
-    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.NONE):
         pass
 
 
@@ -63,7 +63,7 @@ class HardcodedSingleFrameDataset(SingleFrameDataset):
         self.canonical_field = canonical_field
         self.live_field = live_field
 
-    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.NONE):
         return self.live_field, self.canonical_field
 
 
@@ -79,7 +79,7 @@ class ImageBasedSingleFrameDataset(SingleFrameDataset):
         self.offset = offset
         self.voxel_size = voxel_size
 
-    def generate_2d_sdf_canonical(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
+    def generate_2d_sdf_canonical(self, method=tsdf_gen.GenerationMethod.NONE):
         rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
         depth_camera = rig.depth_camera
         depth_image0 = cv2.imread(self.first_frame_path, cv2.IMREAD_UNCHANGED)
@@ -88,11 +88,11 @@ class ImageBasedSingleFrameDataset(SingleFrameDataset):
         canonical_field = \
             tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, self.image_pixel_row,
                                                              field_size=self.field_size, array_offset=self.offset,
-                                                             depth_interpolation_method=method,
+                                                             generation_method=method,
                                                              voxel_size=self.voxel_size)
         return canonical_field
 
-    def generate_2d_sdf_live(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
+    def generate_2d_sdf_live(self, method=tsdf_gen.GenerationMethod.NONE):
         rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
         depth_camera = rig.depth_camera
         depth_image1 = cv2.imread(self.second_frame_path, cv2.IMREAD_UNCHANGED)
@@ -101,11 +101,11 @@ class ImageBasedSingleFrameDataset(SingleFrameDataset):
         live_field = \
             tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image1, depth_camera, self.image_pixel_row,
                                                              field_size=self.field_size, array_offset=self.offset,
-                                                             depth_interpolation_method=method,
+                                                             generation_method=method,
                                                              voxel_size=self.voxel_size)
         return live_field
 
-    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.NONE):
         live_field = self.generate_2d_sdf_live(method)
         canonical_field = self.generate_2d_sdf_canonical(method)
         return live_field, canonical_field
@@ -125,7 +125,7 @@ class MaskedImageBasedSingleFrameDataset(SingleFrameDataset):
         self.offset = offset
         self.voxel_size = voxel_size
 
-    def generate_2d_sdf_fields(self, method=tsdf_gen.DepthInterpolationMethod.NONE):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.NONE):
         rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
         depth_camera = rig.depth_camera
         depth_image0 = cv2.imread(self.first_frame_path, cv2.IMREAD_UNCHANGED)
@@ -136,7 +136,7 @@ class MaskedImageBasedSingleFrameDataset(SingleFrameDataset):
         canonical_field = \
             tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, self.image_pixel_row,
                                                              field_size=self.field_size, array_offset=self.offset,
-                                                             depth_interpolation_method=method)
+                                                             generation_method=method)
         depth_image1 = cv2.imread(self.second_frame_path, cv2.IMREAD_UNCHANGED)
         mask_image1 = cv2.imread(self.second_mask_path, cv2.IMREAD_UNCHANGED)
         depth_image1[mask_image1 == 0] = max_depth
@@ -144,7 +144,7 @@ class MaskedImageBasedSingleFrameDataset(SingleFrameDataset):
         live_field = \
             tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image1, depth_camera, self.image_pixel_row,
                                                              field_size=self.field_size, array_offset=self.offset,
-                                                             depth_interpolation_method=method)
+                                                             generation_method=method)
         return live_field, canonical_field
 
 
