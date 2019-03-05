@@ -38,18 +38,21 @@ EXIT_CODE_FAILURE = 1
 
 def main():
     save_profile = False
-    fraction_field = False
+    fraction_field = True
+    image_choice = 1
 
-    if fraction_field:
+    if fraction_field or image_choice == 1:
         image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/depth/depth_00064.png"
+        z_offset = 480  # zigzag - 64
     else:
         image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag2/input/depth_00108.png"
+        z_offset = 0  # zigzag2 - 108
 
     # depth_interpolation_method = gen.GenerationMethod.NONE
     # depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE
-    depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE_CPP
+    # depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE_CPP
     # depth_interpolation_method = gen.GenerationMethod.EWA_TSDF
-    # depth_interpolation_method = gen.GenerationMethod.EWA_TSDF_INCLUSIVE
+    depth_interpolation_method = gen.GenerationMethod.EWA_TSDF_INCLUSIVE
 
     if save_profile:
         im = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
@@ -64,7 +67,11 @@ def main():
 
         if fraction_field:
             voxel_size = 0.004
-            field_size = 16
+            # field_size = 16
+            field_size = 64
+            # offset = np.array([94, -256, 804])
+            offset = np.array([-256, -256, 480])
+
             rig = DepthCameraRig.from_infinitam_format(
                 "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt")
             depth_camera = rig.depth_camera
@@ -76,9 +83,11 @@ def main():
             field = \
                 gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, 200,
                                                             field_size=field_size,
-                                                            array_offset=np.array([94, -256, 804]),
+                                                            array_offset=offset,
                                                             generation_method=depth_interpolation_method,
-                                                            voxel_size=voxel_size)
+                                                            voxel_size=voxel_size,
+                                                            smoothing_coefficient=0.5
+                                                            )
             print(repr(field))
 
         else:
@@ -92,8 +101,7 @@ def main():
 
             max_depth = np.iinfo(np.uint16).max
             depth_image0[depth_image0 == 0] = max_depth
-            # z_offset = 480 # zigzag - 64
-            z_offset = 0  # zigzag2 - 108
+
             field = \
                 gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, 200,
                                                             field_size=field_size,

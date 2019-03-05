@@ -492,7 +492,7 @@ def generate_tsdf_2d_ewa_tsdf(depth_image, camera, image_y_coordinate,
                     tsdf_sum += weight * tsdf_value
                     weights_sum += weight
 
-            if tsdf_sum <= 0.0:
+            if weights_sum == 0.0:
                 continue
 
             field[y_field, x_field] = tsdf_sum / weights_sum
@@ -626,7 +626,7 @@ def generate_tsdf_2d_ewa_tsdf_inclusive(depth_image, camera, image_y_coordinate,
                         tsdf_sum += weight * tsdf_value
                     weights_sum += weight
 
-            if tsdf_sum <= 0.0:
+            if weights_sum == 0.0:
                 continue
 
             field[y_field, x_field] = tsdf_sum / weights_sum
