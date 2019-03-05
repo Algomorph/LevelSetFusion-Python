@@ -246,7 +246,7 @@ def generate_2d_tsdf_field_from_depth_image(depth_image, camera, image_y_coordin
                                             apply_transformation=False, twist=np.zeros((6, 1)),
                                             smoothing_coefficient=1.0):
     if generation_method == GenerationMethod.NONE:
-        generate_tsdf_2d_conventional_functions[generation_method](
+        return generate_2d_tsdf_field_from_depth_image_no_interpolation(
             depth_image, camera, image_y_coordinate, camera_extrinsic_matrix, field_size, default_value,
             voxel_size, array_offset, narrow_band_width_voxels, back_cutoff_voxels, apply_transformation, twist)
     if generation_method in generate_tsdf_2d_conventional_functions:
