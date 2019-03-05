@@ -240,8 +240,8 @@ tsdf_from_depth_image_generation_functions_2d = {
     DepthInterpolationMethod.NONE: generate_2d_tsdf_field_from_depth_image_no_interpolation,
     DepthInterpolationMethod.BILINEAR_IMAGE_SPACE: generate_2d_tsdf_field_from_depth_image_bilinear_image_space,
     DepthInterpolationMethod.BILINEAR_TSDF_SPACE: generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space,
-    DepthInterpolationMethod.EWA: ewa.generate_2d_tsdf_field_from_depth_image_ewa,
-    DepthInterpolationMethod.EWA_CPP: ewa.generate_2d_tsdf_field_from_depth_image_ewa_cpp
+    DepthInterpolationMethod.EWA: ewa.generate_tsdf_2d_ewa_depth,
+    DepthInterpolationMethod.EWA_CPP: ewa.generate_tsdf_2d_ewa_depth_cpp
 }
 
 

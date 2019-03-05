@@ -51,12 +51,12 @@ def main():
     max_depth = np.iinfo(np.uint16).max
     depth_image0[depth_image0 == 0] = max_depth
     field = \
-        ewa.generate_3d_tsdf_field_from_depth_image_ewa_cpp(depth_image0,
-                                                            depth_camera,
-                                                            field_shape=field_size,
-                                                            array_offset=array_offset,
-                                                            voxel_size=voxel_size,
-                                                            narrow_band_width_voxels=20)
+        ewa.generate_tsdf_3d_ewa_depth_cpp(depth_image0,
+                                           depth_camera,
+                                           field_shape=field_size,
+                                           array_offset=array_offset,
+                                           voxel_size=voxel_size,
+                                           narrow_band_width_voxels=20)
     print(repr(field))
     #chunk = np.moveaxis(field, (0,1,2), (2,1,0))
     #print(repr(chunk.reshape(16,16)))

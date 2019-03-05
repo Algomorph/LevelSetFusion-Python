@@ -40,15 +40,17 @@ def find_sampling_bounds_helper(bounds_max, depth_image, voxel_image):
     return start_x, end_x, start_y, end_y
 
 
-def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
-                                                camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
-                                                field_shape=np.array([128, 128, 128]), default_value=1,
-                                                voxel_size=0.004,
-                                                array_offset=np.array([-64, -64, 64]),
-                                                narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                                gaussian_covariance_scale=1.0):
+def generate_tsdf_3d_ewa_depth(depth_image, camera,
+                               camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                               field_shape=np.array([128, 128, 128]), default_value=1,
+                               voxel_size=0.004,
+                               array_offset=np.array([-64, -64, 64]),
+                               narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
+                               gaussian_covariance_scale=1.0):
     """
-    Assumes camera is at array_offset voxels relative to sdf grid
+    Generate 3D TSDF field based on elliptical Gaussian averages (EWA) of depth values from the provided image.
+    Elliptical Gaussian filters are projected from spherical 3D Gaussian functions onto the depth image and convolved
+    with a circular 2D Gaussain filter before averaging the depth values.
     :type depth_image: np.ndarray
     :param depth_image: depth image to use
     :type camera: calib.camera.DepthCamera
@@ -62,7 +64,7 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
     :param field_shape: shape of the TSDF grid to generate
     :param narrow_band_width_voxels: span (in voxels) where signed distance is between -1 and 1
     :param back_cutoff_voxels: where to truncate the negative voxel values (currently not supported!)
-    :param gaussian_covariance_scale:
+    :param gaussian_covariance_scale: scale of elliptical gaussians (relative to voxel size)
     :return: resulting 3D TSDF
     """
     # TODO: use back_cutoff_voxels for additional limit on
@@ -171,12 +173,12 @@ def generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
     return field
 
 
-def generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, image_y_coordinate,
-                                                    camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
-                                                    field_size=128, default_value=1, voxel_size=0.004,
-                                                    array_offset=np.array([-64, -64, 64], dtype=np.int32),
-                                                    narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                                    gaussian_covariance_scale=1.0):
+def generate_tsdf_2d_ewa_depth_cpp(depth_image, camera, image_y_coordinate,
+                                   camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                   field_size=128, default_value=1, voxel_size=0.004,
+                                   array_offset=np.array([-64, -64, 64], dtype=np.int32),
+                                   narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
+                                   gaussian_covariance_scale=1.0):
     if type(array_offset) != np.ndarray:
         array_offset = np.array(array_offset).astype(np.int32)
     return cpp_extension.generate_2d_tsdf_field_from_depth_image_ewa(image_y_coordinate,
@@ -192,13 +194,13 @@ def generate_2d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera, image_y
                                                                      gaussian_covariance_scale)
 
 
-def generate_3d_tsdf_field_from_depth_image_ewa_cpp(depth_image, camera,
-                                                    camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
-                                                    field_shape=np.array([128, 128, 128], dtype=np.int32),
-                                                    default_value=1, voxel_size=0.004,
-                                                    array_offset=np.array([-64, -64, 64], dtype=np.int32),
-                                                    narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                                    gaussian_covariance_scale=1.0):
+def generate_tsdf_3d_ewa_depth_cpp(depth_image, camera,
+                                   camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                   field_shape=np.array([128, 128, 128], dtype=np.int32),
+                                   default_value=1, voxel_size=0.004,
+                                   array_offset=np.array([-64, -64, 64], dtype=np.int32),
+                                   narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
+                                   gaussian_covariance_scale=1.0):
     if type(field_shape) != np.ndarray:
         field_shape = np.array(field_shape).astype(np.int32)
     if type(array_offset) != np.ndarray:
@@ -235,16 +237,18 @@ def generate_3d_tsdf_ewa_cpp_viz(depth_image, camera, field,
                                                                          gaussian_covariance_scale)
 
 
-def generate_2d_tsdf_field_from_depth_image_ewa(depth_image, camera, image_y_coordinate,
-                                                camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
-                                                field_size=128, default_value=1, voxel_size=0.004,
-                                                array_offset=np.array([-64, -64, 64]),
-                                                narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                                gaussian_covariance_scale=1.0):
+def generate_tsdf_2d_ewa_depth(depth_image, camera, image_y_coordinate,
+                               camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                               field_size=128, default_value=1, voxel_size=0.004,
+                               array_offset=np.array([-64, -64, 64]),
+                               narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
+                               gaussian_covariance_scale=1.0):
     """
-    Assumes camera is at array_offset voxels relative to sdf grid
-    :param narrow_band_width_voxels:
-    :param array_offset:
+    Generate 2D TSDF field based on elliptical Gaussian averages (EWA) of depth values from the provided image.
+    Elliptical Gaussian filters are projected from spherical 3D Gaussian functions onto the depth image and convolved
+    with a circular 2D Gaussain filter before averaging the depth values.
+    :param narrow_band_width_voxels: desired width, in voxels, of the narrow band (non-truncated region) of the TSDF
+    :param array_offset: assumes camera is at array_offset voxels relative to TSDF grid
     :param camera_extrinsic_matrix: matrix representing transformation of the camera (incl. rotation and translation)
     [ R | T]
     [ 0 | 1]
