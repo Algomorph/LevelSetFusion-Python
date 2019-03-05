@@ -160,10 +160,6 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
     :type camera: calib.camera.DepthCamera
     :param image_y_coordinate:
     :type image_y_coordinate: int
-    :param apply_transformation:
-    :type apply_transformation: boolean
-    :param twist: transformation vector
-    :type twist: np.array (6, 1)
     :return:
     """
     # TODO: use back_cutoff_voxels for additional limit on
