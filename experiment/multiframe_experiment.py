@@ -31,7 +31,7 @@ import pandas as pd
 from experiment.build_optimizer import OptimizerChoice, build_optimizer
 from nonrigid_opt.data_term import DataTermMethod
 from experiment.dataset import ImageBasedSingleFrameDataset, MaskedImageBasedSingleFrameDataset
-from tsdf.generation import DepthInterpolationMethod
+from tsdf.generation import GenerationMethod
 from utils.point2d import Point2d
 from utils.printing import *
 from utils.visualization import save_initial_fields, save_final_fields, rescale_depth_to_8bit, highlight_row_on_gray, \
@@ -88,7 +88,7 @@ def record_cases_files(log, out_directory):
 def perform_multiple_tests(start_from_sample=0,
                            data_term_method=DataTermMethod.BASIC,
                            optimizer_choice=OptimizerChoice.CPP,
-                           depth_interpolation_method=DepthInterpolationMethod.NONE,
+                           depth_interpolation_method=GenerationMethod.NONE,
                            out_path="out2D/Snoopy MultiTest",
                            input_case_file=None,
                            calibration_path=

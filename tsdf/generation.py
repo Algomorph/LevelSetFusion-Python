@@ -12,20 +12,14 @@ from utils.point2d import Point2d
 import utils.sampling as sampling
 import tsdf.ewa as ewa
 
+from tsdf.common import GenerationMethod
+
 IGNORE_OPENCV = False
 
 try:
     import cv2
 except ImportError:
     IGNORE_OPENCV = True
-
-
-class DepthInterpolationMethod:
-    NONE = 0
-    BILINEAR_IMAGE_SPACE = 1
-    BILINEAR_TSDF_SPACE = 2
-    EWA = 3
-    EWA_CPP = 4
 
 
 def generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space(depth_image, camera, image_y_coordinate,
@@ -197,7 +191,7 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
                 twist_matrix = cv2.Rodrigues(twist[3:6])[0]
                 twist_matrix = np.concatenate((twist_matrix, np.zeros((1, 3))), axis=0)
                 twist_matrix = np.concatenate((twist_matrix,
-                                              np.array([twist[0], twist[1], twist[2], [1]])), axis=1)
+                                               np.array([twist[0], twist[1], twist[2], [1]])), axis=1)
                 point = np.dot(twist_matrix, point)
 
             point_in_camera_space = camera_extrinsic_matrix.dot(point).flatten()
@@ -236,12 +230,10 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
     return field
 
 
-tsdf_from_depth_image_generation_functions_2d = {
-    DepthInterpolationMethod.NONE: generate_2d_tsdf_field_from_depth_image_no_interpolation,
-    DepthInterpolationMethod.BILINEAR_IMAGE_SPACE: generate_2d_tsdf_field_from_depth_image_bilinear_image_space,
-    DepthInterpolationMethod.BILINEAR_TSDF_SPACE: generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space,
-    DepthInterpolationMethod.EWA: ewa.generate_tsdf_2d_ewa_depth,
-    DepthInterpolationMethod.EWA_CPP: ewa.generate_tsdf_2d_ewa_depth_cpp
+generate_tsdf_2d_conventional_functions = {
+    GenerationMethod.NONE: generate_2d_tsdf_field_from_depth_image_no_interpolation,
+    GenerationMethod.BILINEAR_IMAGE: generate_2d_tsdf_field_from_depth_image_bilinear_image_space,
+    GenerationMethod.BILINEAR_TSDF: generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space,
 }
 
 
@@ -250,12 +242,23 @@ def generate_2d_tsdf_field_from_depth_image(depth_image, camera, image_y_coordin
                                             field_size=128, default_value=1, voxel_size=0.004,
                                             array_offset=np.array([-64, -64, 64]),
                                             narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                            depth_interpolation_method=DepthInterpolationMethod.NONE,
-                                            apply_transformation=False, twist=np.zeros((6, 1))):
-    # TODO: voxel grid twist can only be applied with NONE as the interpolation method
-    return tsdf_from_depth_image_generation_functions_2d[depth_interpolation_method](
-        depth_image, camera, image_y_coordinate, camera_extrinsic_matrix, field_size, default_value,
-        voxel_size, array_offset, narrow_band_width_voxels, back_cutoff_voxels, apply_transformation, twist)
+                                            generation_method=GenerationMethod.NONE,
+                                            apply_transformation=False, twist=np.zeros((6, 1)),
+                                            smoothing_coefficient=1.0):
+    if generation_method == GenerationMethod.NONE:
+        generate_tsdf_2d_conventional_functions[generation_method](
+            depth_image, camera, image_y_coordinate, camera_extrinsic_matrix, field_size, default_value,
+            voxel_size, array_offset, narrow_band_width_voxels, back_cutoff_voxels, apply_transformation, twist)
+    if generation_method in generate_tsdf_2d_conventional_functions:
+        return generate_tsdf_2d_conventional_functions[generation_method](
+            depth_image, camera, image_y_coordinate, camera_extrinsic_matrix, field_size, default_value,
+            voxel_size, array_offset, narrow_band_width_voxels, back_cutoff_voxels)
+    elif generation_method in ewa.generate_tsdf_2d_ewa_functions:
+        return ewa.generate_tsdf_2d_ewa_functions[generation_method](
+            depth_image, camera, image_y_coordinate, camera_extrinsic_matrix, field_size, default_value,
+            voxel_size, array_offset, narrow_band_width_voxels, back_cutoff_voxels, smoothing_coefficient)
+    else:
+        raise ValueError("Unrecognized GenerationMethod enum value: " + str(generation_method))
 
 
 def add_surface_to_2d_tsdf_field_sample(field, consecutive_surface_points, narrow_band_width_voxels=20,

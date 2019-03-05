@@ -27,7 +27,7 @@ import argparse
 from nonrigid_opt.data_term import DataTermMethod
 from experiment.multiframe_experiment import perform_multiple_tests, OptimizerChoice
 from experiment.singleframe_experiment import perform_single_test
-from tsdf.generation import DepthInterpolationMethod
+from tsdf.generation import GenerationMethod
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1
@@ -104,7 +104,7 @@ def main():
               " data_term_method (dtm) should be \"basic\" or \"thresholded_fdm\", got \"{:s}\""
               .format(arguments.data_term_method))
 
-    depth_interpolation_method = DepthInterpolationMethod.__dict__[arguments.depth_interpolation_method]
+    depth_interpolation_method = GenerationMethod.__dict__[arguments.depth_interpolation_method]
     optimizer_choice = OptimizerChoice.__dict__[arguments.optimizer_choice]
 
     if mode == Mode.SINGLE_TEST:

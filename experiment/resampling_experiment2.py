@@ -45,7 +45,7 @@ def main():
     rig = DepthCameraRig.from_infinitam_format(
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt")
     depth_camera = rig.depth_camera
-    depth_interpolation_method = gen.DepthInterpolationMethod.EWA
+    depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE
     # depth_image0 = cv2.imread(
     #     "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00064.png",
     #     cv2.IMREAD_UNCHANGED)
@@ -56,17 +56,17 @@ def main():
     max_depth = np.iinfo(np.uint16).max
     depth_image0[depth_image0 == 0] = max_depth
     field = \
-        ewa.generate_tsdf_3d_ewa_depth_cpp(depth_image0,
+        ewa.generate_tsdf_3d_ewa_image_cpp(depth_image0,
                                            depth_camera,
                                            field_shape=field_size,
                                            array_offset=array_offset,
                                            voxel_size=voxel_size,
                                            narrow_band_width_voxels=20)
-    viz_image = ewa.generate_3d_tsdf_ewa_cpp_viz(depth_image=depth_image0,
-                                                 camera=depth_camera,
-                                                 field=field,
-                                                 voxel_size=voxel_size,
-                                                 array_offset=array_offset)
+    viz_image = ewa.generate_tsdf_3d_ewa_image_visualization_cpp(depth_image=depth_image0,
+                                                                 camera=depth_camera,
+                                                                 field=field,
+                                                                 voxel_size=voxel_size,
+                                                                 array_offset=array_offset)
     # print(viz_image.shape, viz_image.dtype)
     # resized = cv2.resize(viz_image, (2400, 3200))
     cv2.imwrite("../output/ewa_sampling_viz.png", viz_image)

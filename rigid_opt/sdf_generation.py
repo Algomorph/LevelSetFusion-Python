@@ -20,14 +20,14 @@ class ImageBasedSingleFrameDataset:
         self.offset = offset
         self.depth_camera = camera
 
-    def generate_2d_sdf_fields(self, narrow_band_width_voxels=20., method=tsdf_gen.DepthInterpolationMethod.NONE):
+    def generate_2d_sdf_fields(self, narrow_band_width_voxels=20., method=tsdf_gen.GenerationMethod.NONE):
         canonical_field = self.generate_2d_canonical_field(narrow_band_width_voxels=narrow_band_width_voxels,
                                                            method=method)
         live_field = self.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
                                                  method=method)
         return live_field, canonical_field
 
-    def generate_2d_canonical_field(self, narrow_band_width_voxels=20., method=tsdf_gen.DepthInterpolationMethod.NONE):
+    def generate_2d_canonical_field(self, narrow_band_width_voxels=20., method=tsdf_gen.GenerationMethod.NONE):
 
         depth_image0 = cv2.imread(self.first_frame_path, -1)
         depth_image0 = cv2.cvtColor(depth_image0, cv2.COLOR_BGR2GRAY)
@@ -41,10 +41,10 @@ class ImageBasedSingleFrameDataset:
                                                              # default_value=-999.,
                                                              array_offset=self.offset,
                                                              narrow_band_width_voxels=narrow_band_width_voxels,
-                                                             depth_interpolation_method=method)
+                                                             generation_method=method)
         return canonical_field
 
-    def generate_2d_live_field(self, method=tsdf_gen.DepthInterpolationMethod.NONE,
+    def generate_2d_live_field(self, method=tsdf_gen.GenerationMethod.NONE,
                                narrow_band_width_voxels=20.,
                                apply_transformation=False, twist=np.zeros((6, 1))):
         depth_image1 = cv2.imread(self.second_frame_path, -1)
@@ -60,7 +60,7 @@ class ImageBasedSingleFrameDataset:
                                                              # default_value=-999.,
                                                              array_offset=self.offset,
                                                              narrow_band_width_voxels=narrow_band_width_voxels,
-                                                             depth_interpolation_method=method,
+                                                             generation_method=method,
                                                              apply_transformation=apply_transformation, twist=twist)
         return live_field
 
@@ -74,24 +74,24 @@ class ArrayBasedSingleFrameDataset:
         self.offset = offset
         self.depth_camera = camera
 
-    def generate_2d_sdf_fields(self, narrow_band_width_voxels=20., method=tsdf_gen.DepthInterpolationMethod.NONE):
+    def generate_2d_sdf_fields(self, narrow_band_width_voxels=20., method=tsdf_gen.GenerationMethod.NONE):
         canonical_field = self.generate_2d_canonical_field(narrow_band_width_voxels=narrow_band_width_voxels,
                                                            method=method)
         live_field = self.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
                                                  method=method)
         return live_field, canonical_field
 
-    def generate_2d_canonical_field(self, narrow_band_width_voxels=20., method=tsdf_gen.DepthInterpolationMethod.NONE):
+    def generate_2d_canonical_field(self, narrow_band_width_voxels=20., method=tsdf_gen.GenerationMethod.NONE):
         canonical_field = \
             tsdf_gen.generate_2d_tsdf_field_from_depth_image(self.depth_image0, self.depth_camera, self.image_pixel_row,
                                                              field_size=self.field_size,
                                                              # default_value=-999.,
                                                              array_offset=self.offset,
                                                              narrow_band_width_voxels=narrow_band_width_voxels,
-                                                             depth_interpolation_method=method)
+                                                             generation_method=method)
         return canonical_field
 
-    def generate_2d_live_field(self, method=tsdf_gen.DepthInterpolationMethod.NONE,
+    def generate_2d_live_field(self, method=tsdf_gen.GenerationMethod.NONE,
                                narrow_band_width_voxels=20.,
                                apply_transformation=False, twist=np.zeros((6, 1))):
         live_field = \
@@ -100,6 +100,6 @@ class ArrayBasedSingleFrameDataset:
                                                              # default_value=-999.,
                                                              array_offset=self.offset,
                                                              narrow_band_width_voxels=narrow_band_width_voxels,
-                                                             depth_interpolation_method=method,
+                                                             generation_method=method,
                                                              apply_transformation=apply_transformation, twist=twist)
         return live_field

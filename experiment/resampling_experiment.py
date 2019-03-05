@@ -45,9 +45,11 @@ def main():
     else:
         image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag2/input/depth_00108.png"
 
-    # depth_interpolation_method = gen.DepthInterpolationMethod.NONE
-    # depth_interpolation_method = gen.DepthInterpolationMethod.EWA
-    depth_interpolation_method = gen.DepthInterpolationMethod.EWA_CPP
+    # depth_interpolation_method = gen.GenerationMethod.NONE
+    # depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE
+    depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE_CPP
+    # depth_interpolation_method = gen.GenerationMethod.EWA_TSDF
+    # depth_interpolation_method = gen.GenerationMethod.EWA_TSDF_INCLUSIVE
 
     if save_profile:
         im = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
@@ -75,7 +77,7 @@ def main():
                 gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, 200,
                                                             field_size=field_size,
                                                             array_offset=np.array([94, -256, 804]),
-                                                            depth_interpolation_method=depth_interpolation_method,
+                                                            generation_method=depth_interpolation_method,
                                                             voxel_size=voxel_size)
             print(repr(field))
 
@@ -96,7 +98,7 @@ def main():
                 gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, 200,
                                                             field_size=field_size,
                                                             array_offset=np.array([-256, -256, z_offset]),
-                                                            depth_interpolation_method=depth_interpolation_method,
+                                                            generation_method=depth_interpolation_method,
                                                             voxel_size=voxel_size)
             print(repr(field[103:119, 210:226]))
             # print(repr(field[102:120, 209:226]))

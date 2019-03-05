@@ -71,9 +71,9 @@ class Sdf2SdfOptimizer2d:
         """
 
         canonical_field = data_to_use.generate_2d_canonical_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                                  method=tsdf_gen.DepthInterpolationMethod.NONE)
+                                                                  method=tsdf_gen.GenerationMethod.NONE)
         live_field = data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                        method=tsdf_gen.DepthInterpolationMethod.NONE)
+                                                        method=tsdf_gen.GenerationMethod.NONE)
         field_size = canonical_field.shape[0]
         offset = data_to_use.offset
         twist = np.zeros((3, 1))
@@ -92,7 +92,7 @@ class Sdf2SdfOptimizer2d:
                                  twist[2],
                                  [0.]], dtype=np.float32)
             live_field = data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                            method=tsdf_gen.DepthInterpolationMethod.NONE,
+                                                            method=tsdf_gen.GenerationMethod.NONE,
                                                             apply_transformation=True, twist=twist_3d)
             live_weight = (live_field > -eta).astype(np.int)
             live_gradient = calculate_gradient_wrt_twist(live_field, twist, array_offset=offset, voxel_size=voxel_size)
@@ -125,7 +125,7 @@ class Sdf2SdfOptimizer2d:
 
             self.visualizer.generate_per_iteration_visualizations(
                 data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                   method=tsdf_gen.DepthInterpolationMethod.NONE,
+                                                   method=tsdf_gen.GenerationMethod.NONE,
                                                    apply_transformation=True, twist=np.array([twist[0],
                                                                                               [0.],
                                                                                               twist[1],
