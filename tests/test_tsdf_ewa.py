@@ -187,9 +187,3 @@ class TsdfTest(TestCase):
                                                             gaussian_covariance_scale=0.5)
 
         self.assertTrue(np.allclose(field, data.sdf_3d_slice02))
-        print("")
-
-        #print(repr(field2))
-        #print(repr(abs(field2 - field)))
-        #print(repr(abs(field2 - field) < 1e-5))
-        print(repr(field.reshape(16,16)))
