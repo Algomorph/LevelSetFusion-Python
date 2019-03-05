@@ -1,7 +1,7 @@
 # import unittest
 from unittest import TestCase
 import numpy as np
-from rigid_opt.transformation import twist_vector_to_matrix
+from math_utils.transformation import twist_vector_to_matrix2d
 
 
 class MyTestCase(TestCase):
@@ -14,7 +14,7 @@ class MyTestCase(TestCase):
                                  [0.],
                                  [0.]])
         sdf_gradient_first_term = np.gradient(live_field)
-        twist_matrix_homo = twist_vector_to_matrix(twist_vector)
+        twist_matrix_homo = twist_vector_to_matrix2d(twist_vector)
         sdf_gradient = np.zeros((live_field.shape[0], live_field.shape[1], 3))
 
         for i in range(live_field.shape[0]):

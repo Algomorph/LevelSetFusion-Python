@@ -1,7 +1,6 @@
 # import unittest
 from unittest import TestCase
 import numpy as np
-from rigid_opt.transformation import twist_vector_to_matrix
 
 
 class MyTestCase(TestCase):

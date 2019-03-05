@@ -85,15 +85,14 @@ class Sdf2SdfOptimizer2d:
             matrix_a = np.zeros((3, 3))
             vector_b = np.zeros((3, 1))
             canonical_weight = (canonical_field > -eta).astype(np.int)
-            twist_3d = np.array([twist[0],
-                                 [0.],
-                                 twist[1],
-                                 [0.],
-                                 twist[2],
-                                 [0.]], dtype=np.float32)
             live_field = data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
                                                             method=tsdf_gen.DepthInterpolationMethod.NONE,
-                                                            apply_transformation=True, twist=twist_3d)
+                                                            twist=np.array([twist[0],
+                                                                           [0.],
+                                                                           twist[1],
+                                                                           [0.],
+                                                                           twist[2],
+                                                                           [0.]], dtype=np.float32))
             live_weight = (live_field > -eta).astype(np.int)
             live_gradient = calculate_gradient_wrt_twist(live_field, twist, array_offset=offset, voxel_size=voxel_size)
 
@@ -126,12 +125,12 @@ class Sdf2SdfOptimizer2d:
             self.visualizer.generate_per_iteration_visualizations(
                 data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
                                                    method=tsdf_gen.DepthInterpolationMethod.NONE,
-                                                   apply_transformation=True, twist=np.array([twist[0],
-                                                                                              [0.],
-                                                                                              twist[1],
-                                                                                              [0.],
-                                                                                              twist[2],
-                                                                                              [0.]], dtype=np.float32)))
+                                                   twist=np.array([twist[0],
+                                                                  [0.],
+                                                                  twist[1],
+                                                                  [0.],
+                                                                  twist[2],
+                                                                  [0.]], dtype=np.float32)))
 
         self.visualizer.generate_post_optimization_visualizations(canonical_field, live_field)
         del self.visualizer
