@@ -202,6 +202,48 @@ def generate_tsdf_2d_ewa_image_cpp(depth_image, camera, image_y_coordinate,
                                                     gaussian_covariance_scale)
 
 
+def generate_tsdf_2d_ewa_tsdf_cpp(depth_image, camera, image_y_coordinate,
+                                  camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                  field_size=128, default_value=1, voxel_size=0.004,
+                                  array_offset=np.array([-64, -64, 64], dtype=np.int32),
+                                  narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
+                                  gaussian_covariance_scale=1.0):
+    if type(array_offset) != np.ndarray:
+        array_offset = np.array(array_offset).astype(np.int32)
+    return cpp_extension.generate_tsdf_2d_ewa_tsdf(image_y_coordinate,
+                                                   depth_image,
+                                                   camera.depth_unit_ratio,
+                                                   camera.intrinsics.intrinsic_matrix.astype(
+                                                       np.float32),
+                                                   camera_extrinsic_matrix.astype(np.float32),
+                                                   array_offset.astype(np.int32),
+                                                   field_size,
+                                                   voxel_size,
+                                                   narrow_band_width_voxels,
+                                                   gaussian_covariance_scale)
+
+
+def generate_tsdf_2d_ewa_tsdf_inclusive_cpp(depth_image, camera, image_y_coordinate,
+                                            camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                            field_size=128, default_value=1, voxel_size=0.004,
+                                            array_offset=np.array([-64, -64, 64], dtype=np.int32),
+                                            narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
+                                            gaussian_covariance_scale=1.0):
+    if type(array_offset) != np.ndarray:
+        array_offset = np.array(array_offset).astype(np.int32)
+    return cpp_extension.generate_tsdf_2d_ewa_tsdf_inclusive(image_y_coordinate,
+                                                             depth_image,
+                                                             camera.depth_unit_ratio,
+                                                             camera.intrinsics.intrinsic_matrix.astype(
+                                                                 np.float32),
+                                                             camera_extrinsic_matrix.astype(np.float32),
+                                                             array_offset.astype(np.int32),
+                                                             field_size,
+                                                             voxel_size,
+                                                             narrow_band_width_voxels,
+                                                             gaussian_covariance_scale)
+
+
 def generate_tsdf_3d_ewa_image_cpp(depth_image, camera,
                                    camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
                                    field_shape=np.array([128, 128, 128], dtype=np.int32),
@@ -612,8 +654,8 @@ def generate_tsdf_2d_ewa_tsdf_inclusive(depth_image, camera, image_y_coordinate,
 
                     weight = gaussian.compute(dist_sq)
 
-                    if y_sample <= 0 or y_sample > depth_image.shape[0] \
-                            or x_sample <= 0 or x_sample > depth_image.shape[1]:
+                    if y_sample < 0 or y_sample >= depth_image.shape[0] \
+                            or x_sample < 0 or x_sample >= depth_image.shape[1]:
                         tsdf_sum += weight * 1.0
                     else:
                         surface_depth = depth_image[y_sample, x_sample] * depth_ratio

@@ -45,10 +45,10 @@ class TsdfTest(TestCase):
                                        [3233, 3246, 3243, 3256, 3253, 3268, 3263, 3279, 3272, 3289, 3282,
                                         3299, 3291, 3308, 3301, 3317, 3310, 3326]], dtype=np.uint16)
         depth_image[:, 399:417] = depth_image_region
-        camera_intrisic_matrix = np.array([[700., 0., 320.],
-                                           [0., 700., 240.],
-                                           [0., 0., 1.]])
-        camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 3), intrinsic_matrix=camera_intrisic_matrix),
+        camera_intrinsic_matrix = np.array([[700., 0., 320.],
+                                            [0., 700., 240.],
+                                            [0., 0., 1.]])
+        camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 3), intrinsic_matrix=camera_intrinsic_matrix),
                                  depth_unit_ratio=0.001)
         field = \
             ewa.generate_tsdf_2d_ewa_image(depth_image, camera, 1,
@@ -60,7 +60,7 @@ class TsdfTest(TestCase):
         field2 = ewa.generate_tsdf_2d_ewa_image_cpp(depth_image, camera, 1,
                                                     field_size=16,
                                                     array_offset=np.array([94, -256, 804],
-                                                                                           dtype=np.int32),
+                                                                          dtype=np.int32),
                                                     voxel_size=0.004)
         self.assertTrue(np.allclose(field2, data.out_sdf_field01, atol=1e-6))
 
@@ -68,10 +68,10 @@ class TsdfTest(TestCase):
         filename = "zigzag2_depth_00108.png"
         depth_image = self.image_load_helper(filename)
         test_full_image = False
-        camera_intrisic_matrix = np.array([[700., 0., 320.],
-                                           [0., 700., 240.],
-                                           [0., 0., 1.]])
-        camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 480), intrinsic_matrix=camera_intrisic_matrix),
+        camera_intrinsic_matrix = np.array([[700., 0., 320.],
+                                            [0., 700., 240.],
+                                            [0., 0., 1.]])
+        camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 480), intrinsic_matrix=camera_intrinsic_matrix),
                                  depth_unit_ratio=0.001)
 
         offset_full_image = np.array([-256, -256, 0])
@@ -103,37 +103,54 @@ class TsdfTest(TestCase):
         self.assertTrue(np.allclose(field, data.out_sdf_chunk, atol=2e-5))
 
     def test_2D_ewa_tsdf_generation3(self):
-        depth_image = np.zeros((3, 640), dtype=np.uint16)
-        depth_image[:] = np.iinfo(np.uint16).max
-        depth_image_region = np.array([[3233, 3246, 3243, 3256, 3253, 3268, 3263, 3279, 3272, 3289, 3282,
-                                        3299, 3291, 3308, 3301, 3317, 3310, 3326],
-                                       [3233, 3246, 3243, 3256, 3253, 3268, 3263, 3279, 3272, 3289, 3282,
-                                        3299, 3291, 3308, 3301, 3317, 3310, 3326],
-                                       [3233, 3246, 3243, 3256, 3253, 3268, 3263, 3279, 3272, 3289, 3282,
-                                        3299, 3291, 3308, 3301, 3317, 3310, 3326]], dtype=np.uint16)
-        depth_image[:, 399:417] = depth_image_region
-        camera_intrisic_matrix = np.array([[700., 0., 320.],
-                                           [0., 700., 240.],
-                                           [0., 0., 1.]])
-        camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 3), intrinsic_matrix=camera_intrisic_matrix),
+        filename = "zigzag1_depth_00064.png"
+        depth_image = self.image_load_helper(filename)
+        camera_intrinsic_matrix = np.array([[700., 0., 320.],
+                                            [0., 700., 240.],
+                                            [0., 0., 1.]])
+        camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 3), intrinsic_matrix=camera_intrinsic_matrix),
                                  depth_unit_ratio=0.001)
         field = \
-            ewa.generate_tsdf_2d_ewa_image(depth_image, camera, 1,
-                                           field_size=16,
-                                           array_offset=np.array([94, -256, 804]),
-                                           voxel_size=0.004,
-                                           gaussian_covariance_scale=0.5
-                                           )
+            ewa.generate_tsdf_2d_ewa_tsdf(depth_image, camera, 200,
+                                          field_size=16,
+                                          array_offset=np.array([-232, -256, 490]),
+                                          voxel_size=0.004,
+                                          gaussian_covariance_scale=0.5
+                                          )
 
-        self.assertTrue(np.allclose(field, data.out_sdf_field02))
+        self.assertTrue(np.allclose(field, data.out_sdf_field03))
 
-        field2 = ewa.generate_tsdf_2d_ewa_image_cpp(depth_image, camera, 1,
+        field2 = ewa.generate_tsdf_2d_ewa_tsdf_cpp(depth_image, camera, 1,
+                                                   field_size=16,
+                                                   array_offset=np.array([-232, -256, 490]),
+                                                   voxel_size=0.004,
+                                                   gaussian_covariance_scale=0.5)
+        self.assertTrue(np.allclose(field2, data.out_sdf_field03, atol=1e-5))
+
+    def test_2D_ewa_tsdf_generation4(self):
+        filename = "zigzag1_depth_00064.png"
+        depth_image = self.image_load_helper(filename)
+        camera_intrinsic_matrix = np.array([[700., 0., 320.],
+                                            [0., 700., 240.],
+                                            [0., 0., 1.]])
+        camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 3), intrinsic_matrix=camera_intrinsic_matrix),
+                                 depth_unit_ratio=0.001)
+        field = \
+            ewa.generate_tsdf_2d_ewa_tsdf_inclusive(depth_image, camera, 200,
                                                     field_size=16,
-                                                    array_offset=np.array([94, -256, 804],
-                                                                                           dtype=np.int32),
+                                                    array_offset=np.array([-232, -256, 490]),
                                                     voxel_size=0.004,
-                                                    gaussian_covariance_scale=0.5)
-        self.assertTrue(np.allclose(field2, data.out_sdf_field02, atol=1e-5))
+                                                    gaussian_covariance_scale=0.5
+                                                    )
+
+        self.assertTrue(np.allclose(field, data.out_sdf_field04))
+
+        field2 = ewa.generate_tsdf_2d_ewa_tsdf_inclusive_cpp(depth_image, camera, 1,
+                                                             field_size=16,
+                                                             array_offset=np.array([-232, -256, 490]),
+                                                             voxel_size=0.004,
+                                                             gaussian_covariance_scale=0.5)
+        self.assertTrue(np.allclose(field2, data.out_sdf_field04, atol=1e-5))
 
     def test_3d_ewa_tsdf_generation1(self):
         filename = "zigzag2_depth_00108.png"
@@ -166,8 +183,8 @@ class TsdfTest(TestCase):
         array_offset = np.array([-46, -8, 105], dtype=np.int32)
         field_shape = np.array([16, 1, 16], dtype=np.int32)
         camera_intrinsic_matrix = np.array([[700., 0., 320.],
-                                           [0., 700., 240.],
-                                           [0., 0., 1.]])
+                                            [0., 700., 240.],
+                                            [0., 0., 1.]])
         camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 480), intrinsic_matrix=camera_intrinsic_matrix),
                                  depth_unit_ratio=0.001)
 

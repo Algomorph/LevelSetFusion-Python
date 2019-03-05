@@ -51,8 +51,8 @@ def main():
     # depth_interpolation_method = gen.GenerationMethod.NONE
     # depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE
     # depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE_CPP
-    # depth_interpolation_method = gen.GenerationMethod.EWA_TSDF
-    depth_interpolation_method = gen.GenerationMethod.EWA_TSDF_INCLUSIVE
+    depth_interpolation_method = gen.GenerationMethod.EWA_TSDF
+    # depth_interpolation_method = gen.GenerationMethod.EWA_TSDF_INCLUSIVE
 
     if save_profile:
         im = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
@@ -67,10 +67,10 @@ def main():
 
         if fraction_field:
             voxel_size = 0.004
-            # field_size = 16
-            field_size = 64
+            field_size = 16
+            # field_size = 64
             # offset = np.array([94, -256, 804])
-            offset = np.array([-256, -256, 480])
+            offset = np.array([-232, -256, 490])
 
             rig = DepthCameraRig.from_infinitam_format(
                 "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt")
