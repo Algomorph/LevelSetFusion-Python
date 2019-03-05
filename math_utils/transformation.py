@@ -5,12 +5,11 @@
 
 import math
 import numpy as np
+import cv2
 
 
-def twist_vector_to_matrix(twist):
+def twist_vector_to_matrix2d(twist):
     # for transforming translation and rotation vector to homo matrix in 2D
-
-    # rotation3DMatrix = cv2.Rodrigues(rotation3DVector)
 
     theta = twist[2]
     twist_matrix_homo = np.identity(3)
@@ -22,3 +21,13 @@ def twist_vector_to_matrix(twist):
     twist_matrix_homo[1, 2] = twist[1]
 
     return twist_matrix_homo  # 3 by 3 matrix
+
+
+def twist_vector_to_matrix3d(twist):
+    # for transforming translation and rotation vector to homo matrix in 3D
+
+    twist_matrix_homo = cv2.Rodrigues(twist[3:6])[0]
+    twist_matrix_homo = np.concatenate((twist_matrix_homo, np.zeros((1, 3))), axis=0)
+    twist_matrix_homo = np.concatenate((twist_matrix_homo, np.array([twist[0], twist[1], twist[2], [1]])), axis=1)
+
+    return twist_matrix_homo  # 4 by 4 matrix

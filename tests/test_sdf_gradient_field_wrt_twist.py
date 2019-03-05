@@ -2,7 +2,7 @@
 from unittest import TestCase
 import numpy as np
 from rigid_opt.sdf_gradient_field import calculate_gradient_wrt_twist
-from rigid_opt.transformation import twist_vector_to_matrix
+from math_utils.transformation import twist_vector_to_matrix2d
 
 
 def sdf_gradient_wrt_to_twist(live_field, y_field, x_field, twist_vector, offset, voxel_size):
@@ -52,7 +52,7 @@ def sdf_gradient_wrt_to_twist(live_field, y_field, x_field, twist_vector, offset
     z_voxel = (y_field + offset[2])*voxel_size
 
     point = np.array([[x_voxel, z_voxel, 1.]], dtype=np.float32).T
-    twist_matrix_homo_inv = twist_vector_to_matrix(-twist_vector)
+    twist_matrix_homo_inv = twist_vector_to_matrix2d(-twist_vector)
     trans = np.dot(twist_matrix_homo_inv, point)
 
     voxel_gradient_wrt_to_twist = np.array([[1, 0, trans[1]],
