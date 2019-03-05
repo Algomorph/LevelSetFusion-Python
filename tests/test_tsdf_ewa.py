@@ -177,7 +177,7 @@ class TsdfTest(TestCase):
                                                                      voxel_size=0.004,
                                                                      gaussian_covariance_scale=0.5)
 
-        #self.assertTrue(np.allclose(field2, data.sdf_3d_slice02, atol=1e-5))
+        self.assertTrue(np.allclose(field2, data.sdf_3d_slice02, atol=1e-5))
 
         field = \
             ewa.generate_3d_tsdf_field_from_depth_image_ewa(depth_image, camera,
@@ -192,4 +192,4 @@ class TsdfTest(TestCase):
         #print(repr(field2))
         #print(repr(abs(field2 - field)))
         #print(repr(abs(field2 - field) < 1e-5))
-        #print(repr(field))
+        print(repr(field.reshape(16,16)))

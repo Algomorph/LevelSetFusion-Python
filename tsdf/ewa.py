@@ -27,9 +27,9 @@ import level_set_fusion_optimization as cpp_extension
 
 def find_sampling_bounds_helper(bounds_max, depth_image, voxel_image):
     start_x = int(voxel_image[0] - bounds_max[0])
-    end_x = int(voxel_image[0] + bounds_max[0] + 1)
+    end_x = int(math.ceil(voxel_image[0] + bounds_max[0] + 1))
     start_y = int(voxel_image[1] - bounds_max[1])
-    end_y = int(voxel_image[1] + bounds_max[1] + 1)
+    end_y = int(math.ceil(voxel_image[1] + bounds_max[1] + 1))
 
     if end_y <= 0 or start_y > depth_image.shape[0] or end_x <= 0 or start_x > depth_image.shape[1]:
         return None
