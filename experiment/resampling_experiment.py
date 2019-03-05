@@ -38,8 +38,8 @@ EXIT_CODE_FAILURE = 1
 
 def main():
     save_profile = False
-    fraction_field = True
-    image_choice = 1
+    fraction_field = False
+    image_choice = 2
 
     if fraction_field or image_choice == 1:
         image_path = "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/depth/depth_00064.png"
@@ -51,8 +51,9 @@ def main():
     # depth_interpolation_method = gen.GenerationMethod.NONE
     # depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE
     # depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE_CPP
-    depth_interpolation_method = gen.GenerationMethod.EWA_TSDF
+    # depth_interpolation_method = gen.GenerationMethod.EWA_TSDF
     # depth_interpolation_method = gen.GenerationMethod.EWA_TSDF_INCLUSIVE
+    depth_interpolation_method = gen.GenerationMethod.EWA_TSDF_CPP
 
     if save_profile:
         im = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
@@ -107,7 +108,8 @@ def main():
                                                             field_size=field_size,
                                                             array_offset=np.array([-256, -256, z_offset]),
                                                             generation_method=depth_interpolation_method,
-                                                            voxel_size=voxel_size)
+                                                            voxel_size=voxel_size,
+                                                            smoothing_coefficient=0.5)
             print(repr(field[103:119, 210:226]))
             # print(repr(field[102:120, 209:226]))
 

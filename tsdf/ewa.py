@@ -680,5 +680,7 @@ generate_tsdf_2d_ewa_functions = {
     GenerationMethod.EWA_IMAGE: generate_tsdf_2d_ewa_image,
     GenerationMethod.EWA_IMAGE_CPP: generate_tsdf_2d_ewa_image_cpp,
     GenerationMethod.EWA_TSDF: generate_tsdf_2d_ewa_tsdf,
+    GenerationMethod.EWA_TSDF_CPP: generate_tsdf_2d_ewa_tsdf_cpp,
     GenerationMethod.EWA_TSDF_INCLUSIVE: generate_tsdf_2d_ewa_tsdf_inclusive,
+    GenerationMethod.EWA_TSDF_INCLUSIVE_CPP: generate_tsdf_2d_ewa_tsdf_inclusive_cpp,
 }

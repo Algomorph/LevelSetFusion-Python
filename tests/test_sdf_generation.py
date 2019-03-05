@@ -14,7 +14,7 @@ class MyTestCase(TestCase):
         image_pixel_row = 1
         offset = np.array([-1, -1, 1])
         field_size = 3
-        narrow_band_width_voxels=1
+        narrow_band_width_voxels = 1
 
         intrinsic_matrix = np.array([[1, 0, 1],  # FX = 1 CX = 1
                                      [0, 1, 1],  # FY = 1 CY = 1
@@ -38,7 +38,7 @@ class MyTestCase(TestCase):
         image_pixel_row = 1
         offset = np.array([-1, -1, 1])
         field_size = 3
-        narrow_band_width_voxels=1
+        narrow_band_width_voxels = 1
 
         intrinsic_matrix = np.array([[1, 0, 1],  # FX = 1 CX = 1
                                      [0, 1, 1],  # FY = 1 CY = 1
@@ -62,7 +62,7 @@ class MyTestCase(TestCase):
         image_pixel_row = 1
         offset = np.array([-1, -1, -1])
         field_size = 3
-        narrow_band_width_voxels=1
+        narrow_band_width_voxels = 1
 
         intrinsic_matrix = np.array([[1, 0, 1],  # FX = 1 CX = 1
                                      [0, 1, 1],  # FY = 1 CY = 1
@@ -78,7 +78,7 @@ class MyTestCase(TestCase):
                                                                  default_value=-999,
                                                                  voxel_size=1,
                                                                  array_offset=offset,
-                                                                 narrow_band_width_voxels=narrow_band_width_voxels,)
+                                                                 narrow_band_width_voxels=narrow_band_width_voxels, )
         self.assertTrue(np.allclose(expected_field, field))
 
     def test_sdf_generation04(self):
@@ -86,7 +86,7 @@ class MyTestCase(TestCase):
         image_pixel_row = 1
         offset = np.array([-1, -1, 1])
         field_size = 3
-        narrow_band_width_voxels=1
+        narrow_band_width_voxels = 1
 
         intrinsic_matrix = np.array([[1, 0, 1],  # FX = 1 CX = 1
                                      [0, 1, 1],  # FY = 1 CY = 1
@@ -112,8 +112,8 @@ class MyTestCase(TestCase):
         image_pixel_row = 1
         offset = np.array([-1, -1, 1])
         field_size = 3
-        narrow_band_width_voxels=1
-        twist3d=np.zeros((6, 1))
+        narrow_band_width_voxels = 1
+        twist3d = np.zeros((6, 1))
         twist_matrix3d = twist_vector_to_matrix3d(twist3d)
 
         intrinsic_matrix = np.array([[1, 0, 1],  # FX = 1 CX = 1
@@ -141,8 +141,8 @@ class MyTestCase(TestCase):
         image_pixel_row = 1
         offset = np.array([-1, -1, 1])
         field_size = 3
-        narrow_band_width_voxels=1
-        twist3d=np.zeros((6, 1))
+        narrow_band_width_voxels = 1
+        twist3d = np.zeros((6, 1))
         twist3d[1] = 10000000
         twist_matrix3d = twist_vector_to_matrix3d(twist3d)
         intrinsic_matrix = np.array([[1, 0, 1],  # FX = 1 CX = 1
@@ -170,8 +170,8 @@ class MyTestCase(TestCase):
         image_pixel_row = 1
         offset = np.array([-1, -1, 1])
         field_size = 3
-        narrow_band_width_voxels=1
-        twist3d=np.zeros((6, 1))
+        narrow_band_width_voxels = 1
+        twist3d = np.zeros((6, 1))
         twist3d[0] = 1
         twist_matrix3d = twist_vector_to_matrix3d(twist3d)
         intrinsic_matrix = np.array([[1, 0, 1],  # FX = 1 CX = 1
@@ -199,8 +199,8 @@ class MyTestCase(TestCase):
         image_pixel_row = 1
         offset = np.array([-1, -1, 1])
         field_size = 3
-        narrow_band_width_voxels=1
-        twist3d=np.zeros((6, 1))
+        narrow_band_width_voxels = 1
+        twist3d = np.zeros((6, 1))
         twist3d[0] = 2
         twist_matrix3d = twist_vector_to_matrix3d(twist3d)
         intrinsic_matrix = np.array([[1, 0, 1],  # FX = 1 CX = 1
@@ -228,8 +228,8 @@ class MyTestCase(TestCase):
         image_pixel_row = 1
         offset = np.array([-1, -1, 1])
         field_size = 3
-        narrow_band_width_voxels=1
-        twist3d=np.zeros((6, 1))
+        narrow_band_width_voxels = 1
+        twist3d = np.zeros((6, 1))
         twist3d[2] = 1000000
         twist_matrix3d = twist_vector_to_matrix3d(twist3d)
         intrinsic_matrix = np.array([[1, 0, 1],  # FX = 1 CX = 1
@@ -257,8 +257,8 @@ class MyTestCase(TestCase):
         image_pixel_row = 1
         offset = np.array([-1, -1, 1])
         field_size = 3
-        narrow_band_width_voxels=1
-        twist3d=np.zeros((6, 1))
+        narrow_band_width_voxels = 1
+        twist3d = np.zeros((6, 1))
         twist3d[2] = -1
         twist_matrix3d = twist_vector_to_matrix3d(twist3d)
         intrinsic_matrix = np.array([[1, 0, 1],  # FX = 1 CX = 1

@@ -21,7 +21,9 @@ class GenerationMethod:
     EWA_IMAGE = 3
     EWA_IMAGE_CPP = 4
     EWA_TSDF = 5
-    EWA_TSDF_INCLUSIVE = 6
+    EWA_TSDF_CPP = 6
+    EWA_TSDF_INCLUSIVE = 7
+    EWA_TSDF_INCLUSIVE_CPP = 8
 
 
 def compute_tsdf_value(signed_distance, narrow_band_half_width):
