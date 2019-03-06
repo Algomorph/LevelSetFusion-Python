@@ -52,8 +52,9 @@ def main():
     # depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE
     # depth_interpolation_method = gen.GenerationMethod.EWA_IMAGE_CPP
     # depth_interpolation_method = gen.GenerationMethod.EWA_TSDF
+    # depth_interpolation_method = gen.GenerationMethod.EWA_TSDF_CPP
     # depth_interpolation_method = gen.GenerationMethod.EWA_TSDF_INCLUSIVE
-    depth_interpolation_method = gen.GenerationMethod.EWA_TSDF_CPP
+    depth_interpolation_method = gen.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP
 
     if save_profile:
         im = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)

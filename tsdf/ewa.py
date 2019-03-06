@@ -33,7 +33,7 @@ def find_sampling_bounds_helper(bounds_max, depth_image, voxel_image):
     start_y = int(voxel_image[1] - bounds_max[1])
     end_y = int(math.ceil(voxel_image[1] + bounds_max[1] + 1))
 
-    if end_y <= 0 or start_y > depth_image.shape[0] or end_x <= 0 or start_x > depth_image.shape[1]:
+    if end_y <= 0 or start_y >= depth_image.shape[0] or end_x <= 0 or start_x >= depth_image.shape[1]:
         return None
     start_y = max(0, start_y)
     end_y = min(depth_image.shape[0], end_y)
@@ -42,13 +42,13 @@ def find_sampling_bounds_helper(bounds_max, depth_image, voxel_image):
     return start_x, end_x, start_y, end_y
 
 
-def find_sampling_bounds_helper2(bounds_max, depth_image, voxel_image):
+def find_sampling_bounds_inclusive_helper(bounds_max, depth_image, voxel_image):
     start_x = int(voxel_image[0] - bounds_max[0])
     end_x = int(math.ceil(voxel_image[0] + bounds_max[0] + 1))
     start_y = int(voxel_image[1] - bounds_max[1])
     end_y = int(math.ceil(voxel_image[1] + bounds_max[1] + 1))
 
-    if end_y <= 0 or start_y > depth_image.shape[0] or end_x <= 0 or start_x > depth_image.shape[1]:
+    if end_y <= 0 or start_y >= depth_image.shape[0] or end_x <= 0 or start_x >= depth_image.shape[1]:
         return None
 
     return start_x, end_x, start_y, end_y
@@ -634,7 +634,7 @@ def generate_tsdf_2d_ewa_tsdf_inclusive(depth_image, camera, image_y_coordinate,
 
             bounds_max = gaussian.ellipse.get_bounds()
 
-            result = find_sampling_bounds_helper2(bounds_max, depth_image, voxel_image)
+            result = find_sampling_bounds_inclusive_helper(bounds_max, depth_image, voxel_image)
             if result is None:
                 continue
             else:
