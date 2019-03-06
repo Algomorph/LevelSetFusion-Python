@@ -26,6 +26,8 @@ from tsdf.common import GenerationMethod
 # C++ extension
 import level_set_fusion_optimization as cpp_extension
 
+near_clipping_distance = 0.05
+
 
 def find_sampling_bounds_helper(bounds_max, depth_image, voxel_image):
     start_x = int(voxel_image[0] - bounds_max[0])
@@ -118,7 +120,7 @@ def generate_tsdf_3d_ewa_image(depth_image, camera,
                 voxel_world = np.array([[x_voxel, y_voxel, z_voxel, w_voxel]], dtype=np.float32).T
                 voxel_camera = camera_extrinsic_matrix.dot(voxel_world).flatten()[:3]
 
-                if voxel_camera[2] <= 0:
+                if voxel_camera[2] <= near_clipping_distance:
                     continue
 
                 # distance along ray from camera to voxel center
@@ -179,6 +181,28 @@ def generate_tsdf_3d_ewa_image(depth_image, camera,
                 field[x_field, y_field, z_field] = common.compute_tsdf_value(signed_distance, narrow_band_half_width)
 
     return field
+
+
+# Mostly for debugging EWA -- compute matrix containing sampling areas for each field entry being considered
+def sampling_area_heatmap_2d_ewa_image(depth_image, camera, image_y_coordinate,
+                                       camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
+                                       field_size=128, default_value=1, voxel_size=0.004,
+                                       array_offset=np.array([-64, -64, 64], dtype=np.int32),
+                                       narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
+                                       gaussian_covariance_scale=1.0):
+    if type(array_offset) != np.ndarray:
+        array_offset = np.array(array_offset).astype(np.int32)
+    return cpp_extension.sampling_area_heatmap_2d_ewa_image(image_y_coordinate,
+                                                            depth_image,
+                                                            camera.depth_unit_ratio,
+                                                            camera.intrinsics.intrinsic_matrix.astype(
+                                                                np.float32),
+                                                            camera_extrinsic_matrix.astype(np.float32),
+                                                            array_offset.astype(np.int32),
+                                                            field_size,
+                                                            voxel_size,
+                                                            narrow_band_width_voxels,
+                                                            gaussian_covariance_scale)
 
 
 def generate_tsdf_2d_ewa_image_cpp(depth_image, camera, image_y_coordinate,
@@ -349,7 +373,7 @@ def generate_tsdf_2d_ewa_image(depth_image, camera, image_y_coordinate,
             voxel_world = np.array([[x_voxel, y_voxel, z_voxel, w_voxel]], dtype=np.float32).T
             voxel_camera = camera_extrinsic_matrix.dot(voxel_world).flatten()[:3]
 
-            if voxel_camera[2] <= 0:
+            if voxel_camera[2] <= near_clipping_distance:
                 continue
 
             # distance along ray from camera to voxel
@@ -477,7 +501,7 @@ def generate_tsdf_2d_ewa_tsdf(depth_image, camera, image_y_coordinate,
             voxel_world = np.array([[x_voxel, y_voxel, z_voxel, w_voxel]], dtype=np.float32).T
             voxel_camera = camera_extrinsic_matrix.dot(voxel_world).flatten()[:3]
 
-            if voxel_camera[2] <= 0:
+            if voxel_camera[2] <= near_clipping_distance:
                 continue
 
             # distance along ray from camera to voxel
@@ -606,7 +630,19 @@ def generate_tsdf_2d_ewa_tsdf_inclusive(depth_image, camera, image_y_coordinate,
             voxel_world = np.array([[x_voxel, y_voxel, z_voxel, w_voxel]], dtype=np.float32).T
             voxel_camera = camera_extrinsic_matrix.dot(voxel_world).flatten()[:3]
 
-            if voxel_camera[2] <= 0:
+            if voxel_camera[2] <= near_clipping_distance:
+                continue
+
+            voxel_image = (camera_intrinsic_matrix.dot(voxel_camera) / voxel_camera[2])[:2]
+            voxel_image[1] = image_y_coordinate
+            voxel_image = voxel_image.reshape(-1, 1)
+
+            x_image = voxel_image[0]
+            y_image = voxel_image[1]
+            margin = 3
+
+            if y_image < -margin or y_image >= depth_image.shape[0] + margin \
+                    or x_image < -margin or x_image >= depth_image.shape[1] + margin:
                 continue
 
             # distance along ray from camera to voxel
@@ -627,10 +663,6 @@ def generate_tsdf_2d_ewa_tsdf_inclusive(depth_image, camera, image_y_coordinate,
                 image_space_scaling_matrix.T) + np.eye(2)
             Q = np.linalg.inv(final_covariance)
             gaussian = eg.EllipticalGaussian(eg.ImplicitEllipse(Q=Q, F=squared_radius_threshold))
-
-            voxel_image = (camera_intrinsic_matrix.dot(voxel_camera) / voxel_camera[2])[:2]
-            voxel_image[1] = image_y_coordinate
-            voxel_image = voxel_image.reshape(-1, 1)
 
             bounds_max = gaussian.ellipse.get_bounds()
 
