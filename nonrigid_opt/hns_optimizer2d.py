@@ -14,7 +14,11 @@
 #  limitations under the License.
 #  ================================================================
 
-# HNS = hierarchical nonrigid optimizer
+# HNS = hierarchical nonrigid SLAM optimizer
+
+# TODO: rename all references, file names, class names to simply use "hierarchical optimizer" instead of some weird
+#  acronym
+
 # stdlib
 # libraries
 import numpy as np
