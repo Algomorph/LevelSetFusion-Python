@@ -30,7 +30,7 @@ import pandas as pd
 # local
 from experiment.build_optimizer import OptimizerChoice, build_optimizer
 from nonrigid_opt.data_term import DataTermMethod
-from experiment.dataset import ImageBasedSingleFrameDataset, MaskedImageBasedSingleFrameDataset
+from experiment.dataset import ImageBasedFramePairDataset, MaskedImageBasedFramePairDataset
 from tsdf.generation import GenerationMethod
 from utils.point2d import Point2d
 from utils.printing import *
@@ -88,7 +88,7 @@ def record_cases_files(log, out_directory):
 def perform_multiple_tests(start_from_sample=0,
                            data_term_method=DataTermMethod.BASIC,
                            optimizer_choice=OptimizerChoice.CPP,
-                           depth_interpolation_method=GenerationMethod.NONE,
+                           depth_interpolation_method=GenerationMethod.BASIC,
                            out_path="out2D/Snoopy MultiTest",
                            input_case_file=None,
                            calibration_path=
@@ -208,12 +208,12 @@ def perform_multiple_tests(start_from_sample=0,
 
         # Generate SDF fields
         if use_masks:
-            dataset = MaskedImageBasedSingleFrameDataset(calibration_path, canonical_frame_path, canonical_mask_path,
-                                                         live_frame_path, live_mask_path, pixel_row_index,
-                                                         field_size, offset)
+            dataset = MaskedImageBasedFramePairDataset(calibration_path, canonical_frame_path, canonical_mask_path,
+                                                       live_frame_path, live_mask_path, pixel_row_index,
+                                                       field_size, offset)
         else:
-            dataset = ImageBasedSingleFrameDataset(calibration_path, canonical_frame_path, live_frame_path,
-                                                   pixel_row_index, field_size, offset)
+            dataset = ImageBasedFramePairDataset(calibration_path, canonical_frame_path, live_frame_path,
+                                                 pixel_row_index, field_size, offset)
 
         live_field, canonical_field = dataset.generate_2d_sdf_fields(method=depth_interpolation_method)
 

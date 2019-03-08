@@ -23,7 +23,7 @@ import os
 import numpy as np
 # local
 from nonrigid_opt.data_term import DataTermMethod
-from experiment.dataset import datasets, PredefinedDatasetEnum, MaskedImageBasedSingleFrameDataset, ImageBasedSingleFrameDataset
+from experiment.dataset import datasets, PredefinedDatasetEnum, MaskedImageBasedFramePairDataset, ImageBasedFramePairDataset
 from nonrigid_opt.slavcheva_visualizer import SlavchevaVisualizer
 from nonrigid_opt.smoothing_term import SmoothingTermMethod
 from tsdf.generation import generate_initial_orthographic_2d_tsdf_fields, GenerationMethod
@@ -33,7 +33,7 @@ from utils.visualization import visualize_and_save_initial_fields, visualize_fin
 from experiment import experiment_shared_routines as shared
 
 
-def perform_single_test(depth_interpolation_method=GenerationMethod.NONE, out_path="output/out2D",
+def perform_single_test(depth_interpolation_method=GenerationMethod.BASIC, out_path="output/out2D",
                         frame_path="", calibration_path="calib.txt", canonical_frame_index=-1, pixel_row_index=-1,
                         z_offset=128, draw_tsdfs_and_exit=False):
     visualize_and_save_initial_and_final_fields = False
@@ -70,12 +70,12 @@ def perform_single_test(depth_interpolation_method=GenerationMethod.NONE, out_pa
         offset = [-64, -64, z_offset]
         # Generate SDF fields
         if use_masks:
-            dataset = MaskedImageBasedSingleFrameDataset(calibration_path, canonical_frame_path, canonical_mask_path,
-                                                         live_frame_path, live_mask_path, pixel_row_index,
-                                                         field_size, offset)
+            dataset = MaskedImageBasedFramePairDataset(calibration_path, canonical_frame_path, canonical_mask_path,
+                                                       live_frame_path, live_mask_path, pixel_row_index,
+                                                       field_size, offset)
         else:
-            dataset = ImageBasedSingleFrameDataset(calibration_path, canonical_frame_path, live_frame_path,
-                                                   pixel_row_index, field_size, offset)
+            dataset = ImageBasedFramePairDataset(calibration_path, canonical_frame_path, live_frame_path,
+                                                 pixel_row_index, field_size, offset)
 
         live_field, canonical_field = dataset.generate_2d_sdf_fields(method=depth_interpolation_method)
 

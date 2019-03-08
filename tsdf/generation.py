@@ -218,7 +218,7 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
 
 
 generate_tsdf_2d_conventional_functions = {
-    GenerationMethod.NONE: generate_2d_tsdf_field_from_depth_image_no_interpolation,
+    GenerationMethod.BASIC: generate_2d_tsdf_field_from_depth_image_no_interpolation,
     GenerationMethod.BILINEAR_IMAGE: generate_2d_tsdf_field_from_depth_image_bilinear_image_space,
     GenerationMethod.BILINEAR_TSDF: generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space,
 }
@@ -229,7 +229,7 @@ def generate_2d_tsdf_field_from_depth_image(depth_image, camera, image_y_coordin
                                             field_size=128, default_value=1, voxel_size=0.004,
                                             array_offset=np.array([-64, -64, 64]),
                                             narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                            generation_method=GenerationMethod.NONE,
+                                            generation_method=GenerationMethod.BASIC,
                                             smoothing_coefficient=1.0):
     if generation_method in generate_tsdf_2d_conventional_functions:
         return generate_tsdf_2d_conventional_functions[generation_method](

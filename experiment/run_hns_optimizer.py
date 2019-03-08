@@ -30,7 +30,7 @@ EXIT_CODE_FAILURE = 1
 
 def main():
     data_to_use = ds.PredefinedDatasetEnum.REAL3D_SNOOPY_SET03
-    depth_interpolation_method = tsdf.GenerationMethod.NONE
+    depth_interpolation_method = tsdf.GenerationMethod.BASIC
     out_path = "output/hnso"
     sampling.set_focus_coordinates(0, 0)
     generate_test_data = False

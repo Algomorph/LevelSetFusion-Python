@@ -20,12 +20,15 @@
 from enum import Enum
 import re
 import os
+
 # libraries
 import cv2
 import numpy as np
 
-
 # local
+import experiment.dataset as dts
+import experiment.path_utility as pu
+
 
 def is_unmasked_image_row_empty(path, ix_row):
     image = cv2.imread(path, cv2.IMREAD_UNCHANGED)
@@ -86,7 +89,7 @@ def check_frame_count_and_format(frames_path, turn_mask_checking_off=False):
     return frame_count, filename_format, use_masks
 
 
-def generate_framepath_format_string(frame_directory, frame_filename_format):
+def generate_frame_path_format_string(frame_directory, frame_filename_format):
     if frame_filename_format == FrameFilenameFormat.SIX_DIGIT:
         frame_path_format_string = frame_directory + os.path.sep + "depth_{:0>6d}.png"
         mask_path_format_string = frame_directory + os.path.sep + "mask_{:0>6d}.png"
@@ -98,26 +101,37 @@ def generate_framepath_format_string(frame_directory, frame_filename_format):
 
 
 def prepare_dataset_for_2d_frame_pair_processing(
-        frame_directory="/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/",
+        calibration_path=os.path.join(pu.get_reconstruction_directory(),
+                                      "real_data/snoopy/snoopy_calib.txt"),
+        frame_directory=os.path.join(pu.get_reconstruction_directory(),
+                                     "real_data/snoopy/frames/"),
+        output_directory="./output",
         y_range=(214, 400),
         replace_empty_rows=True,
         use_masks=True,
-        input_case_file=None
+        input_case_file=None,
+        offset=np.array([-64, -64, 128]),
+        field_size=128,
 ):
     """
-
-
-    :param frame_directory:
+    :param calibration_path: path to calibration file
+    :param frame_directory: directory where depth, color, and, potentially, mask images reside, all postfixed with
+     frame numbers
+    :param output_directory: general output directory
     TODO: make safe_y_range a property of each dataset
     :param y_range: some kind of estimated range of "good" pixel rows that works for every image in the dataset
-    :param replace_empty_rows:
-    :param use_masks:
-    :param input_case_file:
-    :return:
+    :param replace_empty_rows: make sure we don't use rows full of zeros from the depth images
+    :param use_masks: whether or not to use masks (if such are included in the frame_directory)
+    :param input_case_file: a .csv dataset specifying exactly which frame pairs and rows to use, along with
+    focus (image) coordinates for debugging
+    (format is TBD, but for now it is: canonical_frame_index, pixel_row_index, <some other column>, focus_x, focus_y)
+    :param offset: offset, in voxels, of TSDF fields from camera
+    :param field_size: side length of (square) TSDF field in voxels
+    :return: a set of frame datasets
     """
     frame_count, frame_filename_format, use_masks = check_frame_count_and_format(frame_directory, not use_masks)
     frame_path_format_string, mask_path_format_string = \
-        generate_framepath_format_string(frame_directory, frame_filename_format)
+        generate_frame_path_format_string(frame_directory, frame_filename_format)
 
     if input_case_file:
         frame_row_and_focus_set = np.genfromtxt(input_case_file, delimiter=",", dtype=np.int32)
@@ -148,5 +162,24 @@ def prepare_dataset_for_2d_frame_pair_processing(
                 new_pixel_row_set.append(pixel_row_index)
             frame_row_and_focus_set = zip(frame_set, pixel_row_set, focus_x, focus_y)
 
-    # TODO: modify return to output frame input & output path sets directly (along with focus coordinates) -- maybe make new class holding these?
-    return frame_row_and_focus_set
+    datasets = []
+
+    for canonical_frame_index, pixel_row_index, focus_x, focus_y in frame_row_and_focus_set:
+        out_subpath = os.path.join(output_directory, "frames {:0>6d}-{:0>6d} line {:0>3d}"
+                                   .format(canonical_frame_index, canonical_frame_index + 1, pixel_row_index))
+        canonical_frame_path = frame_path_format_string.format(canonical_frame_index)
+        canonical_mask_path = mask_path_format_string.format(canonical_frame_index)
+        live_frame_path = frame_path_format_string.format(canonical_frame_index + 1)
+        live_mask_path = mask_path_format_string.format(canonical_frame_index + 1)
+        if use_masks:
+            dataset = dts.MaskedImageBasedFramePairDataset(calibration_path, canonical_frame_path, canonical_mask_path,
+                                                           live_frame_path, live_mask_path, pixel_row_index,
+                                                           field_size, offset, focus_coordinates=(focus_x, focus_y))
+        else:
+            dataset = dts.ImageBasedFramePairDataset(calibration_path, canonical_frame_path, live_frame_path,
+                                                     pixel_row_index, field_size, offset,
+                                                     focus_coordinates=(focus_x, focus_y))
+        dataset.out_subpath = out_subpath
+        datasets.append(dataset)
+
+    return datasets

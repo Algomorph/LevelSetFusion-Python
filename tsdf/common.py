@@ -15,7 +15,7 @@
 #  ================================================================
 
 class GenerationMethod:
-    NONE = 0
+    BASIC = 0
     BILINEAR_IMAGE = 1
     BILINEAR_TSDF = 2
     EWA_IMAGE = 3
