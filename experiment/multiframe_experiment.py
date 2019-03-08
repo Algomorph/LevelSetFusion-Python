@@ -97,12 +97,11 @@ def perform_multiple_tests(start_from_sample=0,
                            "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/",
                            z_offset=128):
     # CANDIDATES FOR ARGS
-
     save_initial_and_final_fields = input_case_file is not None
     enable_warp_statistics_logging = input_case_file is not None
     save_frame_images = input_case_file is not None
     use_masks = True
-    check_empty_row = True
+
     # TODO a tiled image with 6x6 bad cases and 6x6 good cases (SDF fields)
     save_tiled_good_vs_bad_case_comparison_image = True
     save_per_case_results_in_root_output_folder = False
@@ -119,12 +118,15 @@ def perform_multiple_tests(start_from_sample=0,
         frame_path_format_string = frame_path + os.path.sep + "depth_{:0>5d}.png"
         mask_path_format_string = frame_path + os.path.sep + "mask_{:0>5d}.png"
 
-    # region ================ Generation of lists of frames & pixel rows to work with ==================================
 
     # CANDIDATES FOR ARGS
     field_size = 128
     offset = [-64, -64, z_offset]
     line_range = (214, 400)
+    view_scaling_factor = 1024 // field_size
+
+    # region ================ Generation of lists of frames & pixel rows to work with ==================================
+    check_empty_row = True
 
     if input_case_file:
         frame_row_and_focus_set = np.genfromtxt(input_case_file, delimiter=",", dtype=np.int32)
@@ -155,8 +157,6 @@ def perform_multiple_tests(start_from_sample=0,
                     pixel_row_index = line_range[0] + (line_range[1] - line_range[0]) * np.random.rand()
                 new_pixel_row_set.append(pixel_row_index)
             frame_row_and_focus_set = zip(frame_set, pixel_row_set, focus_x, focus_y)
-
-    view_scaling_factor = 1024 // field_size
 
     # endregion ========================================================================================================
 
