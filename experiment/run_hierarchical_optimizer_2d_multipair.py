@@ -60,23 +60,33 @@ def main():
         print_iteration_data_energy=True,
         print_iteration_tikhonov_energy=False)
 
-    kernel = generate_1d_sobolev_kernel(size=7, strength=0.1)
+    kernel = generate_1d_sobolev_kernel(size=7, strength=0.1).copy()
+    print(type(verbosity_params))
+    tc = cpp_extension.TestClass(kernel)
+
+
+
     optimizer = cpp_extension.HierarchicalOptimizer(
         tikhonov_term_enabled=False,
         gradient_kernel_enabled=False,
+
         maximum_chunk_size=8,
         rate=0.2,
         maximum_iteration_count=100,
         maximum_warp_update_threshold=0.001,
+
         data_term_amplifier=1.0,
+        tikhonov_strength=0.2,
         kernel=kernel,
         verbosity_params=verbosity_params
     )
-
-    for dataset in frame_pair_datasets:
-        canonical_field, live_field = dataset.generate_2d_sdf_fields(generation_method)
-        warp_field_out = optimizer.optimize(canonical_field, live_field)
-        final_live_resampled = resampling.resample_field(live_field, warp_field_out)
+    #
+    #
+    #
+    # for dataset in frame_pair_datasets:
+    #     canonical_field, live_field = dataset.generate_2d_sdf_fields(generation_method)
+    #     warp_field_out = optimizer.optimize(canonical_field, live_field)
+    #     final_live_resampled = resampling.resample_field(live_field, warp_field_out)
 
     return EXIT_CODE_SUCCESS
 
