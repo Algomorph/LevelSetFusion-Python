@@ -20,6 +20,7 @@ import os.path
 
 # libraries
 import numpy as np
+import progressbar
 
 # local
 import experiment.path_utility as pu
@@ -28,6 +29,7 @@ from tsdf import generation as tsdf
 from utils import field_resampling as resampling
 import utils.sampling as sampling
 from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
+import utils.printing as prt
 
 # has to be compiled and installed first (cpp folder)
 import level_set_fusion_optimization as cpp_extension
@@ -37,6 +39,7 @@ EXIT_CODE_FAILURE = 1
 
 
 def main():
+    # program argument candidates
     generation_method = tsdf.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP
 
     out_path = "output/ho"
@@ -55,16 +58,12 @@ def main():
         field_size=128,
     )
 
-    verbosity_params = cpp_extension.HierarchicalOptimizer.VerbosityParameters(
+    verbosity_parameters = cpp_extension.HierarchicalOptimizer.VerbosityParameters(
         print_max_warp_update=False,
-        print_iteration_data_energy=True,
+        print_iteration_mean_tsdf_difference=False,
+        print_iteration_std_tsdf_difference=False,
+        print_iteration_data_energy=False,
         print_iteration_tikhonov_energy=False)
-
-    kernel = generate_1d_sobolev_kernel(size=7, strength=0.1).copy()
-    print(type(verbosity_params))
-    tc = cpp_extension.TestClass(kernel)
-
-
 
     optimizer = cpp_extension.HierarchicalOptimizer(
         tikhonov_term_enabled=False,
@@ -77,16 +76,16 @@ def main():
 
         data_term_amplifier=1.0,
         tikhonov_strength=0.2,
-        kernel=kernel,
-        verbosity_params=verbosity_params
+        kernel=generate_1d_sobolev_kernel(size=7, strength=0.1),
+        verbosity_parameters=verbosity_parameters
     )
-    #
-    #
-    #
-    # for dataset in frame_pair_datasets:
-    #     canonical_field, live_field = dataset.generate_2d_sdf_fields(generation_method)
-    #     warp_field_out = optimizer.optimize(canonical_field, live_field)
-    #     final_live_resampled = resampling.resample_field(live_field, warp_field_out)
+
+    pair_count = len(frame_pair_datasets)
+
+    for dataset in progressbar.progressbar(frame_pair_datasets):
+        canonical_field, live_field = dataset.generate_2d_sdf_fields(generation_method)
+        warp_field_out = optimizer.optimize(canonical_field, live_field)
+        final_live_resampled = resampling.resample_field(live_field, warp_field_out)
 
     return EXIT_CODE_SUCCESS
 

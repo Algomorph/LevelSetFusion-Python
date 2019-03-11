@@ -255,7 +255,7 @@ def generate_tsdf_2d_ewa_tsdf_inclusive_cpp(depth_image, camera, image_y_coordin
                                             gaussian_covariance_scale=1.0):
     if type(array_offset) != np.ndarray:
         array_offset = np.array(array_offset).astype(np.int32)
-    return cpp_extension.generate_tsdf_2d_ewa_tsdf_inclusive(image_y_coordinate,
+    return cpp_extension.generate_tsdf_2d_ewa_tsdf_inclusive(int(image_y_coordinate),
                                                              depth_image,
                                                              camera.depth_unit_ratio,
                                                              camera.intrinsics.intrinsic_matrix.astype(
