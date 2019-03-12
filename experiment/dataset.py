@@ -182,27 +182,27 @@ datasets = {
         200, 128, np.array([-64, -64, 64])
     ),
     PredefinedDatasetEnum.REAL3D_SNOOPY_SET01: ImageBasedFramePairDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000015.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000016.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/snoopy_calib.txt",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000015.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000016.png",
         214, 128, np.array([-64, -64, 128])
     ),
     PredefinedDatasetEnum.REAL3D_SNOOPY_SET02: ImageBasedFramePairDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000064.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000065.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/snoopy_calib.txt",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000064.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000065.png",
         214, 128, np.array([-64, -64, 128])
     ),
     PredefinedDatasetEnum.REAL3D_SNOOPY_SET03: ImageBasedFramePairDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000025.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000026.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/snoopy_calib.txt",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000025.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000026.png",
         334, 128, np.array([-64, -64, 128])
     ),
     PredefinedDatasetEnum.REAL3D_SNOOPY_SET04: ImageBasedFramePairDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000065.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000066.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/snoopy_calib.txt",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000065.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000066.png",
         223, 128, np.array([-64, -64, 128])
     ),
     PredefinedDatasetEnum.SYNTHETIC3D_PLANE_AWAY: ImageBasedFramePairDataset(

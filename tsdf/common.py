@@ -25,6 +25,11 @@ class GenerationMethod:
     EWA_TSDF_INCLUSIVE = 7
     EWA_TSDF_INCLUSIVE_CPP = 8
 
+def get_generation_method_keys():
+    standard_class_dict_keys = {'__dict__', '__doc__', '__module__', '__weakref__'}
+    all_class_dict_keys = set(GenerationMethod.__dict__.keys())
+    return all_class_dict_keys.difference(standard_class_dict_keys)
+
 
 def compute_tsdf_value(signed_distance, narrow_band_half_width):
     """

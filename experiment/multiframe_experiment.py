@@ -41,16 +41,17 @@ from experiment import experiment_shared_routines as shared
 
 
 def log_convergence_status(log, convergence_status, canonical_frame_index, live_frame_index, pixel_row_index):
+    wds = convergence_status.warp_delta_statistics
     log.append([canonical_frame_index,
                 live_frame_index,
                 pixel_row_index,
                 convergence_status.iteration_count,
-                convergence_status.max_warp_length,
-                convergence_status.max_warp_location.x,
-                convergence_status.max_warp_location.y,
+                wds.length_max,
+                wds.longest_warp_location.x,
+                wds.longest_warp_location.y,
                 convergence_status.iteration_limit_reached,
-                convergence_status.largest_warp_below_minimum_threshold,
-                convergence_status.largest_warp_above_maximum_threshold])
+                wds.is_largest_below_min_threshold,
+                wds.is_largest_above_max_threshold])
 
 
 def record_convergence_status_log(log, file_path):
@@ -92,9 +93,9 @@ def perform_multiple_tests(start_from_sample=0,
                            out_path="out2D/Snoopy MultiTest",
                            input_case_file=None,
                            calibration_path=
-                           "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
+                           "/media/algomorph/Data/Reconstruction/real_data/snoopy/snoopy_calib.txt",
                            frame_path=
-                           "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/",
+                           "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/",
                            z_offset=128):
     # CANDIDATES FOR ARGS
     save_initial_and_final_fields = input_case_file is not None
@@ -251,16 +252,17 @@ def perform_multiple_tests(start_from_sample=0,
                 else:
                     plot_warp_statistics(out_subpath, warp_statistics, extra_path=None)
 
-        convergence_status = optimizer.get_convergence_status()
-        max_warp_at = Point2d(convergence_status.max_warp_location.x, convergence_status.max_warp_location.y)
-        if not convergence_status.iteration_limit_reached:
-            if convergence_status.largest_warp_above_maximum_threshold:
+        convergence_report = optimizer.get_convergence_report()
+        max_warp_at_cpp = convergence_report.warp_delta_statistics.longest_warp_location
+        max_warp_at = Point2d(max_warp_at_cpp.x, max_warp_at_cpp.y)
+        if not convergence_report.iteration_limit_reached:
+            if convergence_report.warp_delta_statistics.is_largest_above_max_threshold:
                 print(": DIVERGED", end="")
             else:
                 print(": CONVERGED", end="")
 
             if (save_tiled_good_vs_bad_case_comparison_image and
-                    not convergence_status.largest_warp_above_maximum_threshold
+                    not convergence_report.warp_delta_statistics.is_largest_above_max_threshold
                     and len(good_case_sdfs) < max_case_count):
                 good_case_sdfs.append((canonical_field, original_live_field, max_warp_at))
 
@@ -268,9 +270,9 @@ def perform_multiple_tests(start_from_sample=0,
             print(": NOT CONVERGED", end="")
             if save_tiled_good_vs_bad_case_comparison_image and len(bad_case_sdfs) < max_case_count:
                 bad_case_sdfs.append((canonical_field, original_live_field, max_warp_at))
-        print(" IN", convergence_status.iteration_count, "ITERATIONS")
+        print(" IN", convergence_report.iteration_count, "ITERATIONS")
 
-        log_convergence_status(convergence_status_log, convergence_status,
+        log_convergence_status(convergence_status_log, convergence_report,
                                canonical_frame_index, live_frame_index, pixel_row_index)
 
         if rebuild_optimizer:

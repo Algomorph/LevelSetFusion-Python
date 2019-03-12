@@ -65,6 +65,10 @@ def main():
         print_iteration_data_energy=False,
         print_iteration_tikhonov_energy=False)
 
+    logging_parameters = cpp_extension.HierarchicalOptimizer.LoggingParameters(
+        collect_per_level_convergence_reports=True
+    )
+
     optimizer = cpp_extension.HierarchicalOptimizer(
         tikhonov_term_enabled=False,
         gradient_kernel_enabled=False,

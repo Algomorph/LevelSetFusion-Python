@@ -61,7 +61,7 @@ class OptimizationLog:
         self.smoothing_energies = []
         self.level_set_energies = []
         self.max_warps = []
-        self.convergence_status = cpp_extension.ConvergenceStatus()
+        self.convergence_status = cpp_extension.ConvergenceReport()
 
 
 class ComputeMethod(Enum):
@@ -391,7 +391,7 @@ class SlavchevaOptimizer2d:
 
         # log end-of-optimization stats
         if self.enable_convergence_status_logging:
-            self.log.convergence_status = cpp_extension.ConvergenceStatus(
+            self.log.convergence_status = cpp_extension.ConvergenceReport(
                 iteration_number, float(max_warp),
                 cpp_extension.Vector2i(int(max_warp_location.x), int(max_warp_location.y)),
                 iteration_number >= self.max_iterations,
