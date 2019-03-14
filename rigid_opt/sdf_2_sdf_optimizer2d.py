@@ -71,9 +71,9 @@ class Sdf2SdfOptimizer2d:
         """
 
         canonical_field = data_to_use.generate_2d_canonical_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                                  method=tsdf_gen.GenerationMethod.NONE)
+                                                                  method=tsdf_gen.GenerationMethod.BASIC)
         live_field = data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                        method=tsdf_gen.GenerationMethod.NONE)
+                                                        method=tsdf_gen.GenerationMethod.BASIC)
         field_size = canonical_field.shape[0]
         offset = data_to_use.offset
         twist = np.zeros((3, 1))
@@ -86,7 +86,7 @@ class Sdf2SdfOptimizer2d:
             vector_b = np.zeros((3, 1))
             canonical_weight = (canonical_field > -eta).astype(np.int)
             live_field = data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                            method=tsdf_gen.GenerationMethod.NONE,
+                                                            method=tsdf_gen.GenerationMethod.BASIC,
                                                             twist=np.array([twist[0],
                                                                            [0.],
                                                                            twist[1],
@@ -124,7 +124,7 @@ class Sdf2SdfOptimizer2d:
 
             self.visualizer.generate_per_iteration_visualizations(
                 data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                   method=tsdf_gen.GenerationMethod.NONE,
+                                                   method=tsdf_gen.GenerationMethod.BASIC,
                                                    twist=np.array([twist[0],
                                                                   [0.],
                                                                   twist[1],

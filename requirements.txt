@@ -1,10 +1,11 @@
-pytest==3.9.3
-numpy==1.15.4
-opencv-python==3.4.4.19
-pandas==0.23.4
-matplotlib==3.0.2
-lxml==4.2.1
-scipy==1.1.0
+pytest>=3.9.3
+numpy>=1.15.4
+opencv-python>=3.4.4.19
+pandas>=0.23.4
+matplotlib>=3.0.2
+lxml>=4.2.1
+scipy>=1.1.0
+progressbar2>=3.39.2
 -e git+https://github.com/mnick/scikit-tensor.git#egg=scikit-tensor
 # Change previous entry to this after the "pip installation for scikit-tensor" issue is fixed;
 # see https://github.com/mnick/scikit-tensor/issues/34:

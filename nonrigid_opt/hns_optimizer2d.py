@@ -148,7 +148,7 @@ class HierarchicalNonrigidSLAMOptimizer2d:
             if self.hierarchy_level != level_count - 1:
                 warp_field = warp_field.repeat(2, axis=0).repeat(2, axis=1)
 
-            if self.verbosity_parameters.print_per_iteration_info:
+            if self.verbosity_parameters.print_per_level_info:
                 print("%s[LEVEL %d COMPLETED]%s" % (printing.BOLD_RED, self.hierarchy_level, printing.RESET),
                       end="")
 

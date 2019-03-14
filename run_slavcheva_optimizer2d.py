@@ -27,7 +27,8 @@ import argparse
 from nonrigid_opt.data_term import DataTermMethod
 from experiment.multiframe_experiment import perform_multiple_tests, OptimizerChoice
 from experiment.singleframe_experiment import perform_single_test
-from tsdf.generation import GenerationMethod
+import tsdf.generation as gen
+import tsdf.common as tsdf
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1
@@ -53,10 +54,10 @@ def main():
     parser.add_argument("-c", "--calibration", type=str,
                         default=
                         "/media/algomorph/Data/Reconstruction/real_data/"
-                        "KillingFusion Snoopy/snoopy_calib.txt",
+                        "snoopy/snoopy_calib.txt",
                         help="Path to the camera calibration file to use unless using a predefined dataset")
     parser.add_argument("-f", "--frames", type=str,
-                        default="/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames",
+                        default="/media/algomorph/Data/Reconstruction/real_data/snoopy/frames",
                         help="Path to the depth frames. Frame image files should have names "
                              "that follow depth_{:0>6d}.png pattern, i.e. depth_000000.png")
     parser.add_argument("-cfi", "--canonical_frame_index", type=int, default=-1,
@@ -75,9 +76,9 @@ def main():
     parser.add_argument("-oc", "--optimizer_choice", type=str, default="CPP",
                         help="optimizer choice (currently, multiple_tests mode only!), "
                              "must be in {CPP, PYTHON_DIRECT, PYTHON_VECTORIZED}")
-    parser.add_argument("-di", "--depth_interpolation_method", type=str, default="NONE",
+    parser.add_argument("-di", "--depth_interpolation_method", type=str, default="BASIC",
                         help="Depth image interpolation method to use when generating SDF. "
-                             "Can be one of: {NONE, BILINEAR_IMAGE_SPACE, BILINEAR_TSDF_SPACE}")
+                             "Must be in " + str(tsdf.get_generation_method_keys()))
     parser.add_argument("--draw_initial_tsdfs_and_exit",
                         action='store_true',
                         help="(single_test mode only), exits after drawing and saving the initial TSDF")
@@ -104,7 +105,7 @@ def main():
               " data_term_method (dtm) should be \"basic\" or \"thresholded_fdm\", got \"{:s}\""
               .format(arguments.data_term_method))
 
-    depth_interpolation_method = GenerationMethod.__dict__[arguments.depth_interpolation_method]
+    depth_interpolation_method = gen.GenerationMethod.__dict__[arguments.depth_interpolation_method]
     optimizer_choice = OptimizerChoice.__dict__[arguments.optimizer_choice]
 
     if mode == Mode.SINGLE_TEST:

@@ -47,30 +47,31 @@ class PredefinedDatasetEnum(Enum):
     REAL3D_SNOOPY_SET04 = 103
 
 
-class SingleFrameDataset(ABC):
-    def __init__(self):
-        pass
+class FramePairDataset(ABC):
+    def __init__(self, focus_coordinates=(-1, -1, -1)):
+        self.focus_coordinates = focus_coordinates
+        self.out_subpath = ""
 
     @abstractmethod
-    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.NONE):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.BASIC):
         pass
 
 
-class HardcodedSingleFrameDataset(SingleFrameDataset):
+class HardcodedFramePairDataset(FramePairDataset):
     def __init__(self, canonical_field, live_field):
-        super(HardcodedSingleFrameDataset).__init__()
+        super(HardcodedFramePairDataset).__init__()
         self.field_size = canonical_field.shape[0]
         self.canonical_field = canonical_field
         self.live_field = live_field
 
-    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.NONE):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.BASIC):
         return self.live_field, self.canonical_field
 
 
-class ImageBasedSingleFrameDataset(SingleFrameDataset):
+class ImageBasedFramePairDataset(FramePairDataset):
     def __init__(self, calibration_file_path, first_frame_path, second_frame_path, image_pixel_row, field_size, offset,
-                 voxel_size=0.004):
-        super(ImageBasedSingleFrameDataset).__init__()
+                 voxel_size=0.004, focus_coordinates=(-1, -1, -1)):
+        super().__init__(focus_coordinates)
         self.calibration_file_path = calibration_file_path
         self.first_frame_path = first_frame_path
         self.second_frame_path = second_frame_path
@@ -79,7 +80,7 @@ class ImageBasedSingleFrameDataset(SingleFrameDataset):
         self.offset = offset
         self.voxel_size = voxel_size
 
-    def generate_2d_sdf_canonical(self, method=tsdf_gen.GenerationMethod.NONE):
+    def generate_2d_sdf_canonical(self, method=tsdf_gen.GenerationMethod.BASIC):
         rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
         depth_camera = rig.depth_camera
         depth_image0 = cv2.imread(self.first_frame_path, cv2.IMREAD_UNCHANGED)
@@ -92,7 +93,7 @@ class ImageBasedSingleFrameDataset(SingleFrameDataset):
                                                              voxel_size=self.voxel_size)
         return canonical_field
 
-    def generate_2d_sdf_live(self, method=tsdf_gen.GenerationMethod.NONE):
+    def generate_2d_sdf_live(self, method=tsdf_gen.GenerationMethod.BASIC):
         rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
         depth_camera = rig.depth_camera
         depth_image1 = cv2.imread(self.second_frame_path, cv2.IMREAD_UNCHANGED)
@@ -105,27 +106,22 @@ class ImageBasedSingleFrameDataset(SingleFrameDataset):
                                                              voxel_size=self.voxel_size)
         return live_field
 
-    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.NONE):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.BASIC):
         live_field = self.generate_2d_sdf_live(method)
         canonical_field = self.generate_2d_sdf_canonical(method)
         return live_field, canonical_field
 
 
-class MaskedImageBasedSingleFrameDataset(SingleFrameDataset):
+class MaskedImageBasedFramePairDataset(ImageBasedFramePairDataset):
     def __init__(self, calibration_file_path, first_frame_path, first_mask_path, second_frame_path, second_mask_path,
-                 image_pixel_row, field_size, offset, voxel_size=0.004):
-        super(ImageBasedSingleFrameDataset).__init__()
-        self.calibration_file_path = calibration_file_path
-        self.first_frame_path = first_frame_path
+                 image_pixel_row, field_size, offset, voxel_size=0.004, focus_coordinates=(-1, -1, -1)):
+        super(MaskedImageBasedFramePairDataset).__init__(calibration_file_path, first_frame_path, second_frame_path,
+                                                         image_pixel_row, field_size, offset,
+                                                         voxel_size, focus_coordinates)
         self.first_mask_path = first_mask_path
-        self.second_frame_path = second_frame_path
         self.second_mask_path = second_mask_path
-        self.image_pixel_row = image_pixel_row
-        self.field_size = field_size
-        self.offset = offset
-        self.voxel_size = voxel_size
 
-    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.NONE):
+    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.BASIC):
         rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
         depth_camera = rig.depth_camera
         depth_image0 = cv2.imread(self.first_frame_path, cv2.IMREAD_UNCHANGED)
@@ -149,79 +145,79 @@ class MaskedImageBasedSingleFrameDataset(SingleFrameDataset):
 
 
 datasets = {
-    PredefinedDatasetEnum.ZIGZAG001: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.ZIGZAG001: ImageBasedFramePairDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00000.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00001.png",
         200, 512, np.array([-256, -256, 640])
     ),
-    PredefinedDatasetEnum.ZIGZAG064: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.ZIGZAG064: ImageBasedFramePairDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00064.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00065.png",
         200, 512, np.array([-256, -256, 480])
     ),
-    PredefinedDatasetEnum.ZIGZAG124: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.ZIGZAG124: ImageBasedFramePairDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00124.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00125.png",
         200, 512, np.array([-256, -256, 360])
     ),
-    PredefinedDatasetEnum.ZIGZAG248: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.ZIGZAG248: ImageBasedFramePairDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00248.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/zigzag/input/depth_00249.png",
         200, 512, np.array([-256, -256, 256])
     ),
-    PredefinedDatasetEnum.SYNTHETIC3D_SUZANNE_AWAY: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.SYNTHETIC3D_SUZANNE_AWAY: ImageBasedFramePairDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/input/depth_00000.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_away/input/depth_00001.png",
         200, 128, np.array([-64, -64, 0])
     ),
-    PredefinedDatasetEnum.SYNTHETIC3D_SUZANNE_TWIST: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.SYNTHETIC3D_SUZANNE_TWIST: ImageBasedFramePairDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/input/depth_00000.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/suzanne_twist/input/depth_00010.png",
         200, 128, np.array([-64, -64, 64])
     ),
-    PredefinedDatasetEnum.REAL3D_SNOOPY_SET01: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000015.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000016.png",
+    PredefinedDatasetEnum.REAL3D_SNOOPY_SET01: ImageBasedFramePairDataset(
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/snoopy_calib.txt",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000015.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000016.png",
         214, 128, np.array([-64, -64, 128])
     ),
-    PredefinedDatasetEnum.REAL3D_SNOOPY_SET02: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000064.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000065.png",
+    PredefinedDatasetEnum.REAL3D_SNOOPY_SET02: ImageBasedFramePairDataset(
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/snoopy_calib.txt",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000064.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000065.png",
         214, 128, np.array([-64, -64, 128])
     ),
-    PredefinedDatasetEnum.REAL3D_SNOOPY_SET03: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000025.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000026.png",
+    PredefinedDatasetEnum.REAL3D_SNOOPY_SET03: ImageBasedFramePairDataset(
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/snoopy_calib.txt",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000025.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000026.png",
         334, 128, np.array([-64, -64, 128])
     ),
-    PredefinedDatasetEnum.REAL3D_SNOOPY_SET04: ImageBasedSingleFrameDataset(
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000065.png",
-        "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/depth_000066.png",
+    PredefinedDatasetEnum.REAL3D_SNOOPY_SET04: ImageBasedFramePairDataset(
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/snoopy_calib.txt",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000065.png",
+        "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/depth_000066.png",
         223, 128, np.array([-64, -64, 128])
     ),
-    PredefinedDatasetEnum.SYNTHETIC3D_PLANE_AWAY: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.SYNTHETIC3D_PLANE_AWAY: ImageBasedFramePairDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00000.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00001.png",
         200, 128, np.array([-64, -64, 106])
     ),
-    PredefinedDatasetEnum.SYNTHETIC3D_PLANE_AWAY_512: ImageBasedSingleFrameDataset(
+    PredefinedDatasetEnum.SYNTHETIC3D_PLANE_AWAY_512: ImageBasedFramePairDataset(
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/inf_calib.txt",
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00000.png",
         "/media/algomorph/Data/Reconstruction/synthetic_data/plane_away/input/depth_00001.png",
         130, 512, np.array([-256, -256, 0])
     ),
-    PredefinedDatasetEnum.SIMPLE_TEST_CASE01: HardcodedSingleFrameDataset(
+    PredefinedDatasetEnum.SIMPLE_TEST_CASE01: HardcodedFramePairDataset(
         np.array([[1.0000000e+00, 1.0000000e+00, 3.7499955e-01, 2.4999955e-01],
                   [1.0000000e+00, 3.2499936e-01, 1.9999936e-01, 1.4999935e-01],
                   [1.0000000e+00, 1.7500064e-01, 1.0000064e-01, 5.0000645e-02],

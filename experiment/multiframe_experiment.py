@@ -30,7 +30,7 @@ import pandas as pd
 # local
 from experiment.build_optimizer import OptimizerChoice, build_optimizer
 from nonrigid_opt.data_term import DataTermMethod
-from experiment.dataset import ImageBasedSingleFrameDataset, MaskedImageBasedSingleFrameDataset
+from experiment.dataset import ImageBasedFramePairDataset, MaskedImageBasedFramePairDataset
 from tsdf.generation import GenerationMethod
 from utils.point2d import Point2d
 from utils.printing import *
@@ -41,16 +41,17 @@ from experiment import experiment_shared_routines as shared
 
 
 def log_convergence_status(log, convergence_status, canonical_frame_index, live_frame_index, pixel_row_index):
+    wds = convergence_status.warp_delta_statistics
     log.append([canonical_frame_index,
                 live_frame_index,
                 pixel_row_index,
                 convergence_status.iteration_count,
-                convergence_status.max_warp_length,
-                convergence_status.max_warp_location.x,
-                convergence_status.max_warp_location.y,
+                wds.length_max,
+                wds.longest_warp_location.x,
+                wds.longest_warp_location.y,
                 convergence_status.iteration_limit_reached,
-                convergence_status.largest_warp_below_minimum_threshold,
-                convergence_status.largest_warp_above_maximum_threshold])
+                wds.is_largest_below_min_threshold,
+                wds.is_largest_above_max_threshold])
 
 
 def record_convergence_status_log(log, file_path):
@@ -88,21 +89,20 @@ def record_cases_files(log, out_directory):
 def perform_multiple_tests(start_from_sample=0,
                            data_term_method=DataTermMethod.BASIC,
                            optimizer_choice=OptimizerChoice.CPP,
-                           depth_interpolation_method=GenerationMethod.NONE,
+                           depth_interpolation_method=GenerationMethod.BASIC,
                            out_path="out2D/Snoopy MultiTest",
                            input_case_file=None,
                            calibration_path=
-                           "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/snoopy_calib.txt",
+                           "/media/algomorph/Data/Reconstruction/real_data/snoopy/snoopy_calib.txt",
                            frame_path=
-                           "/media/algomorph/Data/Reconstruction/real_data/KillingFusion Snoopy/frames/",
+                           "/media/algomorph/Data/Reconstruction/real_data/snoopy/frames/",
                            z_offset=128):
     # CANDIDATES FOR ARGS
-
     save_initial_and_final_fields = input_case_file is not None
     enable_warp_statistics_logging = input_case_file is not None
     save_frame_images = input_case_file is not None
     use_masks = True
-    check_empty_row = True
+
     # TODO a tiled image with 6x6 bad cases and 6x6 good cases (SDF fields)
     save_tiled_good_vs_bad_case_comparison_image = True
     save_per_case_results_in_root_output_folder = False
@@ -119,12 +119,15 @@ def perform_multiple_tests(start_from_sample=0,
         frame_path_format_string = frame_path + os.path.sep + "depth_{:0>5d}.png"
         mask_path_format_string = frame_path + os.path.sep + "mask_{:0>5d}.png"
 
-    # region ================ Generation of lists of frames & pixel rows to work with ==================================
 
     # CANDIDATES FOR ARGS
     field_size = 128
     offset = [-64, -64, z_offset]
     line_range = (214, 400)
+    view_scaling_factor = 1024 // field_size
+
+    # region ================ Generation of lists of frames & pixel rows to work with ==================================
+    check_empty_row = True
 
     if input_case_file:
         frame_row_and_focus_set = np.genfromtxt(input_case_file, delimiter=",", dtype=np.int32)
@@ -155,8 +158,6 @@ def perform_multiple_tests(start_from_sample=0,
                     pixel_row_index = line_range[0] + (line_range[1] - line_range[0]) * np.random.rand()
                 new_pixel_row_set.append(pixel_row_index)
             frame_row_and_focus_set = zip(frame_set, pixel_row_set, focus_x, focus_y)
-
-    view_scaling_factor = 1024 // field_size
 
     # endregion ========================================================================================================
 
@@ -208,12 +209,12 @@ def perform_multiple_tests(start_from_sample=0,
 
         # Generate SDF fields
         if use_masks:
-            dataset = MaskedImageBasedSingleFrameDataset(calibration_path, canonical_frame_path, canonical_mask_path,
-                                                         live_frame_path, live_mask_path, pixel_row_index,
-                                                         field_size, offset)
+            dataset = MaskedImageBasedFramePairDataset(calibration_path, canonical_frame_path, canonical_mask_path,
+                                                       live_frame_path, live_mask_path, pixel_row_index,
+                                                       field_size, offset)
         else:
-            dataset = ImageBasedSingleFrameDataset(calibration_path, canonical_frame_path, live_frame_path,
-                                                   pixel_row_index, field_size, offset)
+            dataset = ImageBasedFramePairDataset(calibration_path, canonical_frame_path, live_frame_path,
+                                                 pixel_row_index, field_size, offset)
 
         live_field, canonical_field = dataset.generate_2d_sdf_fields(method=depth_interpolation_method)
 
@@ -251,16 +252,17 @@ def perform_multiple_tests(start_from_sample=0,
                 else:
                     plot_warp_statistics(out_subpath, warp_statistics, extra_path=None)
 
-        convergence_status = optimizer.get_convergence_status()
-        max_warp_at = Point2d(convergence_status.max_warp_location.x, convergence_status.max_warp_location.y)
-        if not convergence_status.iteration_limit_reached:
-            if convergence_status.largest_warp_above_maximum_threshold:
+        convergence_report = optimizer.get_convergence_report()
+        max_warp_at_cpp = convergence_report.warp_delta_statistics.longest_warp_location
+        max_warp_at = Point2d(max_warp_at_cpp.x, max_warp_at_cpp.y)
+        if not convergence_report.iteration_limit_reached:
+            if convergence_report.warp_delta_statistics.is_largest_above_max_threshold:
                 print(": DIVERGED", end="")
             else:
                 print(": CONVERGED", end="")
 
             if (save_tiled_good_vs_bad_case_comparison_image and
-                    not convergence_status.largest_warp_above_maximum_threshold
+                    not convergence_report.warp_delta_statistics.is_largest_above_max_threshold
                     and len(good_case_sdfs) < max_case_count):
                 good_case_sdfs.append((canonical_field, original_live_field, max_warp_at))
 
@@ -268,9 +270,9 @@ def perform_multiple_tests(start_from_sample=0,
             print(": NOT CONVERGED", end="")
             if save_tiled_good_vs_bad_case_comparison_image and len(bad_case_sdfs) < max_case_count:
                 bad_case_sdfs.append((canonical_field, original_live_field, max_warp_at))
-        print(" IN", convergence_status.iteration_count, "ITERATIONS")
+        print(" IN", convergence_report.iteration_count, "ITERATIONS")
 
-        log_convergence_status(convergence_status_log, convergence_status,
+        log_convergence_status(convergence_status_log, convergence_report,
                                canonical_frame_index, live_frame_index, pixel_row_index)
 
         if rebuild_optimizer:

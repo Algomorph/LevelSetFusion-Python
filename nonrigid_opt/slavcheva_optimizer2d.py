@@ -61,7 +61,7 @@ class OptimizationLog:
         self.smoothing_energies = []
         self.level_set_energies = []
         self.max_warps = []
-        self.convergence_status = cpp_extension.ConvergenceStatus()
+        self.convergence_report = cpp_extension.ConvergenceReport()
 
 
 class ComputeMethod(Enum):
@@ -391,19 +391,24 @@ class SlavchevaOptimizer2d:
 
         # log end-of-optimization stats
         if self.enable_convergence_status_logging:
-            self.log.convergence_status = cpp_extension.ConvergenceStatus(
-                iteration_number, float(max_warp),
-                cpp_extension.Vector2i(int(max_warp_location.x), int(max_warp_location.y)),
+            warp_stats = cpp_extension.WarpDeltaStatistics(warp_field, canonical_field, live_field,
+                                                           self.maximum_warp_length_lower_threshold,
+                                                           self.maximum_warp_length_upper_threshold)
+
+            tsdf_stats = cpp_extension.TsdfDifferenceStatistics(canonical_field, live_field)
+
+            self.log.convergence_report = cpp_extension.ConvergenceReport(
+                iteration_number,
                 iteration_number >= self.max_iterations,
-                bool(max_warp < self.maximum_warp_length_lower_threshold),
-                bool(max_warp > self.maximum_warp_length_upper_threshold))
+                warp_stats,
+                tsdf_stats)
 
         del self.visualizer
         self.visualizer = None
         return live_field
 
-    def get_convergence_status(self):
-        return self.log.convergence_status
+    def get_convergence_report(self):
+        return self.log.convergence_report
 
     def plot_logged_sdf_and_warp_magnitudes(self):
         visualize_and_save_sdf_and_warp_magnitude_progression(get_focus_coordinates(),

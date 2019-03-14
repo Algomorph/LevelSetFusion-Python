@@ -15,7 +15,7 @@
 #  ================================================================
 
 class GenerationMethod:
-    NONE = 0
+    BASIC = 0
     BILINEAR_IMAGE = 1
     BILINEAR_TSDF = 2
     EWA_IMAGE = 3
@@ -24,6 +24,11 @@ class GenerationMethod:
     EWA_TSDF_CPP = 6
     EWA_TSDF_INCLUSIVE = 7
     EWA_TSDF_INCLUSIVE_CPP = 8
+
+def get_generation_method_keys():
+    standard_class_dict_keys = {'__dict__', '__doc__', '__module__', '__weakref__'}
+    all_class_dict_keys = set(GenerationMethod.__dict__.keys())
+    return all_class_dict_keys.difference(standard_class_dict_keys)
 
 
 def compute_tsdf_value(signed_distance, narrow_band_half_width):

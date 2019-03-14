@@ -25,6 +25,7 @@ import utils.sampling as sampling
 from nonrigid_opt.slavcheva_visualizer import SlavchevaVisualizer
 from nonrigid_opt.smoothing_term import SmoothingTermMethod
 from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
+import level_set_fusion_optimization as cpp_module
 
 
 def make_optimizer(compute_method, field_size, max_iterations=1):
@@ -53,7 +54,9 @@ def make_optimizer(compute_method, field_size, max_iterations=1):
                                      sobolev_kernel=generate_1d_sobolev_kernel(size=3, strength=0.1),
                                      visualization_settings=SlavchevaVisualizer.Settings(
                                          enable_component_fields=True,
-                                         view_scaling_factor=view_scaling_factor))
+                                         view_scaling_factor=view_scaling_factor),
+                                     enable_convergence_status_logging=True
+                                     )
     return optimizer
 
 
@@ -123,8 +126,24 @@ class TestNonRigidOptimization(TestCase):
              [1., 0.43342987, 0.3444094, 0.3287867],
              [1., 0.33020678, 0.24566807, 0.22797936],
              [1., 0.2261582, 0.17907946, 0.14683424]], dtype=np.float32)
+
+        report1 = optimizer.get_convergence_report()
+
         self.assertTrue(np.allclose(live_field, expected_live_field_out))
         live_field = live_field_template.copy()
         optimizer = make_optimizer(ComputeMethod.VECTORIZED, field_size, 2)
         optimizer.optimize(live_field, canonical_field)
         self.assertTrue(np.allclose(live_field, expected_live_field_out))
+
+        report2 = optimizer.get_convergence_report()
+        self.assertTrue(report1 == report2)
+
+        expected_warp_stats = \
+            cpp_module.WarpDeltaStatistics(0.272727, 0.0, 0.0684823, 0.0364445,
+                                           0.0167321, cpp_module.Vector2i(1, 2), False, False)
+        expected_diff_stats = \
+            cpp_module.TsdfDifferenceStatistics(0, 0.246834, 0.111843, 0.0838871, cpp_module.Vector2i(3, 3))
+
+        expected_report = cpp_module.ConvergenceReport(2, True, expected_warp_stats, expected_diff_stats)
+
+        self.assertTrue(report2 == expected_report)
