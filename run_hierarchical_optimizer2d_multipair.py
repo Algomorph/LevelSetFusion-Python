@@ -32,6 +32,7 @@ import utils.path as pu
 import experiment.experiment_shared_routines as esr
 from tsdf import generation as tsdf
 from utils import field_resampling as resampling
+import experiment.build_hierarchical_optimizer_helper as build_opt
 from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
 import utils.visualization as viz
 
@@ -40,66 +41,6 @@ import level_set_fusion_optimization as cpp_module
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1
-
-
-def make_python_optimizer(out_path, maximum_iteration_count=25, max_update_threshold=0.001):
-    optimizer = ho.HierarchicalOptimizer2d(
-        tikhonov_term_enabled=False,
-        gradient_kernel_enabled=False,
-
-        maximum_chunk_size=8,
-        rate=0.2,
-        maximum_iteration_count=maximum_iteration_count,
-        maximum_warp_update_threshold=max_update_threshold,
-
-        data_term_amplifier=1.0,
-        tikhonov_strength=0.0,
-        kernel=generate_1d_sobolev_kernel(size=7, strength=0.1),
-
-        verbosity_parameters=ho.HierarchicalOptimizer2d.VerbosityParameters(
-            print_max_warp_update=True,
-            print_iteration_data_energy=True,
-            print_iteration_tikhonov_energy=True,
-        ),
-        visualization_parameters=hov.HNSOVisualizer.Parameters(
-            out_path=out_path,
-            save_live_progression=True,
-            save_initial_fields=True,
-            save_final_fields=True,
-            save_warp_field_progression=True,
-            save_data_gradients=True,
-            save_tikhonov_gradients=False
-        )
-    )
-    return optimizer
-
-
-def make_cpp_optimizer(out_path, maximum_iteration_count=25, max_update_threshold=0.001):
-    optimizer = cpp_module.HierarchicalOptimizer2d(
-        tikhonov_term_enabled=False,
-        gradient_kernel_enabled=False,
-
-        maximum_chunk_size=8,
-        rate=0.2,
-        maximum_iteration_count=maximum_iteration_count,
-        maximum_warp_update_threshold=max_update_threshold,
-
-        data_term_amplifier=1.0,
-        tikhonov_strength=0.0,
-        kernel=generate_1d_sobolev_kernel(size=7, strength=0.1),
-
-        verbosity_parameters=cpp_module.HierarchicalOptimizer2d.VerbosityParameters(
-            print_max_warp_update=False,
-            print_iteration_mean_tsdf_difference=False,
-            print_iteration_std_tsdf_difference=False,
-            print_iteration_data_energy=False,
-            print_iteration_tikhonov_energy=False,
-        ),
-        logging_parameters=cpp_module.HierarchicalOptimizer2d.LoggingParameters(
-            collect_per_level_convergence_reports=True
-        )
-    )
-    return optimizer
 
 
 def clear_folder(folder_path):
@@ -213,11 +154,6 @@ def analyze_convergence_data(data_frame):
         pass
 
 
-class OptimizationMethod(Enum):
-    PYTHON = 0
-    CPP = 1
-
-
 def main():
     # program argument candidates
     dataset_number = 2
@@ -225,7 +161,7 @@ def main():
     smoothing_coefficient = 0.5
     max_iteration_count = 1000
     generation_method = tsdf.GenerationMethod.BASIC
-    optimization_method = OptimizationMethod.CPP
+    implementation_language = build_opt.ImplementationLanguage.CPP
     analyze_only = False  # supersedes all remaining
 
     generate_data = False
@@ -313,12 +249,26 @@ def main():
                 initial_fields.append((archive["canonical"], archive["live"]))
 
         if perform_optimization:
-            if optimization_method == OptimizationMethod.PYTHON:
-                optimizer = make_python_optimizer(out_path, 25)
-            elif optimization_method == OptimizationMethod.CPP:
-                optimizer = make_cpp_optimizer(out_path, 1000, max_update_threshold=0.01)
+
+            shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
+            shared_parameters.maximum_warp_update_threshold = 0.01
+            visualization_parameters_py = build_opt.make_common_hierarchical_optimizer2d_visualization_parameters()
+            logging_parameters_cpp = cpp_module.HierarchicalOptimizer2d.LoggingParameters(
+                collect_per_level_convergence_reports=True)
+            if implementation_language == build_opt.ImplementationLanguage.PYTHON:
+                shared_parameters.maximum_iteration_count = 25
+                # TODO: change later in optimization to make subfolders for each frame pair
+                visualization_parameters_py.out_path = out_path
+            elif implementation_language == build_opt.ImplementationLanguage.CPP:
+                shared_parameters.maximum_iteration_count = 1000
             else:
-                raise ValueError("Unknown OptimizationMethod: " + str(optimization_method))
+                raise ValueError("Unknown ImplementationLanguage: " + str(implementation_language))
+
+            optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=implementation_language,
+                                                                shared_parameters=shared_parameters,
+                                                                logging_parameters_cpp=logging_parameters_cpp,
+                                                                visualization_parameters_py=visualization_parameters_py)
+
             convergence_report_sets = []
             field_images_folder = os.path.join(out_path, "images")
             if save_final_fields:

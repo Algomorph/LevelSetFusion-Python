@@ -25,72 +25,13 @@ from experiment import dataset as ds
 from tsdf import generation as tsdf
 from utils import field_resampling as resampling
 import utils.sampling as sampling
+import experiment.build_hierarchical_optimizer_helper as build_opt
 from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
 # has to be compiled and included in PYTHONPATH first
-import level_set_fusion_optimization as cpp_module
+import level_set_fusion_optimization as ho_cpp
 
 EXIT_CODE_SUCCESS = 0
 EXIT_CODE_FAILURE = 1
-
-
-def make_python_optimizer(out_path):
-    optimizer = ho.HierarchicalOptimizer2d(
-        tikhonov_term_enabled=False,
-        gradient_kernel_enabled=False,
-
-        maximum_chunk_size=8,
-        rate=0.2,
-        maximum_iteration_count=25,
-        maximum_warp_update_threshold=0.001,
-
-        data_term_amplifier=1.0,
-        tikhonov_strength=0.0,
-        kernel=generate_1d_sobolev_kernel(size=7, strength=0.1),
-
-        verbosity_parameters=ho.HierarchicalOptimizer2d.VerbosityParameters(
-            print_max_warp_update=True,
-            print_iteration_data_energy=True,
-            print_iteration_tikhonov_energy=True,
-        ),
-        visualization_parameters=hov.HNSOVisualizer.Parameters(
-            out_path=out_path,
-            save_live_progression=True,
-            save_initial_fields=True,
-            save_final_fields=True,
-            save_warp_field_progression=True,
-            save_data_gradients=True,
-            save_tikhonov_gradients=False
-        )
-    )
-    return optimizer
-
-
-def make_cpp_optimizer(out_path):
-    optimizer = cpp_module.HierarchicalOptimizer2d(
-        tikhonov_term_enabled=False,
-        gradient_kernel_enabled=False,
-
-        maximum_chunk_size=8,
-        rate=0.2,
-        maximum_iteration_count=1000,
-        maximum_warp_update_threshold=0.001,
-
-        data_term_amplifier=1.0,
-        tikhonov_strength=0.0,
-        kernel=generate_1d_sobolev_kernel(size=7, strength=0.1),
-
-        verbosity_parameters=cpp_module.HierarchicalOptimizer2d.VerbosityParameters(
-            print_max_warp_update=True,
-            print_iteration_mean_tsdf_difference=True,
-            print_iteration_std_tsdf_difference=True,
-            print_iteration_data_energy=True,
-            print_iteration_tikhonov_energy=True,
-        ),
-        logging_parameters=cpp_module.HierarchicalOptimizer2d.LoggingParameters(
-            collect_per_level_convergence_reports=True
-        )
-    )
-    return optimizer
 
 
 def print_convergence_reports(reports):
@@ -100,7 +41,7 @@ def print_convergence_reports(reports):
 
 
 def main():
-    data_to_use = ds.PredefinedDatasetEnum.REAL3D_SNOOPY_SET05
+    data_to_use = ds.PredefinedDatasetEnum.REAL3D_SNOOPY_SET00
     tsdf_generation_method = tsdf.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP
     visualize_and_save_initial_and_final_fields = True
     out_path = "output/ho/single"
@@ -121,8 +62,26 @@ def main():
         live_field = live_field[36:52, 21:37].copy()
         canonical_field = canonical_field[36:52, 21:37].copy()
 
-    # optimizer = make_python_optimizer(out_path)
-    optimizer = make_cpp_optimizer(out_path)
+    shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
+    shared_parameters.maximum_warp_update_threshold = 0.01
+    verbosity_parmeters_py = build_opt.make_common_hierarchical_optimizer2d_py_verbosity_parameters()
+    verbosity_parameters_cpp = ho_cpp.HierarchicalOptimizer2d.VerbosityParameters(
+        print_max_warp_update=True,
+        print_iteration_mean_tsdf_difference=True,
+        print_iteration_std_tsdf_difference=True,
+        print_iteration_data_energy=True,
+        print_iteration_tikhonov_energy=True,
+    )
+    visualization_parameters_py = build_opt.make_common_hierarchical_optimizer2d_visualization_parameters()
+    visualization_parameters_py.out_path = out_path
+    logging_parameters_cpp = ho_cpp.HierarchicalOptimizer2d.LoggingParameters(
+        collect_per_level_convergence_reports=True)
+    optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=build_opt.ImplementationLanguage.CPP,
+                                                        shared_parameters=shared_parameters,
+                                                        verbosity_parameters_cpp=verbosity_parameters_cpp,
+                                                        logging_parameters_cpp=logging_parameters_cpp,
+                                                        verbosity_parameters_py=verbosity_parmeters_py,
+                                                        visualization_parameters_py=visualization_parameters_py)
     warp_field = optimizer.optimize(canonical_field, live_field)
 
     print_convergence_reports(optimizer.get_per_level_convergence_reports())

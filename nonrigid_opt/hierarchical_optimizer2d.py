@@ -28,7 +28,7 @@ from utils.pyramid import ScalarFieldPyramid2d
 from utils import field_resampling as resampling
 import utils.printing as printing
 import math_utils.convolution as convolution
-from nonrigid_opt.hierarchical_optimization_visualizer import HNSOVisualizer
+from nonrigid_opt.hierarchical_optimization_visualizer import HierarchicalOptimizer2dVisualizer
 
 
 class HierarchicalOptimizer2d:
@@ -36,6 +36,7 @@ class HierarchicalOptimizer2d:
     An alternative approach to level sets which still optimizes on voxel-level, in theory being able to
         deal with topology changes in a straightforward and natural way
     """
+
     class VerbosityParameters:
         """
         Parameters that control verbosity to stdout.
@@ -54,7 +55,8 @@ class HierarchicalOptimizer2d:
             self.print_per_iteration_info = any(self.per_iteration_flags)
 
             # per-level
-            self.print_per_level_info = True  # TODO: def should be any(self.per_level_flags)
+            # TODO: def should be self.print_per_iteration_info or any(self.per_level_flags)
+            self.print_per_level_info = self.print_per_iteration_info or False
 
     def __init__(self,
                  tikhonov_term_enabled=True,
@@ -112,7 +114,7 @@ class HierarchicalOptimizer2d:
         if visualization_parameters:
             self.visualization_parameters = visualization_parameters
         else:
-            self.visualization_parameters = HNSOVisualizer.Parameters()
+            self.visualization_parameters = HierarchicalOptimizer2dVisualizer.Parameters()
         self.visualizer = None
         self.hierarchy_level = 0
 
@@ -130,8 +132,9 @@ class HierarchicalOptimizer2d:
         level_count = len(canonical_pyramid.levels)
         warp_field = None
 
-        self.visualizer = HNSOVisualizer(parameters=self.visualization_parameters, field_size=field_size,
-                                         level_count=level_count)
+        self.visualizer = HierarchicalOptimizer2dVisualizer(parameters=self.visualization_parameters,
+                                                            field_size=field_size,
+                                                            level_count=level_count)
         self.visualizer.generate_pre_optimization_visualizations(canonical_field, live_field)
 
         for canonical_pyramid_level, live_pyramid_level, live_gradient_x_level, live_gradient_y_level \

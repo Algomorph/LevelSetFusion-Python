@@ -26,9 +26,9 @@ import cv2
 import utils.visualization as viz
 
 
-class HNSOVisualizer:
+class HierarchicalOptimizer2dVisualizer:
     class Parameters:
-        def __init__(self, out_path="output/hns_optimizer/", view_scaling_fator=8,
+        def __init__(self, out_path="output/ho", view_scaling_fator=8,
                      show_live_progression=False,
                      save_live_progression=False,
                      save_initial_fields=False,
@@ -58,7 +58,7 @@ class HNSOVisualizer:
         self.parameters = parameters
         self.level_count = level_count
         if not parameters:
-            self.parameters = HNSOVisualizer.Parameters()
+            self.parameters = HierarchicalOptimizer2dVisualizer.Parameters()
         # initialize video-writers
         self.live_progression_writer = None
         self.warp_video_writer2D = None
