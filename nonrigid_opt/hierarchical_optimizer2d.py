@@ -28,18 +28,17 @@ from utils.pyramid import ScalarFieldPyramid2d
 from utils import field_resampling as resampling
 import utils.printing as printing
 import math_utils.convolution as convolution
-from nonrigid_opt.hns_visualizer import HNSOVisualizer
+from nonrigid_opt.hierarchical_optimization_visualizer import HNSOVisualizer
 
 
-class HierarchicalNonrigidSLAMOptimizer2d:
+class HierarchicalOptimizer2d:
     """
     An alternative approach to level sets which still optimizes on voxel-level, in theory being able to
         deal with topology changes in a straightforward and natural way
     """
-
     class VerbosityParameters:
         """
-        Parameters that controls verbosity to stdout.
+        Parameters that control verbosity to stdout.
         Assumes being used in an "immutable" manner, i.e. just a structure that holds values
         """
 
@@ -58,17 +57,20 @@ class HierarchicalNonrigidSLAMOptimizer2d:
             self.print_per_level_info = True  # TODO: def should be any(self.per_level_flags)
 
     def __init__(self,
+                 tikhonov_term_enabled=True,
+                 gradient_kernel_enabled=True,
+
                  maximum_chunk_size=8,
                  rate=0.1,
+                 maximum_iteration_count=100,
+                 maximum_warp_update_threshold=0.001,
+
                  data_term_amplifier=1.0,
                  tikhonov_strength=0.2,
                  kernel=None,
-                 maximum_warp_update_threshold=0.001,
-                 maximum_iteration_count=100,
+
                  verbosity_parameters=None,
                  visualization_parameters=None,
-                 tikhonov_term_enabled=True,
-                 gradient_kernel_enabled=True
                  ):
 
         """
@@ -105,7 +107,7 @@ class HierarchicalNonrigidSLAMOptimizer2d:
         if verbosity_parameters:
             self.verbosity_parameters = verbosity_parameters
         else:
-            self.verbosity_parameters = HierarchicalNonrigidSLAMOptimizer2d.VerbosityParameters()
+            self.verbosity_parameters = HierarchicalOptimizer2d.VerbosityParameters()
 
         if visualization_parameters:
             self.visualization_parameters = visualization_parameters

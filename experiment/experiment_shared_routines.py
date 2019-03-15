@@ -27,7 +27,7 @@ import numpy as np
 
 # local
 import experiment.dataset as dts
-import experiment.path_utility as pu
+import utils.path as pu
 
 
 def is_unmasked_image_row_empty(path, ix_row):

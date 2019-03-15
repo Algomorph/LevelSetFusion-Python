@@ -17,7 +17,7 @@
 from unittest import TestCase
 import numpy as np
 import calib.camera as cam
-import tests.ewa_test_data as data
+import tests.test_data.ewa_test_data as data
 import tsdf.ewa as ewa
 import os.path
 import cv2

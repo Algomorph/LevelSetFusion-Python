@@ -294,6 +294,7 @@ def visualize_field(field, view_scaling_factor=8, mark_focus=False):
     process_cv_esc()
     cv2.destroyAllWindows()
 
+
 def visualize_and_save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor=8):
     canonical_visualized = sdf_field_to_image(canonical_field, scale=view_scaling_factor)
     canonical_visualized = mark_focus_coordinate_on_sdf_image(canonical_visualized)
@@ -314,6 +315,11 @@ def visualize_and_save_initial_fields(canonical_field, live_field, out_path, vie
     cv2.destroyAllWindows()
 
 
+def save_field(field, path, view_scaling_factor=8):
+    field_visualized = sdf_field_to_image(field, scale=view_scaling_factor)
+    cv2.imwrite(path, field_visualized)
+
+
 def save_initial_fields(canonical_field, live_field, out_path, view_scaling_factor=8):
     if not os.path.exists(out_path):
         os.makedirs(out_path)
@@ -332,10 +338,11 @@ def save_initial_fields(canonical_field, live_field, out_path, view_scaling_fact
 
 
 def visualize_final_fields(canonical_field, live_field, view_scaling_factor):
-    cv2.imshow("live SDF", sdf_field_to_image(live_field, scale=view_scaling_factor))
-    process_cv_esc()
     cv2.imshow("canonical SDF", sdf_field_to_image(canonical_field, scale=view_scaling_factor))
     process_cv_esc()
+    cv2.imshow("live SDF", sdf_field_to_image(live_field, scale=view_scaling_factor))
+    process_cv_esc()
+
     cv2.destroyAllWindows()
 
 

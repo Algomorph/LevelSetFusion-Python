@@ -4,19 +4,15 @@ from calib.camera import DepthCamera
 from rigid_opt import sdf_2_sdf_visualizer as sdf2sdfv, sdf_2_sdf_optimizer2d as sdf2sdfo
 from rigid_opt.sdf_generation import ImageBasedSingleFrameDataset
 import utils.sampling as sampling
+import utils.path
 import os.path
 
 
 class MyTestCase(TestCase):
 
     def test_sdf_2_sdf_optimizer01(self):
-        canonical_frame_path = "tests/testdata/depth_000000.exr"
-        live_frame_path = "tests/testdata/depth_000003.exr"
-
-        if not os.path.exists(canonical_frame_path) or not os.path.exists(live_frame_path):
-            canonical_frame_path = "testdata/depth_000000.exr"
-            live_frame_path = "testdata/depth_000003.exr"
-
+        canonical_frame_path = utils.path.get_test_data_path("test_data/depth_000000.exr")
+        live_frame_path = utils.path.get_test_data_path("test_data/depth_000003.exr")
 
         image_pixel_row = 240
 

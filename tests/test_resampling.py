@@ -16,7 +16,7 @@
 from unittest import TestCase
 import numpy as np
 from utils import field_resampling as ipt
-import tests.hnso_fixtures as fixtures
+import tests.test_data.hnso_fixtures as fixtures
 
 import level_set_fusion_optimization as cpp_extension
 

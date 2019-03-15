@@ -1,5 +1,5 @@
 #  ================================================================
-#  Created by Gregory Kramida on 3/8/19.
+#  Created by Gregory Kramida on 3/14/19.
 #  Copyright (c) 2019 Gregory Kramida
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,11 +14,19 @@
 #  limitations under the License.
 #  ================================================================
 
-# This is just a convenience routine that utilizes a hardcoded dictionary of locations that determine location of the
-# "Reconstruction" folder on different developer/maintainer team machines
+# Some utilities that are useful with this specific project structure
 
+import os.path
 import socket
 
+
+def get_test_data_path(local_path):
+    if not os.path.exists(local_path):
+        return os.path.join("tests", local_path)
+    return local_path
+
+
+# paths to the folder holding data on different developer machines (doesn't generalize unless you add your entry here)
 paths_by_machine_name = {"june-ubuntu": "/mnt/4696C5EE7E51F6BB/Reconstruction",
                          "Juggernaut": "/media/algomorph/Data/Reconstruction"}
 
