@@ -54,7 +54,7 @@ class HNSOptimizerTest(TestCase):
         self.assertTrue(np.allclose(warp_field_out, warp_field))
         self.assertTrue(np.allclose(final_live_resampled, final_live_field))
 
-        optimizer = cpp_extension.HierarchicalOptimizer(
+        optimizer = cpp_extension.HierarchicalOptimizer2d(
             tikhonov_term_enabled=False,
             gradient_kernel_enabled=False,
             maximum_chunk_size=8,
