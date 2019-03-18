@@ -17,7 +17,7 @@
 from unittest import TestCase
 
 # test targets
-from utils.pyramid import *
+from nonrigid_opt.hierarchical.pyramid import *
 
 
 class FieldPyramidTest(TestCase):

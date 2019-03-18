@@ -15,7 +15,7 @@
 #  ================================================================
 from unittest import TestCase
 import numpy as np
-from utils import field_resampling as ipt
+from nonrigid_opt import field_warping as ipt
 import tests.test_data.hierarchical_optimizer_test_data as fixtures
 
 import level_set_fusion_optimization as cpp_extension
@@ -45,9 +45,9 @@ class InterpolationTest(TestCase):
         expected_v_vectors = np.array([[0.5, 0.5],
                                        [-0.5, -0.5]], dtype=np.float32)
         # expected_warp_field = np.stack((expected_u_vectors, expected_v_vectors), axis=2)
-        warped_live_field = ipt.resample_warped_live(canonical_field, warped_live_field, warp_field, gradient_field,
-                                                     band_union_only=False, known_values_only=False,
-                                                     substitute_original=False)
+        warped_live_field = ipt.warp_field_advanced(canonical_field, warped_live_field, warp_field, gradient_field,
+                                                    band_union_only=False, known_values_only=False,
+                                                    substitute_original=False)
         out_u_vectors = warp_field[:, :, 0]
         out_v_vectors = warp_field[:, :, 1]
         self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
@@ -96,9 +96,9 @@ class InterpolationTest(TestCase):
         expected_v_vectors = np.array([[-1.0, 0.0, 0.0],
                                        [0.0, 0.0, 0.5],
                                        [0.0, 0.5, -0.5]], dtype=np.float32)
-        warped_live_field = ipt.resample_warped_live(canonical_field, warped_live_field, warp_field, gradient_field,
-                                                     band_union_only=True, known_values_only=False,
-                                                     substitute_original=True)
+        warped_live_field = ipt.warp_field_advanced(canonical_field, warped_live_field, warp_field, gradient_field,
+                                                    band_union_only=True, known_values_only=False,
+                                                    substitute_original=True)
         out_u_vectors = warp_field[:, :, 0]
         out_v_vectors = warp_field[:, :, 1]
 
@@ -152,9 +152,9 @@ class InterpolationTest(TestCase):
                                        [0., -0.45941665, 1.36006788, -1.05888156],
                                        [-0.47305308, -1.27971876, -0.38927596, 0.],
                                        [0., 0., 0., 0.]], dtype=np.float32)
-        warped_live_field = ipt.resample_warped_live(canonical_field, warped_live_field, warp_field, gradient_field,
-                                                     band_union_only=False, known_values_only=False,
-                                                     substitute_original=False)
+        warped_live_field = ipt.warp_field_advanced(canonical_field, warped_live_field, warp_field, gradient_field,
+                                                    band_union_only=False, known_values_only=False,
+                                                    substitute_original=False)
         out_u_vectors = warp_field[:, :, 0]
         out_v_vectors = warp_field[:, :, 1]
         self.assertTrue(np.allclose(out_u_vectors, expected_u_vectors))
@@ -203,9 +203,9 @@ class InterpolationTest(TestCase):
              [1., 0.3388706, 0.24753733, 0.22598255],
              [1., 0.21407352, 0.16514614, 0.11396749]], dtype=np.float32)
 
-        warped_live_field = ipt.resample_warped_live(canonical_field, warped_live_field, warp_field, gradient_field,
-                                                     band_union_only=False, known_values_only=False,
-                                                     substitute_original=False)
+        warped_live_field = ipt.warp_field_advanced(canonical_field, warped_live_field, warp_field, gradient_field,
+                                                    band_union_only=False, known_values_only=False,
+                                                    substitute_original=False)
         out_u_vectors = warp_field[:, :, 0]
         out_v_vectors = warp_field[:, :, 1]
         self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
@@ -247,9 +247,9 @@ class InterpolationTest(TestCase):
              [1., 0.33020678, 0.24566805, 0.22797936],
              [1., 0.2261582, 0.17907946, 0.14683424]], dtype=np.float32)
 
-        warped_live_field = ipt.resample_warped_live(canonical_field, warped_live_field, warp_field, gradient_field,
-                                                     band_union_only=False, known_values_only=False,
-                                                     substitute_original=False)
+        warped_live_field = ipt.warp_field_advanced(canonical_field, warped_live_field, warp_field, gradient_field,
+                                                    band_union_only=False, known_values_only=False,
+                                                    substitute_original=False)
         out_u_vectors = warp_field[:, :, 0]
         out_v_vectors = warp_field[:, :, 1]
         self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
@@ -264,12 +264,12 @@ class InterpolationTest(TestCase):
     def test_resample_field01(self):
         warp_field = fixtures.warp_field_A_16x16
         scalar_field = fixtures.field_A_16x16
-        resampled_field = ipt.resample_field(scalar_field, warp_field)
+        resampled_field = ipt.warp_field(scalar_field, warp_field)
         self.assertTrue(np.allclose(resampled_field, fixtures.fA_resampled_with_wfA))
 
     def test_resample_field_replacement01(self):
         warp_field = fixtures.warp_field_B_16x16
         scalar_field = fixtures.field_B_16x16
-        resampled_field = ipt.resample_field_replacement(scalar_field, warp_field, 0.0)
+        resampled_field = ipt.warp_field_replacement(scalar_field, warp_field, 0.0)
         print(repr(resampled_field))
         self.assertTrue(np.allclose(resampled_field, fixtures.fB_resampled_with_wfB_replacement))

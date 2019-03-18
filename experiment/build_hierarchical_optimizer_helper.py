@@ -17,14 +17,13 @@
 # standard library
 from enum import Enum
 # requires Python 3.3+
-from types import SimpleNamespace
 
 # local
-import nonrigid_opt.hierarchical_optimizer2d as ho_py
-import nonrigid_opt.hierarchical_optimization_visualizer as hov_py
+import nonrigid_opt.hierarchical.hierarchical_optimizer2d as ho_py
+import nonrigid_opt.hierarchical.hierarchical_optimization_visualizer as hov_py
 # has to be built & installed first (git submodule in cpp folder or http://github/Algomorph/LevelSetFusion-CPP)
 import level_set_fusion_optimization as ho_cpp
-import nonrigid_opt.sobolev_filter as sob
+import nonrigid_opt.slavcheva.sobolev_filter as sob
 
 
 class ImplementationLanguage(Enum):

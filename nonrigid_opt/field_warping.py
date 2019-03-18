@@ -64,7 +64,7 @@ def get_and_print_interpolation_data(canonical_field, warped_live_field, warp_fi
     print_interpolation_data(metainfo, original_live_sdf, new_value)
 
 
-def resample_field(field, vector_field):
+def warp_field(field, vector_field):
     """
     - Accepts a scalar field and a vector field [supposedly of the same dimensions & size -- not checked].
     - Creates a new scalar field of the same dimensions.
@@ -85,7 +85,7 @@ def resample_field(field, vector_field):
     return resampled_field
 
 
-def resample_field_replacement(field, warp_field, replacement):
+def warp_field_replacement(field, warp_field, replacement):
     """
     - Accepts a scalar field and a vector field [supposedly of the same dimensions & size -- not checked].
     - Creates a new scalar field of the same dimensions
@@ -108,9 +108,9 @@ def resample_field_replacement(field, warp_field, replacement):
     return resampled_field
 
 
-def resample_warped_live(canonical_field, warped_live_field, warp_field, gradient_field, band_union_only=False,
-                         known_values_only=False, substitute_original=False,
-                         data_gradient_field=None, smoothing_gradient_field=None):
+def warp_field_advanced(canonical_field, warped_live_field, warp_field, gradient_field, band_union_only=False,
+                        known_values_only=False, substitute_original=False,
+                        data_gradient_field=None, smoothing_gradient_field=None):
     field_size = warp_field.shape[0]
     new_warped_live_field = np.ones_like(warped_live_field)
     for y in range(field_size):
@@ -150,7 +150,7 @@ def resample_warped_live(canonical_field, warped_live_field, warp_field, gradien
     return new_warped_live_field
 
 
-def resample_warped_live_with_flag_info(warped_live_field, warp_field, update_field, flag_field):
+def warp_field_with_with_flag_info(warped_live_field, warp_field, update_field, flag_field):
     field_size = warp_field.shape[0]
     new_warped_live_field = np.ones_like(warped_live_field)
     for y in range(field_size):

@@ -21,10 +21,10 @@
 from enum import Enum
 
 # local
-from nonrigid_opt.data_term import DataTermMethod
-from nonrigid_opt.slavcheva_optimizer2d import ComputeMethod, SlavchevaOptimizer2d, AdaptiveLearningRateMethod
-from nonrigid_opt.smoothing_term import SmoothingTermMethod
-from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
+from nonrigid_opt.slavcheva.data_term import DataTermMethod
+from nonrigid_opt.slavcheva.slavcheva_optimizer2d import ComputeMethod, SlavchevaOptimizer2d, AdaptiveLearningRateMethod
+from nonrigid_opt.slavcheva.smoothing_term import SmoothingTermMethod
+from nonrigid_opt.slavcheva.sobolev_filter import generate_1d_sobolev_kernel
 # has to be compiled and installed first (cpp folder)
 import level_set_fusion_optimization as cpp_module
 

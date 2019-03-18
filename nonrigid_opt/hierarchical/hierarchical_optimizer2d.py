@@ -24,11 +24,11 @@
 import numpy as np
 import scipy.ndimage
 # local
-from utils.pyramid import ScalarFieldPyramid2d
-from utils import field_resampling as resampling
+from nonrigid_opt.hierarchical.pyramid import ScalarFieldPyramid2d
+from nonrigid_opt import field_warping as resampling
 import utils.printing as printing
 import math_utils.convolution as convolution
-from nonrigid_opt.hierarchical_optimization_visualizer import HierarchicalOptimizer2dVisualizer
+from nonrigid_opt.hierarchical.hierarchical_optimization_visualizer import HierarchicalOptimizer2dVisualizer
 
 
 class HierarchicalOptimizer2d:
@@ -181,9 +181,9 @@ class HierarchicalOptimizer2d:
 
         while not self.__termination_conditions_reached(maximum_warp_update_length, iteration_count):
             # resample the live & gradients using current warps
-            resampled_live = resampling.resample_field(live_pyramid_level, warp_field)
-            resampled_live_gradient_x = resampling.resample_field_replacement(live_gradient_x_level, warp_field, 0.0)
-            resampled_live_gradient_y = resampling.resample_field_replacement(live_gradient_y_level, warp_field, 0.0)
+            resampled_live = resampling.warp_field(live_pyramid_level, warp_field)
+            resampled_live_gradient_x = resampling.warp_field_replacement(live_gradient_x_level, warp_field, 0.0)
+            resampled_live_gradient_y = resampling.warp_field_replacement(live_gradient_y_level, warp_field, 0.0)
 
             # see how badly our sampled values correspond to the canonical values at the same locations
             # data_gradient = (warped_live - canonical) * warped_gradient(live)

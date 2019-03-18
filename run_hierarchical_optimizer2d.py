@@ -20,13 +20,11 @@ import os
 import os.path
 # local
 import utils.visualization as viz
-from nonrigid_opt import hierarchical_optimization_visualizer as hov, hierarchical_optimizer2d as ho
 from experiment import dataset as ds
 from tsdf import generation as tsdf
-from utils import field_resampling as resampling
+from nonrigid_opt import field_warping as resampling
 import utils.sampling as sampling
 import experiment.build_hierarchical_optimizer_helper as build_opt
-from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
 # has to be compiled and included in PYTHONPATH first
 import level_set_fusion_optimization as ho_cpp
 
@@ -86,7 +84,7 @@ def main():
 
     print_convergence_reports(optimizer.get_per_level_convergence_reports())
 
-    resampled_live = resampling.resample_field(live_field, warp_field)
+    resampled_live = resampling.warp_field(live_field, warp_field)
 
     if visualize_and_save_initial_and_final_fields:
         viz.visualize_final_fields(canonical_field, resampled_live, view_scaling_factor)

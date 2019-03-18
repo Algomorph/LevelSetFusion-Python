@@ -26,8 +26,8 @@ import numpy as np
 
 # local
 from field_generator import generate_initial_fields
-from nonrigid_opt.slavcheva_optimizer2d import SlavchevaOptimizer2d, AdaptiveLearningRateMethod
-from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
+from nonrigid_opt.slavcheva.slavcheva_optimizer2d import SlavchevaOptimizer2d, AdaptiveLearningRateMethod
+from nonrigid_opt.slavcheva.sobolev_filter import generate_1d_sobolev_kernel
 from utils.printing import *
 
 IGNORE_OPENCV = False
