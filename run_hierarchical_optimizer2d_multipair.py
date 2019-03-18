@@ -30,7 +30,7 @@ import pandas as pd
 import utils.path as pu
 import experiment.experiment_shared_routines as esr
 from tsdf import generation as tsdf
-from utils import field_resampling as resampling
+from nonrigid_opt import field_warping as resampling
 import experiment.build_hierarchical_optimizer_helper as build_opt
 import utils.visualization as viz
 
@@ -308,7 +308,7 @@ def main():
             i_pair = 0
             for (canonical_field, live_field) in progressbar.progressbar(initial_fields):
                 warp_field_out = optimizer.optimize(canonical_field, live_field)
-                final_live_resampled = resampling.resample_field(live_field, warp_field_out)
+                final_live_resampled = resampling.warp_field(live_field, warp_field_out)
                 if args.save_final_fields:
                     (frame_number, pixel_row) = frame_numbers_and_rows[i_pair]
                     final_live_path = os.path.join(field_images_folder,

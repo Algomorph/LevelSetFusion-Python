@@ -24,7 +24,7 @@ from enum import Enum
 import argparse
 
 # local
-from nonrigid_opt.data_term import DataTermMethod
+from nonrigid_opt.slavcheva.data_term import DataTermMethod
 from experiment.multiframe_experiment import perform_multiple_tests, OptimizerChoice
 from experiment.singleframe_experiment import perform_single_test
 import tsdf.generation as gen

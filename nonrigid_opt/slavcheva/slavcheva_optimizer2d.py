@@ -32,9 +32,9 @@ from utils.point2d import Point2d
 from utils.printing import *
 from utils.sampling import focus_coordinates_match, get_focus_coordinates
 from utils.tsdf_set_routines import value_outside_narrow_band
-from utils.field_resampling import resample_warped_live, get_and_print_interpolation_data
-from nonrigid_opt.level_set_term import level_set_term_at_location
-from nonrigid_opt import slavcheva_visualizer as viz, data_term as dt, smoothing_term as st
+from nonrigid_opt.field_warping import warp_field_advanced, get_and_print_interpolation_data
+from nonrigid_opt.slavcheva.level_set_term import level_set_term_at_location
+from nonrigid_opt.slavcheva import data_term as dt, smoothing_term as st, slavcheva_visualizer as viz
 
 # C++ extension
 import level_set_fusion_optimization as cpp_extension
@@ -321,10 +321,10 @@ class SlavchevaOptimizer2d:
                     log.warp_magnitudes.append(warp_length)
                     log.sdf_values.append(warped_live_field[y, x])
 
-        new_warped_live_field = resample_warped_live(canonical_field, warped_live_field, warp_field,
-                                                     self.gradient_field,
-                                                     band_union_only=False, known_values_only=False,
-                                                     substitute_original=False)
+        new_warped_live_field = warp_field_advanced(canonical_field, warped_live_field, warp_field,
+                                                    self.gradient_field,
+                                                    band_union_only=False, known_values_only=False,
+                                                    substitute_original=False)
         np.copyto(warped_live_field, new_warped_live_field)
 
         return max_warp, max_warp_location

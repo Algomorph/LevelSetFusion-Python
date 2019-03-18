@@ -19,12 +19,12 @@ from unittest import TestCase
 import numpy as np
 
 # test targets
-from nonrigid_opt.data_term import DataTermMethod
-from nonrigid_opt.slavcheva_optimizer2d import SlavchevaOptimizer2d, ComputeMethod, AdaptiveLearningRateMethod
+from nonrigid_opt.slavcheva.data_term import DataTermMethod
+from nonrigid_opt.slavcheva.slavcheva_optimizer2d import SlavchevaOptimizer2d, ComputeMethod, AdaptiveLearningRateMethod
 import utils.sampling as sampling
-from nonrigid_opt.slavcheva_visualizer import SlavchevaVisualizer
-from nonrigid_opt.smoothing_term import SmoothingTermMethod
-from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
+from nonrigid_opt.slavcheva.slavcheva_visualizer import SlavchevaVisualizer
+from nonrigid_opt.slavcheva.smoothing_term import SmoothingTermMethod
+from nonrigid_opt.slavcheva.sobolev_filter import generate_1d_sobolev_kernel
 import level_set_fusion_optimization as cpp_module
 
 

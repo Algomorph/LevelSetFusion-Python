@@ -29,7 +29,7 @@ import pandas as pd
 
 # local
 from experiment.build_optimizer import OptimizerChoice, build_optimizer
-from nonrigid_opt.data_term import DataTermMethod
+from nonrigid_opt.slavcheva.data_term import DataTermMethod
 from experiment.dataset import ImageBasedFramePairDataset, MaskedImageBasedFramePairDataset
 from tsdf.generation import GenerationMethod
 from utils.point2d import Point2d

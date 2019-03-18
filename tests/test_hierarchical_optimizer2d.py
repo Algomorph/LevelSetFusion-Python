@@ -16,7 +16,6 @@
 
 # stdlib
 from unittest import TestCase
-import os.path
 
 # libraries
 import numpy as np
@@ -25,10 +24,8 @@ import numpy as np
 import tests.test_data.hierarchical_optimizer_test_data as test_data
 
 # test targets
-from nonrigid_opt import hierarchical_optimizer2d as ho_py
-from nonrigid_opt import hierarchical_optimization_visualizer as hov_py
-from utils import field_resampling as resampling
-from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
+from nonrigid_opt.hierarchical import hierarchical_optimization_visualizer as hov_py, hierarchical_optimizer2d as ho_py
+from nonrigid_opt import field_warping as resampling
 import experiment.dataset as dataset
 import tsdf.common
 import experiment.build_hierarchical_optimizer_helper as build_opt
@@ -50,7 +47,7 @@ class HierarchicalOptimizerTest(TestCase):
                 print_max_warp_update=False
             ))
         warp_field_out = optimizer.optimize(test_data.canonical_field, test_data.live_field)
-        final_live_resampled = resampling.resample_field(test_data.live_field, warp_field_out)
+        final_live_resampled = resampling.warp_field(test_data.live_field, warp_field_out)
 
         self.assertTrue(np.allclose(warp_field_out, test_data.warp_field))
         self.assertTrue(np.allclose(final_live_resampled, test_data.final_live_field))
@@ -66,7 +63,7 @@ class HierarchicalOptimizerTest(TestCase):
         )
 
         warp_field_out = optimizer.optimize(test_data.canonical_field, test_data.live_field)
-        final_live_resampled = resampling.resample_field(test_data.live_field, warp_field_out)
+        final_live_resampled = resampling.warp_field(test_data.live_field, warp_field_out)
         self.assertTrue(np.allclose(warp_field_out, test_data.warp_field, atol=10e-6))
         self.assertTrue(np.allclose(final_live_resampled, test_data.final_live_field, atol=10e-6))
 
@@ -97,7 +94,7 @@ class HierarchicalOptimizerTest(TestCase):
             visualization_parameters_py=visualization_parameters_py)
 
         warp_field_cpp = optimizer_cpp.optimize(canonical_field, live_field)
-        resampled_live_cpp = resampling.resample_field(live_field, warp_field_cpp)
+        resampled_live_cpp = resampling.warp_field(live_field, warp_field_cpp)
 
         optimizer_py = build_opt.make_hierarchical_optimizer2d(
             implementation_language=build_opt.ImplementationLanguage.PYTHON,
@@ -108,7 +105,7 @@ class HierarchicalOptimizerTest(TestCase):
             visualization_parameters_py=visualization_parameters_py)
 
         warp_field_py = optimizer_py.optimize(canonical_field, live_field)
-        resampled_live_py = resampling.resample_field(live_field, warp_field_py)
+        resampled_live_py = resampling.warp_field(live_field, warp_field_py)
 
         self.assertTrue(np.allclose(warp_field_cpp, warp_field_py, atol=10e-6))
         self.assertTrue(np.allclose(resampled_live_cpp, resampled_live_py, atol=10e-6))

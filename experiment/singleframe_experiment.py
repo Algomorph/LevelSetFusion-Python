@@ -22,13 +22,13 @@ import os
 # libraries
 import numpy as np
 # local
-from nonrigid_opt.data_term import DataTermMethod
+from nonrigid_opt.slavcheva.data_term import DataTermMethod
 from experiment.dataset import datasets, PredefinedDatasetEnum, MaskedImageBasedFramePairDataset, ImageBasedFramePairDataset
-from nonrigid_opt.slavcheva_visualizer import SlavchevaVisualizer
-from nonrigid_opt.smoothing_term import SmoothingTermMethod
+from nonrigid_opt.slavcheva.slavcheva_visualizer import SlavchevaVisualizer
+from nonrigid_opt.slavcheva.smoothing_term import SmoothingTermMethod
 from tsdf.generation import generate_initial_orthographic_2d_tsdf_fields, GenerationMethod
-from nonrigid_opt.slavcheva_optimizer2d import SlavchevaOptimizer2d, AdaptiveLearningRateMethod, ComputeMethod
-from nonrigid_opt.sobolev_filter import generate_1d_sobolev_kernel
+from nonrigid_opt.slavcheva.slavcheva_optimizer2d import SlavchevaOptimizer2d, AdaptiveLearningRateMethod, ComputeMethod
+from nonrigid_opt.slavcheva.sobolev_filter import generate_1d_sobolev_kernel
 from utils.visualization import visualize_and_save_initial_fields, visualize_final_fields
 from experiment import experiment_shared_routines as shared
 
