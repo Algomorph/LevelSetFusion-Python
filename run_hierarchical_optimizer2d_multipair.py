@@ -203,20 +203,8 @@ def get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row):
 
 def main():
     args = process_args()
-    # program argument candidates
-    # args.dataset_number = 2
-    # args.max_warp_update_threshold = 0.01
-    # args.smoothing_coefficient = 0.5
-    # args.max_iteration_count = 1000
-    # args.generation_method = tsdf.GenerationMethod.BASIC
-    # args.implementation_language = build_opt.ImplementationLanguage.CPP
-    # args.analyze_only = False  # supersedes all remaining
-    #
-    # args.generate_data = False
-    # args.save_initial_fields_during_generation = True
 
     perform_optimization = not args.skip_optimization
-    # args.save_final_fields = True
 
     load_data = not args.generate_data and perform_optimization  # not an args candidate
 
