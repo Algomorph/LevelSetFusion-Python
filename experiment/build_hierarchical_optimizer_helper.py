@@ -32,7 +32,8 @@ class ImplementationLanguage(Enum):
 
 
 class HierarchicalOptimizer2dSharedParameters:
-    def __init__(self, tikhonov_term_enabled=False,
+    def __init__(self,
+                 tikhonov_term_enabled=False,
                  gradient_kernel_enabled=False,
 
                  maximum_chunk_size=8,
@@ -86,7 +87,8 @@ def make_hierarchical_optimizer2d(implementation_language=ImplementationLanguage
                                   visualization_parameters_py=
                                   make_common_hierarchical_optimizer2d_visualization_parameters(),
                                   logging_parameters_cpp=ho_cpp.HierarchicalOptimizer2d.LoggingParameters(
-                                      collect_per_level_convergence_reports=True
+                                      collect_per_level_convergence_reports=True,
+                                      collect_per_level_iteration_data=False
                                   )):
     if implementation_language == ImplementationLanguage.CPP:
         return make_cpp_optimizer(shared_parameters, verbosity_parameters_cpp, logging_parameters_cpp)
@@ -121,7 +123,8 @@ def make_python_optimizer(shared_parameters=HierarchicalOptimizer2dSharedParamet
 def make_cpp_optimizer(shared_parameters=HierarchicalOptimizer2dSharedParameters(),
                        verbosity_parameters=ho_cpp.HierarchicalOptimizer2d.VerbosityParameters(),
                        logging_parameters=ho_cpp.HierarchicalOptimizer2d.LoggingParameters(
-                           collect_per_level_convergence_reports=True
+                           collect_per_level_convergence_reports=True,
+                           collect_per_level_iteration_data=False
                        )):
     optimizer = ho_cpp.HierarchicalOptimizer2d(
         tikhonov_term_enabled=shared_parameters.tikhonov_term_enabled,

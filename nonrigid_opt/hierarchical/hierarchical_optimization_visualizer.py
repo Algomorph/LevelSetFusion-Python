@@ -24,6 +24,7 @@ import os
 import cv2
 # local
 import utils.visualization as viz
+import level_set_fusion_optimization as ho_cpp
 
 
 class HierarchicalOptimizer2dVisualizer:
@@ -137,3 +138,52 @@ class HierarchicalOptimizer2dVisualizer:
             self.data_gradient_video_writer2D.release()
         if self.tikhonov_gradient_video_writer2D:
             self.tikhonov_gradient_video_writer2D.release()
+
+
+def convert_cpp_optimization_iteration_data_to_video(per_level_optimization_iteration_data,
+                                                     canonical_field, live_field, output_folder):
+    """
+    :type per_level_optimization_iteration_data: ho_cpp.OptimizationIterationDataVector
+    :param per_level_optimization_iteration_data: intermediate results for each level for each iteration
+    :return:
+    """
+    first_level_data = per_level_optimization_iteration_data[0]
+    first_warp_field = first_level_data.get_warp_fields()[0]
+    first_data_term_gradient = first_level_data.get_data_term_gradients()[0]
+    first_tikhonov_term_gradient = first_level_data.get_tikhonov_term_gradients()[0]
+
+    has_warp_fields = first_warp_field.size > 0
+    has_data_term_gradients = first_data_term_gradient.size > 0
+    has_tikhonov_gradients = first_tikhonov_term_gradient.size > 0
+
+    if not has_warp_fields:
+        return
+
+    field_size = first_warp_field.shape[0]
+
+    scaling_factor = 1024 / field_size
+
+    level_count = len(per_level_optimization_iteration_data)
+
+    params = HierarchicalOptimizer2dVisualizer.Parameters(
+        out_path=output_folder,
+        view_scaling_fator=scaling_factor,
+        show_live_progression=False,
+        save_live_progression=False,
+        save_initial_fields=False,
+        save_final_fields=False,
+        save_warp_field_progression=has_warp_fields,
+        save_data_gradients=has_data_term_gradients,
+        save_tikhonov_gradients=has_tikhonov_gradients
+    )
+    visualizer = HierarchicalOptimizer2dVisualizer(params, field_size, level_count)
+
+    for i_level, level_data in enumerate(per_level_optimization_iteration_data):
+        warp_fields = level_data.get_warp_fields()
+        data_term_gradients = level_data.get_data_term_gradients()
+        tikhonov_gradients = level_data.get_tikhonov_term_gradients()
+        for i_iteration, (warp_field, data_term_gradient, tikhonov_gradient) \
+                in enumerate(zip(warp_fields, data_term_gradients, tikhonov_gradients)):
+            visualizer.generate_per_iteration_visualizations(i_level, i_iteration, canonical_field, live_field,
+                                                             warp_field, data_term_gradient, tikhonov_gradient)
+
