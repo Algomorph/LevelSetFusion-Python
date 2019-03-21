@@ -107,8 +107,7 @@ class HierarchicalOptimizerTest(TestCase):
         shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
         shared_parameters.maximum_warp_update_threshold = 0.01
         shared_parameters.maximum_iteration_count = 2
-        # for verbose output from py version:
-        # verbosity_parameters_py = build_opt.make_common_hierarchical_optimizer2d_py_verbosity_parameters()
+
         verbosity_parameters_py = ho_py.HierarchicalOptimizer2d.VerbosityParameters()
         verbosity_parameters_cpp = ho_cpp.HierarchicalOptimizer2d.VerbosityParameters()
         visualization_parameters_py = hov_py.HierarchicalOptimizer2dVisualizer.Parameters()

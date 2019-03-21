@@ -79,10 +79,11 @@ class HierarchicalOptimizer2d:
         Constructor
         :param maximum_chunk_size: lateral size, in pixels, of the chunk of the lowest (finest) level in the hierarchy
         represented by a single pixel in the highest level in the hierarchy
-        :param rate: rate of gradient descent (update = gradient*factor)
+        :param rate: rate of gradient descent (update = gradient*rate)
         :param tikhonov_strength: strength of the tikhonov (i.e. similarity-based) regularizer for the warps
         :param kernel: kernel used to convolve the gradient at each iteration
-        :param maximum_warp_update_threshold: lower threshold on the maximum vector length (after which optimization terminates)
+        :param maximum_warp_update_threshold: lower threshold on the maximum vector length (after which optimization
+         terminates), in voxel units
         :param maximum_iteration_count: top threshold on the number of iterations (after which optimization terminates)
         :@type verbosity_parameters: HierarchicalNonrigidSLAMOptimizer2d.VerbosityParameters
         :param verbosity_parameters: parameters for stdout verbosity during optimization
