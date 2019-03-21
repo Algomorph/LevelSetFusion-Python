@@ -33,6 +33,7 @@ from tsdf import generation as tsdf
 from nonrigid_opt import field_warping as resampling
 import experiment.build_hierarchical_optimizer_helper as build_opt
 import utils.visualization as viz
+import nonrigid_opt.hierarchical.hierarchical_optimization_visualizer as ho_viz
 
 # has to be compiled and installed first (cpp folder)
 import level_set_fusion_optimization as cpp_module
@@ -48,6 +49,16 @@ def clear_folder(folder_path):
             os.unlink(file_path)
         else:
             shutil.rmtree(file_path)
+
+
+def create_or_clear_folder(folder_path):
+    if os.path.exists(folder_path):
+        if os.path.isdir(folder_path):
+            clear_folder(folder_path)
+        else:
+            raise ValueError("Path " + folder_path + " is not a folder.")
+    else:
+        os.makedirs(folder_path)
 
 
 digit_regex = re.compile(r'\d+')
@@ -162,8 +173,12 @@ def process_args():
     parser.add_argument("--max_warp_update_threshold", "-mwut", type=float, default=0.01)
     parser.add_argument("--smoothing_coefficient", "-sc", type=float, default=0.5)
     parser.add_argument("--max_iteration_count", "-mic", type=int, default=1000)
-    parser.add_argument("--generation_method", "-gm", type=str, default=tsdf.GenerationMethod.BASIC.name)
-    parser.add_argument("--implementation_language", "-im", type=str, default=build_opt.ImplementationLanguage.CPP.name)
+    parser.add_argument("--generation_method", "-gm", type=str, default="BASIC")
+    parser.add_argument("--implementation_language", "-im", type=str,
+                        default="CPP")
+    parser.add_argument("--stop_before", "-sb", type=int, default=10000000)
+    parser.add_argument("--start_from", "-sf", type=int, default=0)
+    parser.add_argument("--output_path", "-o", type=str, default="output/ho")
 
     # flags
     parser.add_argument("--analyze_only", "-ao", action="store_true", default=False,
@@ -174,6 +189,7 @@ def process_args():
     parser.add_argument("--skip_optimization", "-so", action="store_true", default=False)
     parser.add_argument("--save_initial_fields_during_generation", "-sifdg", action="store_true", default=False)
     parser.add_argument("--save_final_fields", "-sff", action="store_true", default=False)
+    parser.add_argument("--save_telemetry", "-st", action="store_true", default=False)
 
     args = parser.parse_args()
     args.generation_method = tsdf.GenerationMethod.__dict__[args.generation_method]
@@ -181,22 +197,14 @@ def process_args():
     return args
 
 
+def get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row):
+    return os.path.join(telemetry_folder, "pair_{:d}-{:d}_{:d}".format(frame_number, frame_number + 1, pixel_row))
+
+
 def main():
     args = process_args()
-    # program argument candidates
-    args.dataset_number = 2
-    args.max_warp_update_threshold = 0.01
-    args.smoothing_coefficient = 0.5
-    args.max_iteration_count = 1000
-    args.generation_method = tsdf.GenerationMethod.BASIC
-    args.implementation_language = build_opt.ImplementationLanguage.CPP
-    args.analyze_only = False  # supersedes all remaining
-
-    args.generate_data = False
-    args.save_initial_fields_during_generation = True
 
     perform_optimization = not args.skip_optimization
-    args.save_final_fields = True
 
     load_data = not args.generate_data and perform_optimization  # not an args candidate
 
@@ -211,7 +219,7 @@ def main():
                                                            int(args.max_warp_update_threshold * 100),
                                                            args.max_iteration_count, args.dataset_number)
     data_subfolder = "tsdf_pairs_128_{:s}_{:02d}".format(method_name_substring, args.dataset_number)
-    out_path = "output/ho/{:s}".format(experiment_name)
+    out_path = os.path.join(args.output_path, experiment_name)
     convergence_reports_pickle_path = os.path.join(out_path, "convergence_reports.pk")
     data_path = os.path.join(pu.get_reconstruction_directory(), "real_data/snoopy", data_subfolder)
 
@@ -227,7 +235,7 @@ def main():
         initial_fields = []
         frame_numbers_and_rows = []
         if not load_data or args.generate_data:
-            frame_pair_datasets = esr.prepare_dataset_for_2d_frame_pair_processing(
+            frame_numbers_and_rows = esr.prepare_dataset_for_2d_frame_pair_processing(
                 calibration_path=os.path.join(pu.get_reconstruction_directory(),
                                               "real_data/snoopy/snoopy_calib.txt"),
                 frame_directory=os.path.join(pu.get_reconstruction_directory(),
@@ -241,12 +249,15 @@ def main():
                 field_size=128,
             )
 
+            frame_numbers_and_rows = frame_numbers_and_rows[
+                                     args.start_from: min(len(frame_numbers_and_rows), args.stop_before)]
+
             print("Generating initial fields...")
-            field_images_folder = os.path.join(data_path, "images")
+            initial_fields_folder = os.path.join(data_path, "images")
             if args.save_initial_fields_during_generation:
-                if not os.path.exists(field_images_folder):
-                    os.makedirs(field_images_folder)
-            for dataset in progressbar.progressbar(frame_pair_datasets):
+                if not os.path.exists(initial_fields_folder):
+                    os.makedirs(initial_fields_folder)
+            for dataset in progressbar.progressbar(frame_numbers_and_rows):
                 canonical_field, live_field = dataset.generate_2d_sdf_fields(args.generation_method,
                                                                              args.smoothing_coefficient)
                 initial_fields.append((canonical_field, live_field))
@@ -258,10 +269,10 @@ def main():
                              canonical=canonical_field, live=live_field)
                     if args.save_initial_fields_during_generation:
                         live_frame = canonical_frame + 1
-                        canonical_image_path = os.path.join(field_images_folder,
+                        canonical_image_path = os.path.join(initial_fields_folder,
                                                             "tsdf_frame_{:06d}.png".format(canonical_frame))
                         viz.save_field(canonical_field, canonical_image_path, 1024 // dataset.field_size)
-                        live_image_path = os.path.join(field_images_folder,
+                        live_image_path = os.path.join(initial_fields_folder,
                                                        "tsdf_frame_{:06d}.png".format(live_frame))
                         viz.save_field(live_field, live_image_path, 1024 // dataset.field_size)
 
@@ -278,20 +289,22 @@ def main():
                 archive = np.load(os.path.join(data_path, file))
                 initial_fields.append((archive["canonical"], archive["live"]))
 
+        # limit ranges
+        frame_numbers_and_rows = frame_numbers_and_rows[
+                                 args.start_from: min(len(frame_numbers_and_rows), args.stop_before)]
+        initial_fields = initial_fields[
+                         args.start_from: min(len(initial_fields), args.stop_before)]
+
         if perform_optimization:
             shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
             shared_parameters.maximum_warp_update_threshold = 0.01
             visualization_parameters_py = build_opt.make_common_hierarchical_optimizer2d_visualization_parameters()
             logging_parameters_cpp = cpp_module.HierarchicalOptimizer2d.LoggingParameters(
-                collect_per_level_convergence_reports=True)
-            if args.implementation_language == build_opt.ImplementationLanguage.PYTHON:
-                shared_parameters.maximum_iteration_count = 25
-                # TODO: change later in optimization to make subfolders for each frame pair
-                visualization_parameters_py.out_path = out_path
-            elif args.implementation_language == build_opt.ImplementationLanguage.CPP:
-                shared_parameters.maximum_iteration_count = 1000
-            else:
-                raise ValueError("Unknown ImplementationLanguage: " + str(args.implementation_language))
+                collect_per_level_convergence_reports=True,
+                collect_per_level_iteration_data=args.save_telemetry
+
+            )
+            shared_parameters.maximum_iteration_count = args.max_iteration_count
 
             optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=args.implementation_language,
                                                                 shared_parameters=shared_parameters,
@@ -299,28 +312,57 @@ def main():
                                                                 visualization_parameters_py=visualization_parameters_py)
 
             convergence_report_sets = []
-            field_images_folder = os.path.join(out_path, "images")
-            if args.save_final_fields:
-                if not os.path.exists(field_images_folder):
-                    os.makedirs(field_images_folder)
+            telemetry_folder = os.path.join(out_path, "telemetry")
+            if args.save_final_fields or args.save_telemetry:
+                create_or_clear_folder(telemetry_folder)
+
+            if args.save_telemetry:
+                # make all the necessary subfolders
+                for frame_number, pixel_row in frame_numbers_and_rows:
+                    telemetry_subfolder = get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
+                    create_or_clear_folder(telemetry_subfolder)
 
             print("Optimizing...")
             i_pair = 0
+            telemetry_logs = []
             for (canonical_field, live_field) in progressbar.progressbar(initial_fields):
+                (frame_number, pixel_row) = frame_numbers_and_rows[i_pair]
                 warp_field_out = optimizer.optimize(canonical_field, live_field)
                 final_live_resampled = resampling.warp_field(live_field, warp_field_out)
+                if args.save_telemetry:
+                    if args.implementation_language == build_opt.ImplementationLanguage.CPP:
+                        telemetry_logs.append(optimizer.get_per_level_iteration_data())
+                    else:
+                        optimizer.visualization_parameters.out_path = \
+                            get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
                 if args.save_final_fields:
-                    (frame_number, pixel_row) = frame_numbers_and_rows[i_pair]
-                    final_live_path = os.path.join(field_images_folder,
-                                                   "pair_{:d}-{:d}_{:d}_final_live.png".format(frame_number,
-                                                                                               frame_number + 1,
-                                                                                               pixel_row))
+
+                    if not args.save_telemetry:
+                        final_live_path = os.path.join(telemetry_folder,
+                                                       "pair_{:d}-{:d}_{:d}_final_live.png".format(frame_number,
+                                                                                                   frame_number + 1,
+                                                                                                   pixel_row))
+                    else:
+                        telemetry_subfolder = get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
+                        final_live_path = os.path.join(telemetry_subfolder, "live_warped.png")
                     viz.save_field(final_live_resampled, final_live_path, 1024 // final_live_resampled.shape[0])
+
                 convergence_reports = optimizer.get_per_level_convergence_reports()
                 convergence_report_sets.append(convergence_reports)
                 i_pair += 1
 
-            print("Post-processing data...")
+            if args.save_telemetry and args.implementation_language == build_opt.ImplementationLanguage.CPP:
+                print("Converting telemetry to videos (" + telemetry_folder + ")...")
+                i_pair = 0
+                for telemetry_log in progressbar.progressbar(telemetry_logs):
+                    canonical_field, live_field = initial_fields[i_pair]
+                    (frame_number, pixel_row) = frame_numbers_and_rows[i_pair]
+                    telemetry_subfolder = get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
+                    ho_viz.convert_cpp_optimization_iteration_data_to_video(telemetry_log, canonical_field, live_field,
+                                                                            telemetry_subfolder)
+                    i_pair += 1
+
+            print("Post-processing convergence reports...")
             df = post_process_convergence_report_sets(convergence_report_sets, frame_numbers_and_rows)
             df.to_excel(os.path.join(out_path, "convergence_reports.xlsx"))
             df.to_pickle(os.path.join(out_path, "convergence_reports.pk"))

@@ -29,6 +29,7 @@ from nonrigid_opt import field_warping as resampling
 import experiment.dataset as dataset
 import tsdf.common
 import experiment.build_hierarchical_optimizer_helper as build_opt
+import nonrigid_opt.slavcheva.sobolev_filter as sob
 
 # C++ extension
 import level_set_fusion_optimization as ho_cpp
@@ -67,6 +68,36 @@ class HierarchicalOptimizerTest(TestCase):
         self.assertTrue(np.allclose(warp_field_out, test_data.warp_field, atol=10e-6))
         self.assertTrue(np.allclose(final_live_resampled, test_data.final_live_field, atol=10e-6))
 
+    def test_cpp_iteration_data(self):
+        optimizer = ho_cpp.HierarchicalOptimizer2d(
+            tikhonov_term_enabled=False,
+            gradient_kernel_enabled=False,
+
+            maximum_chunk_size=8,
+            rate=0.2,
+            maximum_iteration_count=100,
+            maximum_warp_update_threshold=0.001,
+
+            data_term_amplifier=1.0,
+            tikhonov_strength=0.0,
+
+            kernel=sob.generate_1d_sobolev_kernel(size=7, strength=0.1),
+            verbosity_parameters=ho_cpp.HierarchicalOptimizer2d.VerbosityParameters(),
+            logging_parameters=ho_cpp.HierarchicalOptimizer2d.LoggingParameters(
+                collect_per_level_convergence_reports=True,
+                collect_per_level_iteration_data=True
+            )
+        )
+        warp_field_out = optimizer.optimize(test_data.canonical_field, test_data.live_field)
+        final_live_resampled = resampling.warp_field(test_data.live_field, warp_field_out)
+        data = optimizer.get_per_level_iteration_data()
+        vec = data[3].get_warp_fields()
+
+        self.assertTrue(np.allclose(vec[50], test_data.iteration50_warp_field, atol=1e-6))
+
+        self.assertTrue(np.allclose(warp_field_out, test_data.warp_field, atol=10e-6))
+        self.assertTrue(np.allclose(final_live_resampled, test_data.final_live_field, atol=10e-6))
+
     def test_operation_same_cpp_to_py(self):
         dataset_to_use = dataset.PredefinedDatasetEnum.REAL3D_SNOOPY_SET00
         generation_method = tsdf.common.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP
@@ -83,7 +114,9 @@ class HierarchicalOptimizerTest(TestCase):
         visualization_parameters_py = hov_py.HierarchicalOptimizer2dVisualizer.Parameters()
         visualization_parameters_py.out_path = "out"
         logging_parameters_cpp = ho_cpp.HierarchicalOptimizer2d.LoggingParameters(
-            collect_per_level_convergence_reports=True)
+            collect_per_level_convergence_reports=True,
+            collect_per_level_iteration_data=False
+        )
 
         optimizer_cpp = build_opt.make_hierarchical_optimizer2d(
             implementation_language=build_opt.ImplementationLanguage.CPP,
