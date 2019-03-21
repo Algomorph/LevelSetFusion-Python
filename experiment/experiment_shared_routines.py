@@ -100,7 +100,7 @@ def generate_frame_path_format_string(frame_directory, frame_filename_format):
     return frame_path_format_string, mask_path_format_string
 
 
-def prepare_dataset_for_2d_frame_pair_processing(
+def prepare_datasets_for_2d_frame_pair_processing(
         calibration_path=os.path.join(pu.get_reconstruction_directory(),
                                       "real_data/snoopy/snoopy_calib.txt"),
         frame_directory=os.path.join(pu.get_reconstruction_directory(),

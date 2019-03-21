@@ -19,7 +19,6 @@ import sys
 import os.path
 import shutil
 import re
-import argparse
 
 # libraries
 import numpy as np
@@ -34,6 +33,8 @@ from nonrigid_opt import field_warping as resampling
 import experiment.build_hierarchical_optimizer_helper as build_opt
 import utils.visualization as viz
 import nonrigid_opt.hierarchical.hierarchical_optimization_visualizer as ho_viz
+from experiment.multipair_hierarchical_optimizer_arguments import Arguments, legacy_process_args, post_process_enum_args
+from ext_argparse.argproc import process_arguments
 
 # has to be compiled and installed first (cpp folder)
 import level_set_fusion_optimization as cpp_module
@@ -59,6 +60,13 @@ def create_or_clear_folder(folder_path):
             raise ValueError("Path " + folder_path + " is not a folder.")
     else:
         os.makedirs(folder_path)
+
+
+def create_folder_if_necessary(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+    elif not os.path.isdir(folder_path):
+        raise ValueError("Path " + folder_path + " is not a folder.")
 
 
 digit_regex = re.compile(r'\d+')
@@ -123,10 +131,10 @@ def post_process_convergence_report_sets(convergence_report_sets, frame_numbers_
     return pd.DataFrame.from_dict(data)
 
 
-def get_converged_ratio_for_level(dataframe, i_level):
+def get_converged_ratio_for_level(data_frame, i_level):
     column_name = "l{:d}_iter_lim_reached".format(i_level)
-    total_count = len(dataframe)
-    grouped = dataframe.groupby(column_name)
+    total_count = len(data_frame)
+    grouped = data_frame.groupby(column_name)
     sizes = grouped.size()
     if False not in sizes:
         return 0.0
@@ -163,50 +171,18 @@ def analyze_convergence_data(data_frame):
         pass
 
 
-def process_args():
-    parser = argparse.ArgumentParser(
-        "Runs 2D hierarchical optimizer on TSDF inputs generated from frame-pairs "
-        "& random pixel rows from these. Alternatively, generates the said data or "
-        "loads it from a folder from further re-use.")
-    # TODO figure out how to have positional and optional arguments share a destination
-    parser.add_argument("--dataset_number", "-dn", type=int, default=1)
-    parser.add_argument("--max_warp_update_threshold", "-mwut", type=float, default=0.01)
-    parser.add_argument("--smoothing_coefficient", "-sc", type=float, default=0.5)
-    parser.add_argument("--max_iteration_count", "-mic", type=int, default=1000)
-    parser.add_argument("--generation_method", "-gm", type=str, default="BASIC")
-    parser.add_argument("--implementation_language", "-im", type=str,
-                        default="CPP")
-    parser.add_argument("--stop_before", "-sb", type=int, default=10000000)
-    parser.add_argument("--start_from", "-sf", type=int, default=0)
-    parser.add_argument("--output_path", "-o", type=str, default="output/ho")
-
-    # flags
-    parser.add_argument("--analyze_only", "-ao", action="store_true", default=False,
-                        help="Skip anything by the final analysis (and only do that if corresponding output file"
-                             " is availalbe). Supersedes any other option that deals with data generation /"
-                             " optimization.")
-    parser.add_argument("--generate_data", "-gd", action="store_true", default=False)
-    parser.add_argument("--skip_optimization", "-so", action="store_true", default=False)
-    parser.add_argument("--save_initial_fields_during_generation", "-sifdg", action="store_true", default=False)
-    parser.add_argument("--save_final_fields", "-sff", action="store_true", default=False)
-    parser.add_argument("--save_telemetry", "-st", action="store_true", default=False)
-
-    args = parser.parse_args()
-    args.generation_method = tsdf.GenerationMethod.__dict__[args.generation_method]
-    args.implementation_language = build_opt.ImplementationLanguage.__dict__[args.implementation_language]
-    return args
-
-
 def get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row):
     return os.path.join(telemetry_folder, "pair_{:d}-{:d}_{:d}".format(frame_number, frame_number + 1, pixel_row))
 
 
 def main():
-    args = process_args()
+    args = process_arguments(Arguments, "Runs 2D hierarchical optimizer on TSDF inputs generated from frame-pairs "
+                                        "& random pixel rows from these. Alternatively, generates the said data or "
+                                        "loads it from a folder from further re-use.")
+    post_process_enum_args(args)
 
     perform_optimization = not args.skip_optimization
-
-    load_data = not args.generate_data and perform_optimization  # not an args candidate
+    load_data = not args.generate_data and perform_optimization
 
     if args.generation_method == tsdf.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP:
         method_name_substring = "TSDF_inclusive"
@@ -225,17 +201,13 @@ def main():
 
     df = None
     if not args.analyze_only:
-        if not os.path.exists(out_path):
-            os.makedirs(out_path)
+        create_folder_if_necessary(out_path)
         if args.generate_data:
-            if os.path.exists(data_path):
-                clear_folder(data_path)
-            else:
-                os.makedirs(data_path)
+            create_or_clear_folder(data_path)
         initial_fields = []
         frame_numbers_and_rows = []
         if not load_data or args.generate_data:
-            frame_numbers_and_rows = esr.prepare_dataset_for_2d_frame_pair_processing(
+            datasets = esr.prepare_datasets_for_2d_frame_pair_processing(
                 calibration_path=os.path.join(pu.get_reconstruction_directory(),
                                               "real_data/snoopy/snoopy_calib.txt"),
                 frame_directory=os.path.join(pu.get_reconstruction_directory(),
@@ -249,15 +221,14 @@ def main():
                 field_size=128,
             )
 
-            frame_numbers_and_rows = frame_numbers_and_rows[
-                                     args.start_from: min(len(frame_numbers_and_rows), args.stop_before)]
+            datasets = datasets[args.start_from_index: min(len(datasets), args.stop_before_index)]
 
             print("Generating initial fields...")
             initial_fields_folder = os.path.join(data_path, "images")
             if args.save_initial_fields_during_generation:
-                if not os.path.exists(initial_fields_folder):
-                    os.makedirs(initial_fields_folder)
-            for dataset in progressbar.progressbar(frame_numbers_and_rows):
+                create_folder_if_necessary(initial_fields_folder)
+
+            for dataset in progressbar.progressbar(datasets):
                 canonical_field, live_field = dataset.generate_2d_sdf_fields(args.generation_method,
                                                                              args.smoothing_coefficient)
                 initial_fields.append((canonical_field, live_field))
@@ -279,6 +250,7 @@ def main():
                 sys.stdout.flush()
         if load_data:
             files = os.listdir(data_path)
+            print(data_path)
             files.sort()
             if files[len(files) - 1] == "images":
                 files = files[:-1]
@@ -291,9 +263,9 @@ def main():
 
         # limit ranges
         frame_numbers_and_rows = frame_numbers_and_rows[
-                                 args.start_from: min(len(frame_numbers_and_rows), args.stop_before)]
+                                 args.start_from_index: min(len(frame_numbers_and_rows), args.stop_before_index)]
         initial_fields = initial_fields[
-                         args.start_from: min(len(initial_fields), args.stop_before)]
+                         args.start_from_index: min(len(initial_fields), args.stop_before_index)]
 
         if perform_optimization:
             shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
@@ -314,7 +286,7 @@ def main():
             convergence_report_sets = []
             telemetry_folder = os.path.join(out_path, "telemetry")
             if args.save_final_fields or args.save_telemetry:
-                create_or_clear_folder(telemetry_folder)
+                create_folder_if_necessary(telemetry_folder)
 
             if args.save_telemetry:
                 # make all the necessary subfolders
