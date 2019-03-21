@@ -35,51 +35,31 @@ class Arguments(Enum):
     start_from_index = Argument(arg_type=int, default=0)
     output_path = Argument(arg_type=str, default="output/ho")
 
+    rate = Argument(arg_type=float, default=0.1)
+    data_term_amplifier = Argument(arg_type=float, default=1.0)
+    tikhonov_strength = Argument(arg_type=float, default=0.2)
+    kernel_size = Argument(arg_type=int, default=7)
+    kernel_strength = Argument(arg_type=float, default=0.1, shorthand="-kst")
+
     # flags
+    tikhonov_term_enabled = Argument(action="store_true", default=False, arg_type='bool_flag')
+    gradient_kernel_enabled = Argument(action="store_true", default=False, arg_type='bool_flag')
+
     analyze_only = Argument(action="store_true", default=False, arg_type='bool_flag',
                             arg_help="Skip anything by the final analysis (and only do that if corresponding output"
                                      " file is availalbe). Supersedes any other option that deals with data"
                                      " generation / optimization.")
+
+    bad_cases_only = Argument(action="store_true", default=False, arg_type='bool_flag')
     generate_data = Argument(action="store_true", default=False, arg_type='bool_flag')
     skip_optimization = Argument(action="store_true", default=False, arg_type='bool_flag')
     save_initial_fields_during_generation = Argument(action="store_true", default=False, arg_type='bool_flag')
-    save_final_fields = Argument(action="store_true", default=False, arg_type='bool_flag')
+    save_initial_and_final_fields = Argument(action="store_true", default=False, arg_type='bool_flag',
+                                             arg_help="save the initial canoinical & live and final live field during"
+                                                      " the optimization")
     save_telemetry = Argument(action="store_true", default=False, arg_type='bool_flag')
 
 
 def post_process_enum_args(args):
     args.generation_method = tsdf.GenerationMethod.__dict__[args.generation_method]
     args.implementation_language = build_opt.ImplementationLanguage.__dict__[args.implementation_language]
-
-
-def legacy_process_args():
-    parser = argparse.ArgumentParser(
-        "Runs 2D hierarchical optimizer on TSDF inputs generated from frame-pairs "
-        "& random pixel rows from these. Alternatively, generates the said data or "
-        "loads it from a folder from further re-use.")
-    # TODO figure out how to have positional and optional arguments share a destination
-    parser.add_argument("--dataset_number", "-dn", type=int, default=1)
-    parser.add_argument("--max_warp_update_threshold", "-mwut", type=float, default=0.01)
-    parser.add_argument("--smoothing_coefficient", "-sc", type=float, default=0.5)
-    parser.add_argument("--max_iteration_count", "-mic", type=int, default=1000)
-    parser.add_argument("--generation_method", "-gm", type=str, default="BASIC")
-    parser.add_argument("--implementation_language", "-im", type=str,
-                        default="CPP")
-    parser.add_argument("--stop_before_index", "-sbi", type=int, default=10000000)
-    parser.add_argument("--start_from_index", "-sfi", type=int, default=0)
-    parser.add_argument("--output_path", "-o", type=str, default="output/ho")
-
-    # flags
-    parser.add_argument("--analyze_only", "-ao", action="store_true", default=False,
-                        help="Skip anything by the final analysis (and only do that if corresponding output file"
-                             " is availalbe). Supersedes any other option that deals with data generation /"
-                             " optimization.")
-    parser.add_argument("--generate_data", "-gd", action="store_true", default=False)
-    parser.add_argument("--skip_optimization", "-so", action="store_true", default=False)
-    parser.add_argument("--save_initial_fields_during_generation", "-sifdg", action="store_true", default=False)
-    parser.add_argument("--save_final_fields", "-sff", action="store_true", default=False)
-    parser.add_argument("--save_telemetry", "-st", action="store_true", default=False)
-
-    args = parser.parse_args()
-    post_process_enum_args(args)
-    return args

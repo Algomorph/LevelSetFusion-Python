@@ -14,6 +14,8 @@
 #  limitations under the License.
 #  ================================================================
 
+value_dict = {}
+
 
 class Argument(object):
     setting_file_location_wildcard = '!settings_file_location'
@@ -29,8 +31,6 @@ class Argument(object):
                  setting_file_location=False):
         """
         @rtype: Argument
-        @type name: str
-        @param name: argument name -- to be used in both console and config file
         @type default: object
         @param default: the default value
         @type nargs: int | str
@@ -50,6 +50,7 @@ class Argument(object):
         @type setting_file_location: bool
         @param setting_file_location: whether to
         """
+        self.__value = default
         self.default = default
         self.required = required
         self.console_only = console_only
@@ -67,3 +68,7 @@ class Argument(object):
             self.shorthand = None
         else:
             self.shorthand = "-" + shorthand
+
+    @property
+    def value(self):
+        return self.__value

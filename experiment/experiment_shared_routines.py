@@ -110,6 +110,7 @@ def prepare_datasets_for_2d_frame_pair_processing(
         replace_empty_rows=True,
         use_masks=True,
         input_case_file=None,
+        case_file_contains_live_index=False,
         offset=np.array([-64, -64, 128]),
         field_size=128,
 ):
@@ -124,7 +125,9 @@ def prepare_datasets_for_2d_frame_pair_processing(
     :param use_masks: whether or not to use masks (if such are included in the frame_directory)
     :param input_case_file: a .csv dataset specifying exactly which frame pairs and rows to use, along with
     focus (image) coordinates for debugging
-    (format is TBD, but for now it is: canonical_frame_index, pixel_row_index, <some other column>, focus_x, focus_y)
+    (format is TBD, but for now it is: canonical_frame_index, pixel_row_index, focus_x, focus_y)
+    :param case_file_contains_live_index: set to True to support case files with live_frame_index as an extra
+    second column
     :param offset: offset, in voxels, of TSDF fields from camera
     :param field_size: side length of (square) TSDF field in voxels
     :return: a set of frame datasets
@@ -137,10 +140,12 @@ def prepare_datasets_for_2d_frame_pair_processing(
         frame_row_and_focus_set = np.genfromtxt(input_case_file, delimiter=",", dtype=np.int32)
         # drop column headers
         frame_row_and_focus_set = frame_row_and_focus_set[1:]
+
         # drop live frame indexes
-        frame_row_and_focus_set = np.concatenate(
-            (frame_row_and_focus_set[:, 0].reshape(-1, 1), frame_row_and_focus_set[:, 2].reshape(-1, 1),
-             frame_row_and_focus_set[:, 3:5]), axis=1)
+        if case_file_contains_live_index:
+            frame_row_and_focus_set = np.concatenate(
+                (frame_row_and_focus_set[:, 0].reshape(-1, 1), frame_row_and_focus_set[:, 2].reshape(-1, 1),
+                 frame_row_and_focus_set[:, 3:5]), axis=1)
     else:
         frame_set = list(range(0, frame_count - 1, 5))
         pixel_row_set = y_range[0] + ((y_range[1] - y_range[0]) * np.random.rand(len(frame_set))).astype(

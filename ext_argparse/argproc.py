@@ -94,39 +94,47 @@ class ArgumentProcessor(object):
                 raise ValueError("A conf-file+console parser requires at least a console-only parser as a parent.")
             parser = ap.ArgumentParser(parents=parents)
 
-        for item in self.arg_enum:
-            if (item.value.console_only and console_only) or (not item.value.console_only and not console_only):
-                if item.value.type == 'bool_flag':
-                    parser.add_argument('--' + item.name, item.value.shorthand, action=item.value.action,
-                                        default=defaults[item.name], required=item.value.required,
-                                        help=item.value.help)
+        for enum_entry in self.arg_enum:
+            if (enum_entry.value.console_only and console_only) or (
+                    not enum_entry.value.console_only and not console_only):
+                if enum_entry.value.type == 'bool_flag':
+                    parser.add_argument('--' + enum_entry.name, enum_entry.value.shorthand,
+                                        action=enum_entry.value.action,
+                                        default=defaults[enum_entry.name], required=enum_entry.value.required,
+                                        help=enum_entry.value.help)
                 else:
-                    parser.add_argument('--' + item.name, item.value.shorthand, action=item.value.action,
-                                        type=item.value.type, nargs=item.value.nargs, required=item.value.required,
-                                        default=defaults[item.name], help=item.value.help)
+                    parser.add_argument('--' + enum_entry.name, enum_entry.value.shorthand,
+                                        action=enum_entry.value.action,
+                                        type=enum_entry.value.type, nargs=enum_entry.value.nargs,
+                                        required=enum_entry.value.required,
+                                        default=defaults[enum_entry.name], help=enum_entry.value.help)
         if console_only:
             # add non-enum args
-            value = ArgumentProcessor.settings_file
+            enum_entry = ArgumentProcessor.settings_file
             parser.add_argument(ArgumentProcessor.settings_file_shorthand, '--' + ArgumentProcessor.settings_file_name,
-                                action=value.action, type=value.type, nargs=value.nargs,
-                                required=value.required, default=defaults[ArgumentProcessor.settings_file_name],
-                                help=value.help)
-            value = ArgumentProcessor.save_settings
+                                action=enum_entry.action, type=enum_entry.type, nargs=enum_entry.nargs,
+                                required=enum_entry.required, default=defaults[ArgumentProcessor.settings_file_name],
+                                help=enum_entry.help)
+            enum_entry = ArgumentProcessor.save_settings
             parser.add_argument(ArgumentProcessor.save_settings_shorthand, '--' + ArgumentProcessor.save_settings_name,
-                                action=value.action, default=defaults[ArgumentProcessor.save_settings_name],
-                                required=value.required, help=value.help)
+                                action=enum_entry.action, default=defaults[ArgumentProcessor.save_settings_name],
+                                required=enum_entry.required, help=enum_entry.help)
 
         if not console_only:
             parser.set_defaults(**defaults)
         return parser
+
+    def fill_enum_values(self, setting_dict):
+        for enum_entry in self.arg_enum:
+            if enum_entry.name in setting_dict:
+                enum_entry.value._Argument__value = enum_entry.__dict__["v"] = setting_dict[enum_entry.name]
 
 
 def process_arguments(program_arguments_enum, program_help_description):
     argproc = ArgumentProcessor(program_arguments_enum)
     defaults = argproc.generate_defaults_dict()
     conf_parser = \
-        argproc.generate_parser(defaults, console_only=True, description=
-        "Test stereo algorithms on two image files.")
+        argproc.generate_parser(defaults, console_only=True, description=program_help_description)
 
     # ============== STORAGE/RETRIEVAL OF CONSOLE SETTINGS ===========================================#
     args, remaining_argv = conf_parser.parse_known_args()
@@ -154,9 +162,11 @@ def process_arguments(program_arguments_enum, program_help_description):
                     Argument.setting_file_location_wildcard:
                 args.__dict__[key] = os.path.dirname(args.settings_file)
 
+    setting_dict = vars(args)
+    argproc.fill_enum_values(setting_dict)
+
     # save settings if prompted to do so
     if args.save_settings and args.settings_file:
-        setting_dict = vars(args)
         file_stream = open(args.settings_file, "w", encoding="utf-8")
         file_name = setting_dict[ArgumentProcessor.save_settings_name]
         del setting_dict[ArgumentProcessor.save_settings_name]

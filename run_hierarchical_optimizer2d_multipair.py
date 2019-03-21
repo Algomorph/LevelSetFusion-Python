@@ -33,7 +33,8 @@ from nonrigid_opt import field_warping as resampling
 import experiment.build_hierarchical_optimizer_helper as build_opt
 import utils.visualization as viz
 import nonrigid_opt.hierarchical.hierarchical_optimization_visualizer as ho_viz
-from experiment.multipair_hierarchical_optimizer_arguments import Arguments, legacy_process_args, post_process_enum_args
+from experiment.multipair_hierarchical_optimizer_arguments import Arguments, post_process_enum_args
+import nonrigid_opt.slavcheva.sobolev_filter as sob
 from ext_argparse.argproc import process_arguments
 
 # has to be compiled and installed first (cpp folder)
@@ -171,8 +172,33 @@ def analyze_convergence_data(data_frame):
         pass
 
 
+def save_bad_cases(data_frame, out_path):
+    df = data_frame
+    level_count = infer_level_count(df)
+    unconverged_column_name = "l{:d}_iter_lim_reached".format(level_count - 1)
+    max_update_x_column_name = "l{:d}_warp_delta_max_x".format(level_count - 1)
+    max_update_y_column_name = "l{:d}_warp_delta_max_y".format(level_count - 1)
+    bad_cases = df[['canonical_frame', 'pixel_row', max_update_x_column_name, max_update_y_column_name]] \
+        [df[unconverged_column_name]]
+    bad_cases.to_csv(os.path.join(out_path, "bad_cases.csv"), header=False, index=False)
+
+
 def get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row):
     return os.path.join(telemetry_folder, "pair_{:d}-{:d}_{:d}".format(frame_number, frame_number + 1, pixel_row))
+
+
+def filter_files_based_on_case_file(out_path, frame_numbers_and_rows, files):
+    case_file = os.path.join(out_path, "bad_cases.csv")
+    cases = np.genfromtxt(case_file, delimiter=",", dtype=int)
+    frame_numbers = set(cases[:, 0])
+    filtered_files = []
+    filtered_frame_numbers_and_rows = []
+    for i_file in range(len(files)):
+        frame_number, row = frame_numbers_and_rows[i_file]
+        if frame_number in frame_numbers:
+            filtered_files.append(files[i_file])
+            filtered_frame_numbers_and_rows.append((frame_number, row))
+    return filtered_files, filtered_frame_numbers_and_rows
 
 
 def main():
@@ -180,21 +206,27 @@ def main():
                                         "& random pixel rows from these. Alternatively, generates the said data or "
                                         "loads it from a folder from further re-use.")
     post_process_enum_args(args)
-
     perform_optimization = not args.skip_optimization
     load_data = not args.generate_data and perform_optimization
 
     if args.generation_method == tsdf.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP:
-        method_name_substring = "TSDF_inclusive"
+        generation_method_name_substring = "TSDF_inclusive"
     elif args.generation_method == tsdf.GenerationMethod.BASIC:
-        method_name_substring = "basic"
+        generation_method_name_substring = "basic"
     else:
         raise ValueError("Unsupported Generation Method")
 
-    experiment_name = "multi_{:s}_{:d}_{:d}_{:02d}".format(method_name_substring,
-                                                           int(args.max_warp_update_threshold * 100),
-                                                           args.max_iteration_count, args.dataset_number)
-    data_subfolder = "tsdf_pairs_128_{:s}_{:02d}".format(method_name_substring, args.dataset_number)
+    # TODO: add other optimizer parameters to the name
+    experiment_name = "multi_{:s}_ds{:02d}_wt{:02d}_mi{:04d}_r{:02d}_ts{:02d}_ks{:02d}" \
+        .format(generation_method_name_substring,
+                args.dataset_number,
+                int(args.max_warp_update_threshold * 100),
+                args.max_iteration_count,
+                int(Arguments.rate.v * 100),
+                int(Arguments.tikhonov_strength.v * 100 if Arguments.tikhonov_term_enabled.v else 0),
+                int(Arguments.kernel_strength.v * 100 if Arguments.gradient_kernel_enabled.v else 0)
+                )
+    data_subfolder = "tsdf_pairs_128_{:s}_{:02d}".format(generation_method_name_substring, args.dataset_number)
     out_path = os.path.join(args.output_path, experiment_name)
     convergence_reports_pickle_path = os.path.join(out_path, "convergence_reports.pk")
     data_path = os.path.join(pu.get_reconstruction_directory(), "real_data/snoopy", data_subfolder)
@@ -207,6 +239,7 @@ def main():
         initial_fields = []
         frame_numbers_and_rows = []
         if not load_data or args.generate_data:
+            input_case_file = None if not Arguments.bad_cases_only.v else os.path.join(out_path, "bad_cases.csv")
             datasets = esr.prepare_datasets_for_2d_frame_pair_processing(
                 calibration_path=os.path.join(pu.get_reconstruction_directory(),
                                               "real_data/snoopy/snoopy_calib.txt"),
@@ -255,9 +288,12 @@ def main():
             if files[len(files) - 1] == "images":
                 files = files[:-1]
             print("Loading initial fields from {:s}...".format(data_path))
+            for file in files:
+                frame_numbers_and_rows.append(infer_frame_number_and_pixel_row_from_filename(file))
+            if Arguments.bad_cases_only.v:
+                files, frame_numbers_and_rows = filter_files_based_on_case_file(out_path, frame_numbers_and_rows, files)
 
             for file in progressbar.progressbar(files):
-                frame_numbers_and_rows.append(infer_frame_number_and_pixel_row_from_filename(file))
                 archive = np.load(os.path.join(data_path, file))
                 initial_fields.append((archive["canonical"], archive["live"]))
 
@@ -269,7 +305,13 @@ def main():
 
         if perform_optimization:
             shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
-            shared_parameters.maximum_warp_update_threshold = 0.01
+            shared_parameters.maximum_warp_update_threshold = args.max_warp_update_threshold
+            shared_parameters.tikhonov_term_enabled = Arguments.tikhonov_term_enabled.v
+            shared_parameters.gradient_kernel_enabled = Arguments.gradient_kernel_enabled.v
+            shared_parameters.data_term_amplifier = Arguments.data_term_amplifier.v
+            shared_parameters.tikhonov_strength = Arguments.tikhonov_strength.v
+            shared_parameters.kernel = sob.generate_1d_sobolev_kernel(Arguments.kernel_size.v,
+                                                                      Arguments.kernel_strength.v)
             visualization_parameters_py = build_opt.make_common_hierarchical_optimizer2d_visualization_parameters()
             logging_parameters_cpp = cpp_module.HierarchicalOptimizer2d.LoggingParameters(
                 collect_per_level_convergence_reports=True,
@@ -285,7 +327,7 @@ def main():
 
             convergence_report_sets = []
             telemetry_folder = os.path.join(out_path, "telemetry")
-            if args.save_final_fields or args.save_telemetry:
+            if Arguments.save_initial_and_final_fields.v or Arguments.save_telemetry.v:
                 create_folder_if_necessary(telemetry_folder)
 
             if args.save_telemetry:
@@ -299,6 +341,7 @@ def main():
             telemetry_logs = []
             for (canonical_field, live_field) in progressbar.progressbar(initial_fields):
                 (frame_number, pixel_row) = frame_numbers_and_rows[i_pair]
+                live_copy = live_field.copy()
                 warp_field_out = optimizer.optimize(canonical_field, live_field)
                 final_live_resampled = resampling.warp_field(live_field, warp_field_out)
                 if args.save_telemetry:
@@ -307,17 +350,21 @@ def main():
                     else:
                         optimizer.visualization_parameters.out_path = \
                             get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
-                if args.save_final_fields:
-
+                if Arguments.save_initial_and_final_fields.v:
                     if not args.save_telemetry:
-                        final_live_path = os.path.join(telemetry_folder,
-                                                       "pair_{:d}-{:d}_{:d}_final_live.png".format(frame_number,
-                                                                                                   frame_number + 1,
-                                                                                                   pixel_row))
+                        frame_file_prefix = "pair_{:d}-{:d}_{:d}".format(frame_number, frame_number + 1, pixel_row)
+                        final_live_path = os.path.join(telemetry_folder, frame_file_prefix + "_final_live.png")
+                        canonical_path = os.path.join(telemetry_folder, frame_file_prefix + "_canonical.png")
+                        initial_live_path = os.path.join(telemetry_folder, frame_file_prefix + "_initial_live.png")
                     else:
                         telemetry_subfolder = get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
-                        final_live_path = os.path.join(telemetry_subfolder, "live_warped.png")
-                    viz.save_field(final_live_resampled, final_live_path, 1024 // final_live_resampled.shape[0])
+                        final_live_path = os.path.join(telemetry_subfolder, "final_live.png")
+                        canonical_path = os.path.join(telemetry_subfolder, "canonical.png")
+                        initial_live_path = os.path.join(telemetry_subfolder, "live.png")
+                    scale = 1024 // final_live_resampled.shape[0]
+                    viz.save_field(final_live_resampled, final_live_path, scale)
+                    viz.save_field(canonical_field, canonical_path, scale)
+                    viz.save_field(live_copy, initial_live_path, scale)
 
                 convergence_reports = optimizer.get_per_level_convergence_reports()
                 convergence_report_sets.append(convergence_reports)
@@ -343,6 +390,8 @@ def main():
 
     if df is not None:
         analyze_convergence_data(df)
+        if not Arguments.bad_cases_only.v:
+            save_bad_cases(df, out_path)
 
     return EXIT_CODE_SUCCESS
 
