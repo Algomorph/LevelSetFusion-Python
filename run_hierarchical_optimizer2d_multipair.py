@@ -143,6 +143,11 @@ def get_converged_ratio_for_level(data_frame, i_level):
         return sizes[False] / total_count
 
 
+def get_mean_iteration_count_for_level(data_frame, i_level):
+    column_name = "l{:d}_iter_count".format(i_level)
+    return data_frame[column_name].mean()
+
+
 def get_tsdf_difference_stats_for_level(dataframe, i_level):
     # TODO
     pass
@@ -165,7 +170,13 @@ def analyze_convergence_data(data_frame):
     for i_level in range(level_count):
         print("  level {:d}: {:.2%}".format(i_level, get_converged_ratio_for_level(data_frame, i_level)), sep="",
               end="")
-    # print()
+    print()
+    print("Per-level mean iteration counts:")
+    for i_level in range(level_count):
+        print("  level {:d}: {:.2f}".format(i_level, get_mean_iteration_count_for_level(data_frame, i_level)), sep="",
+              end="")
+    print()
+
     #
     # print("Average per-level tsdf difference statistics:")
     # for i_level in range(level_count):
@@ -231,15 +242,17 @@ def main():
     data_path = os.path.join(pu.get_reconstruction_data_directory(), "real_data/snoopy", data_subfolder)
 
     # TODO: add other optimizer parameters to the name
-    experiment_name = "multi_{:s}_ds{:02d}_wt{:02d}_mi{:04d}_r{:02d}_ts{:02d}_ks{:02d}" \
+    experiment_name = "multi_{:s}{:s}_ds{:02d}_wt{:02d}_mi{:04d}_r{:02d}_ts{:02d}_ks{:02d}" \
         .format(generation_method_name_substring,
+                generation_smoothing_substring,
                 args.dataset_number,
                 int(args.max_warp_update_threshold * 100),
                 args.max_iteration_count,
                 int(Arguments.rate.v * 100),
                 int(Arguments.tikhonov_strength.v * 100 if Arguments.tikhonov_term_enabled.v else 0),
-                int(Arguments.kernel_strength.v * 100 if Arguments.gradient_kernel_enabled.v else 0)
-                )
+                int(Arguments.kernel_strength.v * 100 if Arguments.gradient_kernel_enabled.v else 0))
+
+    print("Running experiment " + experiment_name)
 
     out_path = os.path.join(args.output_path, experiment_name)
     convergence_reports_pickle_path = os.path.join(out_path, "convergence_reports.pk")
@@ -320,7 +333,9 @@ def main():
         telemetry_folder = os.path.join(out_path, "telemetry")
         if perform_optimization:
             shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
-            shared_parameters.maximum_warp_update_threshold = args.max_warp_update_threshold
+            shared_parameters.maximum_iteration_count = Arguments.max_iteration_count.v
+            shared_parameters.maximum_warp_update_threshold = Arguments.max_warp_update_threshold.v
+            shared_parameters.rate = Arguments.rate.v
             shared_parameters.tikhonov_term_enabled = Arguments.tikhonov_term_enabled.v
             shared_parameters.gradient_kernel_enabled = Arguments.gradient_kernel_enabled.v
             shared_parameters.data_term_amplifier = Arguments.data_term_amplifier.v
@@ -333,7 +348,6 @@ def main():
                 collect_per_level_iteration_data=args.save_telemetry
 
             )
-            shared_parameters.maximum_iteration_count = args.max_iteration_count
 
             optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=args.implementation_language,
                                                                 shared_parameters=shared_parameters,
@@ -385,8 +399,11 @@ def main():
 
             print("Post-processing convergence reports...")
             df = post_process_convergence_report_sets(convergence_report_sets, frame_numbers_and_rows)
-            df.to_excel(os.path.join(out_path, "convergence_reports.xlsx"))
-            df.to_pickle(os.path.join(out_path, "convergence_reports.pk"))
+            reports_file_name = "convergence_reports"
+            if Arguments.optimization_case_file.v is not None:
+                reports_file_name = "case_convergence_reports"
+            df.to_excel(os.path.join(out_path, "{:s}.xlsx".format(reports_file_name)))
+            df.to_pickle(os.path.join(out_path, "{:s}.pk".format(reports_file_name)))
 
         if Arguments.save_telemetry.v and \
                 Arguments.implementation_language.v == build_opt.ImplementationLanguage.CPP and \
@@ -431,6 +448,8 @@ def main():
         if not Arguments.optimization_case_file.v:
             save_bad_cases(df, out_path)
             save_all_cases(df, out_path)
+
+    print()
 
     return EXIT_CODE_SUCCESS
 
