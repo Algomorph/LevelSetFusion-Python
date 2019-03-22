@@ -28,7 +28,7 @@ from nonrigid_opt.hierarchical import hierarchical_optimization_visualizer as ho
 from nonrigid_opt import field_warping as resampling
 import experiment.dataset as dataset
 import tsdf.common
-import experiment.build_hierarchical_optimizer_helper as build_opt
+import experiment.hierarchical_optimizer.build_helper as build_opt
 import nonrigid_opt.slavcheva.sobolev_filter as sob
 
 # C++ extension

@@ -127,7 +127,7 @@ class ArgumentProcessor(object):
     def fill_enum_values(self, setting_dict):
         for enum_entry in self.arg_enum:
             if enum_entry.name in setting_dict:
-                enum_entry.value._Argument__value = enum_entry.__dict__["v"] = setting_dict[enum_entry.name]
+                enum_entry.__dict__["v"] = setting_dict[enum_entry.name]
 
 
 def process_arguments(program_arguments_enum, program_help_description):

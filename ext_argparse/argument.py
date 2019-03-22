@@ -50,7 +50,6 @@ class Argument(object):
         @type setting_file_location: bool
         @param setting_file_location: whether to
         """
-        self.__value = default
         self.default = default
         self.required = required
         self.console_only = console_only
@@ -68,7 +67,3 @@ class Argument(object):
             self.shorthand = None
         else:
             self.shorthand = "-" + shorthand
-
-    @property
-    def value(self):
-        return self.__value

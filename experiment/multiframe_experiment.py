@@ -28,7 +28,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 
 # local
-from experiment.build_optimizer import OptimizerChoice, build_optimizer
+from experiment.build_slavcheva_optimizer_helper import OptimizerChoice, build_optimizer
 from nonrigid_opt.slavcheva.data_term import DataTermMethod
 from experiment.dataset import ImageBasedFramePairDataset, MaskedImageBasedFramePairDataset
 from tsdf.generation import GenerationMethod

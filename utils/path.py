@@ -31,7 +31,7 @@ paths_by_machine_name = {"june-ubuntu": "/mnt/4696C5EE7E51F6BB/Reconstruction",
                          "Juggernaut": "/media/algomorph/Data/Reconstruction"}
 
 
-def get_reconstruction_directory():
+def get_reconstruction_data_directory():
     hostname = socket.gethostname()
 
     if hostname in paths_by_machine_name:

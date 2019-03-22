@@ -24,7 +24,7 @@ from experiment import dataset as ds
 from tsdf import generation as tsdf
 from nonrigid_opt import field_warping as resampling
 import utils.sampling as sampling
-import experiment.build_hierarchical_optimizer_helper as build_opt
+import experiment.hierarchical_optimizer.build_helper as build_opt
 # has to be compiled and included in PYTHONPATH first
 import level_set_fusion_optimization as ho_cpp
 

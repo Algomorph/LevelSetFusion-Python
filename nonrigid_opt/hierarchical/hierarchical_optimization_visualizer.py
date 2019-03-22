@@ -22,7 +22,10 @@ import os.path
 import os
 # libraries
 import cv2
+import numpy as np
 # local
+from attr import has
+
 import utils.visualization as viz
 import level_set_fusion_optimization as ho_cpp
 
@@ -140,30 +143,146 @@ class HierarchicalOptimizer2dVisualizer:
             self.tikhonov_gradient_video_writer2D.release()
 
 
-def convert_cpp_optimization_iteration_data_to_video(per_level_optimization_iteration_data,
-                                                     canonical_field, live_field, output_folder):
+class TelemetryMetadata:
+    def __init__(self, has_warp_fields, has_data_term_gradients, has_tikhonov_term_gradients, field_size):
+        self.has_warp_fields = has_warp_fields
+        self.has_data_term_gradients = has_data_term_gradients
+        self.has_tikhonov_term_gradients = has_tikhonov_term_gradients
+        self.field_size = field_size
+
+
+class OptimizationIterationData:
+    def __init__(self, warp_fields, data_term_gradients, tikhonov_term_gradients):
+        self.warp_fields = warp_fields
+        self.data_term_gradients = data_term_gradients
+        self.tikhonov_term_gradients = tikhonov_term_gradients
+
+    def get_warp_fields(self):
+        return self.warp_fields
+
+    def get_data_term_gradients(self):
+        return self.data_term_gradients
+
+    def get_tikhonov_term_gradients(self):
+        return self.tikhonov_term_gradients
+
+    def get_frame_count(self):
+        return len(self.warp_fields)
+
+
+def get_number_of_frames_to_save_from_telemetry_logs(telemetry_logs):
+    frame_count = 0
+    for log in telemetry_logs:
+        for level_data in log:
+            frame_count += level_data.get_frame_count()
+    return frame_count
+
+
+def get_telemetry_metadata(telemetry_log):
+    first_level_data = telemetry_log[0]
+    field_size = 0
+    has_warp_fields = False
+    has_data_term_gradients = False
+    has_tikhonov_term_gradients = False
+    warp_fields = first_level_data.get_warp_fields()
+    if warp_fields is not None and len(warp_fields) > 0:
+        first_warp_field = warp_fields[0]
+        if first_warp_field is not None and first_warp_field.size > 0:
+            has_warp_fields = True
+            field_size = first_warp_field.shape[0]
+    data_term_gradients = first_level_data.get_data_term_gradients()
+    if data_term_gradients is not None and len(data_term_gradients) > 0:
+        first_data_term_gradient = data_term_gradients[0]
+        if first_data_term_gradient is not None and first_data_term_gradient.size > 0:
+            has_data_term_gradients = True
+            if field_size == 0:
+                field_size = first_data_term_gradient.shape[0]
+    tikhonov_term_gradients = first_level_data.get_tikhonov_term_gradients()
+    if tikhonov_term_gradients is not None and len(tikhonov_term_gradients):
+        first_tikhonov_term_gradient = tikhonov_term_gradients[0]
+        if first_tikhonov_term_gradient is not None and first_tikhonov_term_gradient.size > 0:
+            has_data_term_gradients = True
+            if field_size == 0:
+                field_size = first_tikhonov_term_gradient.shape[0]
+    return TelemetryMetadata(has_warp_fields, has_data_term_gradients, has_tikhonov_term_gradients, field_size)
+
+
+def save_telemetry_log(telemetry_log, telemetry_metadata, output_folder):
     """
-    :type per_level_optimization_iteration_data: ho_cpp.OptimizationIterationDataVector
-    :param per_level_optimization_iteration_data: intermediate results for each level for each iteration
+    :param telemetry_log: telemetry log to save
+    :type telemetry_metadata: TelemetryMetadata
+    :param telemetry_metadata:
+    :param output_folder:
     :return:
     """
-    first_level_data = per_level_optimization_iteration_data[0]
-    first_warp_field = first_level_data.get_warp_fields()[0]
-    first_data_term_gradient = first_level_data.get_data_term_gradients()[0]
-    first_tikhonov_term_gradient = first_level_data.get_tikhonov_term_gradients()[0]
+    telemetry_dict = {}
+    for i_level, level_data in enumerate(telemetry_log):
+        telemetry_dict["l{:d}_warp_fields".format(i_level)] = np.dstack(level_data.get_warp_fields())
+        telemetry_dict["l{:d}_data_term_gradients".format(i_level)] = \
+            np.array([]) if not telemetry_metadata.has_data_term_gradients else np.dstack(
+                level_data.get_data_term_gradients())
+        telemetry_dict["l{:d}_tikhonov_term_gradients".format(i_level)] = \
+            np.array([]) if not telemetry_metadata.has_tikhonov_term_gradients else np.dstack(
+                level_data.get_tikhonov_term_gradients())
+    np.savez_compressed(os.path.join(output_folder, "telemetry_log.npz"), **telemetry_dict)
 
-    has_warp_fields = first_warp_field.size > 0
-    has_data_term_gradients = first_data_term_gradient.size > 0
-    has_tikhonov_gradients = first_tikhonov_term_gradient.size > 0
+
+def load_telemetry_log(output_folder):
+    path = os.path.join(output_folder, "telemetry_log.npz")
+    telemetry_dict = np.load(path)
+    level_count = len(telemetry_dict.files) // 3
+    telemetry_log = []
+    for i_level in range(level_count):
+        warp_fields = telemetry_dict["l{:d}_warp_fields".format(i_level)]
+        warp_fields = np.dsplit(warp_fields, warp_fields.shape[2]//2)
+        # warp_fields = [warp_field.reshape((warp_field.shape[0], warp_field.shape[1])) for warp_field in warp_fields]
+        data_term_gradients = telemetry_dict["l{:d}_warp_fields".format(i_level)]
+        if len(data_term_gradients.shape) == 3:
+            data_term_gradients = np.dsplit(data_term_gradients, data_term_gradients.shape[2]//2)
+            # data_term_gradients = [
+            #     data_term_gradient.reshape((data_term_gradient.shape[0], data_term_gradient.shape[1])) for
+            #     data_term_gradient in data_term_gradients]
+        else:
+            data_term_gradients = (np.array([])) * len(warp_fields)
+        tikhonov_term_gradients = telemetry_dict["l{:d}_tikhonov_term_gradients".format(i_level)]
+        if len(tikhonov_term_gradients.shape) == 3:
+            tikhonov_term_gradients = np.dsplit(tikhonov_term_gradients, tikhonov_term_gradients.shape[2]//2)
+            # tikhonov_term_gradients = [
+            #     tikhonov_term_gradient.reshape((tikhonov_term_gradient.shape[0], tikhonov_term_gradient.shape[1])) for
+            #     tikhonov_term_gradient in tikhonov_term_gradients]
+        else:
+            tikhonov_term_gradients = (np.array([])) * len(warp_fields)
+        level_data = OptimizationIterationData(warp_fields, data_term_gradients, tikhonov_term_gradients)
+        telemetry_log.append(level_data)
+    return telemetry_log
+
+
+def convert_cpp_telemetry_logs_to_video(telemetry_log, telemetry_metadata, canonical_field, live_field, output_folder,
+                                        progress_bar=None):
+    """
+    :type telemetry_metadata: TelemetryMetadata
+    :param telemetry_metadata: metadata that tells what kinds of data the telemetry log contains
+    :param canonical_field: canonical field (typically, warp target)
+    :param live_field: initial live field (typically, warp source)
+    :param output_folder:
+    :type telemetry_log: ho_cpp.OptimizationIterationDataVector
+    :param telemetry_log: intermediate results for each level for each iteration
+    :type progress_bar: progressbar.ProgressBar
+    :param progress_bar: optional progress bar
+    :return:
+    """
+    has_warp_fields = telemetry_metadata.has_warp_fields
+    has_data_term_gradients = telemetry_metadata.has_data_term_gradients
+    has_tikhonov_gradients = telemetry_metadata.has_tikhonov_term_gradients
 
     if not has_warp_fields:
         return
 
-    field_size = first_warp_field.shape[0]
+    field_size = telemetry_metadata.field_size
 
     scaling_factor = 1024 / field_size
 
-    level_count = len(per_level_optimization_iteration_data)
+    level_count = len(telemetry_log)
 
     params = HierarchicalOptimizer2dVisualizer.Parameters(
         out_path=output_folder,
@@ -178,12 +297,20 @@ def convert_cpp_optimization_iteration_data_to_video(per_level_optimization_iter
     )
     visualizer = HierarchicalOptimizer2dVisualizer(params, field_size, level_count)
 
-    for i_level, level_data in enumerate(per_level_optimization_iteration_data):
+    i_frame = 0
+    if progress_bar is not None:
+        i_frame = progress_bar.value
+    for i_level, level_data in enumerate(telemetry_log):
+        frame_count = level_data.get_frame_count()
         warp_fields = level_data.get_warp_fields()
         data_term_gradients = level_data.get_data_term_gradients()
         tikhonov_gradients = level_data.get_tikhonov_term_gradients()
-        for i_iteration, (warp_field, data_term_gradient, tikhonov_gradient) \
-                in enumerate(zip(warp_fields, data_term_gradients, tikhonov_gradients)):
+        for i_iteration in range(frame_count):
+            warp_field = warp_fields[i_iteration]
+            data_term_gradient = None if not has_data_term_gradients else data_term_gradients[i_iteration]
+            tikhonov_gradient = None if not has_tikhonov_gradients else tikhonov_gradients[i_iteration]
             visualizer.generate_per_iteration_visualizations(i_level, i_iteration, canonical_field, live_field,
                                                              warp_field, data_term_gradient, tikhonov_gradient)
-
+            if progress_bar is not None:
+                progress_bar.update(i_frame)
+            i_frame += 1

@@ -101,20 +101,24 @@ def generate_frame_path_format_string(frame_directory, frame_filename_format):
 
 
 def prepare_datasets_for_2d_frame_pair_processing(
-        calibration_path=os.path.join(pu.get_reconstruction_directory(),
+        calibration_path=os.path.join(pu.get_reconstruction_data_directory(),
                                       "real_data/snoopy/snoopy_calib.txt"),
-        frame_directory=os.path.join(pu.get_reconstruction_directory(),
+        frame_directory=os.path.join(pu.get_reconstruction_data_directory(),
                                      "real_data/snoopy/frames/"),
         output_directory="./output",
         y_range=(214, 400),
         replace_empty_rows=True,
         use_masks=True,
-        input_case_file=None,
-        case_file_contains_live_index=False,
         offset=np.array([-64, -64, 128]),
         field_size=128,
+
+        input_case_file=None,
+        case_file_contains_live_index=False,
+        case_file_contains_column_header=False,
+
 ):
     """
+
     :param calibration_path: path to calibration file
     :param frame_directory: directory where depth, color, and, potentially, mask images reside, all postfixed with
      frame numbers
@@ -128,6 +132,7 @@ def prepare_datasets_for_2d_frame_pair_processing(
     (format is TBD, but for now it is: canonical_frame_index, pixel_row_index, focus_x, focus_y)
     :param case_file_contains_live_index: set to True to support case files with live_frame_index as an extra
     second column
+    :param case_file_contains_column_header: set to True if the case file's first row lists column names
     :param offset: offset, in voxels, of TSDF fields from camera
     :param field_size: side length of (square) TSDF field in voxels
     :return: a set of frame datasets
@@ -139,7 +144,8 @@ def prepare_datasets_for_2d_frame_pair_processing(
     if input_case_file:
         frame_row_and_focus_set = np.genfromtxt(input_case_file, delimiter=",", dtype=np.int32)
         # drop column headers
-        frame_row_and_focus_set = frame_row_and_focus_set[1:]
+        if case_file_contains_column_header:
+            frame_row_and_focus_set = frame_row_and_focus_set[1:]
 
         # drop live frame indexes
         if case_file_contains_live_index:

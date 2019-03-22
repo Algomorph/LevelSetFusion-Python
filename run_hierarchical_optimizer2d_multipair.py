@@ -30,10 +30,10 @@ import utils.path as pu
 import experiment.experiment_shared_routines as esr
 from tsdf import generation as tsdf
 from nonrigid_opt import field_warping as resampling
-import experiment.build_hierarchical_optimizer_helper as build_opt
+import experiment.hierarchical_optimizer.build_helper as build_opt
 import utils.visualization as viz
 import nonrigid_opt.hierarchical.hierarchical_optimization_visualizer as ho_viz
-from experiment.multipair_hierarchical_optimizer_arguments import Arguments, post_process_enum_args
+from experiment.hierarchical_optimizer.multipair_arguments import Arguments, post_process_enum_args
 import nonrigid_opt.slavcheva.sobolev_filter as sob
 from ext_argparse.argproc import process_arguments
 
@@ -165,11 +165,11 @@ def analyze_convergence_data(data_frame):
     for i_level in range(level_count):
         print("  level {:d}: {:.2%}".format(i_level, get_converged_ratio_for_level(data_frame, i_level)), sep="",
               end="")
-    print()
-
-    print("Average per-level tsdf difference statistics:")
-    for i_level in range(level_count):
-        pass
+    # print()
+    #
+    # print("Average per-level tsdf difference statistics:")
+    # for i_level in range(level_count):
+    #     pass
 
 
 def save_bad_cases(data_frame, out_path):
@@ -183,13 +183,21 @@ def save_bad_cases(data_frame, out_path):
     bad_cases.to_csv(os.path.join(out_path, "bad_cases.csv"), header=False, index=False)
 
 
+def save_all_cases(data_frame, out_path):
+    df = data_frame
+    level_count = infer_level_count(df)
+    max_update_x_column_name = "l{:d}_warp_delta_max_x".format(level_count - 1)
+    max_update_y_column_name = "l{:d}_warp_delta_max_y".format(level_count - 1)
+    all_cases = df[['canonical_frame', 'pixel_row', max_update_x_column_name, max_update_y_column_name]]
+    all_cases.to_csv(os.path.join(out_path, "all_cases.csv"), header=False, index=False)
+
+
 def get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row):
     return os.path.join(telemetry_folder, "pair_{:d}-{:d}_{:d}".format(frame_number, frame_number + 1, pixel_row))
 
 
-def filter_files_based_on_case_file(out_path, frame_numbers_and_rows, files):
-    case_file = os.path.join(out_path, "bad_cases.csv")
-    cases = np.genfromtxt(case_file, delimiter=",", dtype=int)
+def filter_files_based_on_case_file(case_file_path, frame_numbers_and_rows, files):
+    cases = np.genfromtxt(case_file_path, delimiter=",", dtype=int)
     frame_numbers = set(cases[:, 0])
     filtered_files = []
     filtered_frame_numbers_and_rows = []
@@ -206,15 +214,21 @@ def main():
                                         "& random pixel rows from these. Alternatively, generates the said data or "
                                         "loads it from a folder from further re-use.")
     post_process_enum_args(args)
-    perform_optimization = not args.skip_optimization
-    load_data = not args.generate_data and perform_optimization
+    perform_optimization = not Arguments.skip_optimization.v
 
     if args.generation_method == tsdf.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP:
-        generation_method_name_substring = "TSDF_inclusive"
+        generation_method_name_substring = "EWA_TI"
+        generation_smoothing_substring = "_sm{:03d}".format(int(Arguments.smoothing_coefficient.v * 100))
     elif args.generation_method == tsdf.GenerationMethod.BASIC:
         generation_method_name_substring = "basic"
+        generation_smoothing_substring = ""
     else:
         raise ValueError("Unsupported Generation Method")
+
+    data_subfolder = "tsdf_pairs_128_{:s}{:s}_{:02d}".format(generation_method_name_substring,
+                                                             generation_smoothing_substring,
+                                                             Arguments.dataset_number.v)
+    data_path = os.path.join(pu.get_reconstruction_data_directory(), "real_data/snoopy", data_subfolder)
 
     # TODO: add other optimizer parameters to the name
     experiment_name = "multi_{:s}_ds{:02d}_wt{:02d}_mi{:04d}_r{:02d}_ts{:02d}_ks{:02d}" \
@@ -226,10 +240,9 @@ def main():
                 int(Arguments.tikhonov_strength.v * 100 if Arguments.tikhonov_term_enabled.v else 0),
                 int(Arguments.kernel_strength.v * 100 if Arguments.gradient_kernel_enabled.v else 0)
                 )
-    data_subfolder = "tsdf_pairs_128_{:s}_{:02d}".format(generation_method_name_substring, args.dataset_number)
+
     out_path = os.path.join(args.output_path, experiment_name)
     convergence_reports_pickle_path = os.path.join(out_path, "convergence_reports.pk")
-    data_path = os.path.join(pu.get_reconstruction_directory(), "real_data/snoopy", data_subfolder)
 
     df = None
     if not args.analyze_only:
@@ -238,18 +251,18 @@ def main():
             create_or_clear_folder(data_path)
         initial_fields = []
         frame_numbers_and_rows = []
-        if not load_data or args.generate_data:
-            input_case_file = None if not Arguments.bad_cases_only.v else os.path.join(out_path, "bad_cases.csv")
+        if args.generate_data:
+
             datasets = esr.prepare_datasets_for_2d_frame_pair_processing(
-                calibration_path=os.path.join(pu.get_reconstruction_directory(),
+                calibration_path=os.path.join(pu.get_reconstruction_data_directory(),
                                               "real_data/snoopy/snoopy_calib.txt"),
-                frame_directory=os.path.join(pu.get_reconstruction_directory(),
+                frame_directory=os.path.join(pu.get_reconstruction_data_directory(),
                                              "real_data/snoopy/frames"),
                 output_directory=out_path,
                 y_range=(214, 400),
                 replace_empty_rows=True,
                 use_masks=True,
-                input_case_file=None,
+                input_case_file=Arguments.generation_case_file.v,
                 offset=np.array([-64, -64, 128]),
                 field_size=128,
             )
@@ -281,7 +294,7 @@ def main():
                         viz.save_field(live_field, live_image_path, 1024 // dataset.field_size)
 
                 sys.stdout.flush()
-        if load_data:
+        else:
             files = os.listdir(data_path)
             print(data_path)
             files.sort()
@@ -290,9 +303,9 @@ def main():
             print("Loading initial fields from {:s}...".format(data_path))
             for file in files:
                 frame_numbers_and_rows.append(infer_frame_number_and_pixel_row_from_filename(file))
-            if Arguments.bad_cases_only.v:
-                files, frame_numbers_and_rows = filter_files_based_on_case_file(out_path, frame_numbers_and_rows, files)
-
+            if Arguments.optimization_case_file.v is not None:
+                files, frame_numbers_and_rows = \
+                    filter_files_based_on_case_file(Arguments.optimization_case_file.v, frame_numbers_and_rows, files)
             for file in progressbar.progressbar(files):
                 archive = np.load(os.path.join(data_path, file))
                 initial_fields.append((archive["canonical"], archive["live"]))
@@ -303,6 +316,8 @@ def main():
         initial_fields = initial_fields[
                          args.start_from_index: min(len(initial_fields), args.stop_before_index)]
 
+        telemetry_logs = []
+        telemetry_folder = os.path.join(out_path, "telemetry")
         if perform_optimization:
             shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
             shared_parameters.maximum_warp_update_threshold = args.max_warp_update_threshold
@@ -326,7 +341,6 @@ def main():
                                                                 visualization_parameters_py=visualization_parameters_py)
 
             convergence_report_sets = []
-            telemetry_folder = os.path.join(out_path, "telemetry")
             if Arguments.save_initial_and_final_fields.v or Arguments.save_telemetry.v:
                 create_folder_if_necessary(telemetry_folder)
 
@@ -334,11 +348,10 @@ def main():
                 # make all the necessary subfolders
                 for frame_number, pixel_row in frame_numbers_and_rows:
                     telemetry_subfolder = get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
-                    create_or_clear_folder(telemetry_subfolder)
+                    create_folder_if_necessary(telemetry_subfolder)
 
             print("Optimizing...")
             i_pair = 0
-            telemetry_logs = []
             for (canonical_field, live_field) in progressbar.progressbar(initial_fields):
                 (frame_number, pixel_row) = frame_numbers_and_rows[i_pair]
                 live_copy = live_field.copy()
@@ -370,28 +383,54 @@ def main():
                 convergence_report_sets.append(convergence_reports)
                 i_pair += 1
 
-            if args.save_telemetry and args.implementation_language == build_opt.ImplementationLanguage.CPP:
-                print("Converting telemetry to videos (" + telemetry_folder + ")...")
-                i_pair = 0
-                for telemetry_log in progressbar.progressbar(telemetry_logs):
-                    canonical_field, live_field = initial_fields[i_pair]
-                    (frame_number, pixel_row) = frame_numbers_and_rows[i_pair]
-                    telemetry_subfolder = get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
-                    ho_viz.convert_cpp_optimization_iteration_data_to_video(telemetry_log, canonical_field, live_field,
-                                                                            telemetry_subfolder)
-                    i_pair += 1
-
             print("Post-processing convergence reports...")
             df = post_process_convergence_report_sets(convergence_report_sets, frame_numbers_and_rows)
             df.to_excel(os.path.join(out_path, "convergence_reports.xlsx"))
             df.to_pickle(os.path.join(out_path, "convergence_reports.pk"))
+
+        if Arguments.save_telemetry.v and \
+                Arguments.implementation_language.v == build_opt.ImplementationLanguage.CPP and \
+                len(telemetry_logs) > 0:
+            print("Saving C++-based telemetry (" + telemetry_folder + ")...")
+            i_pair = 0
+            telemetry_metadata = ho_viz.get_telemetry_metadata(telemetry_logs[0])
+            for telemetry_log in progressbar.progressbar(telemetry_logs):
+                (frame_number, pixel_row) = frame_numbers_and_rows[i_pair]
+                telemetry_subfolder = get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
+                ho_viz.save_telemetry_log(telemetry_log, telemetry_metadata, telemetry_subfolder)
+                i_pair += 1
+
+        if Arguments.convert_telemetry.v and \
+                Arguments.implementation_language.v == build_opt.ImplementationLanguage.CPP:
+            # TODO: attempt to load telemetry if the array is empty
+            if len(telemetry_logs) == 0:
+                print("Loading C++-based telemetry (" + telemetry_folder + ")...")
+                for frame_number, pixel_row in progressbar.progressbar(frame_numbers_and_rows):
+                    telemetry_subfolder = get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
+                    telemetry_log = ho_viz.load_telemetry_log(telemetry_subfolder)
+                    telemetry_logs.append(telemetry_log)
+
+            print("Converting C++-based telemetry to videos (" + telemetry_folder + ")...")
+            i_pair = 0
+            total_frame_count = ho_viz.get_number_of_frames_to_save_from_telemetry_logs(telemetry_logs)
+            bar = progressbar.ProgressBar(max_value=total_frame_count)
+            telemetry_metadata = ho_viz.get_telemetry_metadata(telemetry_logs[0])
+            for telemetry_log in telemetry_logs:
+                canonical_field, live_field = initial_fields[i_pair]
+                (frame_number, pixel_row) = frame_numbers_and_rows[i_pair]
+                telemetry_subfolder = get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
+                ho_viz.convert_cpp_telemetry_logs_to_video(telemetry_log, telemetry_metadata,
+                                                           canonical_field, live_field, telemetry_subfolder, bar)
+                i_pair += 1
+
     else:
         df = pd.read_pickle(convergence_reports_pickle_path)
 
     if df is not None:
         analyze_convergence_data(df)
-        if not Arguments.bad_cases_only.v:
+        if not Arguments.optimization_case_file.v:
             save_bad_cases(df, out_path)
+            save_all_cases(df, out_path)
 
     return EXIT_CODE_SUCCESS
 
