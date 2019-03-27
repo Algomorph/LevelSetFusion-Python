@@ -309,7 +309,6 @@ def main():
                 sys.stdout.flush()
         else:
             files = os.listdir(data_path)
-            print(data_path)
             files.sort()
             if files[len(files) - 1] == "images":
                 files = files[:-1]
@@ -378,7 +377,7 @@ def main():
                         optimizer.visualization_parameters.out_path = \
                             get_telemetry_subfolder_path(telemetry_folder, frame_number, pixel_row)
                 if Arguments.save_initial_and_final_fields.v:
-                    if not args.save_telemetry:
+                    if not Arguments.save_telemetry.v:
                         frame_file_prefix = "pair_{:d}-{:d}_{:d}".format(frame_number, frame_number + 1, pixel_row)
                         final_live_path = os.path.join(telemetry_folder, frame_file_prefix + "_final_live.png")
                         canonical_path = os.path.join(telemetry_folder, frame_file_prefix + "_canonical.png")

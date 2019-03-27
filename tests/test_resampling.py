@@ -57,7 +57,7 @@ class InterpolationTest(TestCase):
         # re-prep data
         warped_live_field = warped_live_template.copy()
 
-        warped_live_field, (out_u_vectors, out_v_vectors) = cpp_extension.resample(warped_live_field,
+        warped_live_field, (out_u_vectors, out_v_vectors) = cpp_extension.warp_field(warped_live_field,
                                                                                    canonical_field, u_vectors,
                                                                                    v_vectors)
 
@@ -110,7 +110,7 @@ class InterpolationTest(TestCase):
         warped_live_field = warped_live_template.copy()
 
         warped_live_field, (out_u_vectors, out_v_vectors) = \
-            cpp_extension.resample(warped_live_field, canonical_field, u_vectors, v_vectors,
+            cpp_extension.warp_field(warped_live_field, canonical_field, u_vectors, v_vectors,
                                    band_union_only=True, known_values_only=False, substitute_original=True)
 
         self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
@@ -164,7 +164,7 @@ class InterpolationTest(TestCase):
         # re-prep data
         warped_live_field = warped_live_template.copy()
 
-        warped_live_field, (out_u_vectors, out_v_vectors) = cpp_extension.resample(warped_live_field,
+        warped_live_field, (out_u_vectors, out_v_vectors) = cpp_extension.warp_field(warped_live_field,
                                                                                    canonical_field, u_vectors,
                                                                                    v_vectors)
 
@@ -213,7 +213,7 @@ class InterpolationTest(TestCase):
         # re-prep data
         warped_live_field = warped_live_template.copy()
 
-        warped_live_field, (out_u_vectors, out_v_vectors) = cpp_extension.resample(warped_live_field,
+        warped_live_field, (out_u_vectors, out_v_vectors) = cpp_extension.warp_field(warped_live_field,
                                                                                    canonical_field, u_vectors,
                                                                                    v_vectors)
         self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
@@ -258,7 +258,7 @@ class InterpolationTest(TestCase):
         warped_live_field = warped_live_template.copy()
 
         warped_live_field, (out_u_vectors, out_v_vectors) = \
-            cpp_extension.resample(warped_live_field, canonical_field, u_vectors, v_vectors)
+            cpp_extension.warp_field(warped_live_field, canonical_field, u_vectors, v_vectors)
         self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
 
     def test_resample_field01(self):

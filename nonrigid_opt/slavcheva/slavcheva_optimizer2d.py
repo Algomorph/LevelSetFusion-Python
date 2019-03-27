@@ -92,7 +92,7 @@ class SlavchevaOptimizer2d:
                  isomorphic_enforcement_factor=0.1,
                  level_set_term_weight=0.2,
 
-                 maximum_warp_length_lower_threshold=0.1,
+                 maximum_warp_length_lower_threshold=0.1,  # in terms of voxel size
                  maximum_warp_length_upper_threshold=10000,
                  max_iterations=100, min_iterations=1,
 
@@ -225,7 +225,7 @@ class SlavchevaOptimizer2d:
         v_vectors = warp_field[:, :, 1].copy()
 
         out_warped_live_field, (out_u_vectors, out_v_vectors) = \
-            cpp_extension.resample(warped_live_field, canonical_field, u_vectors, v_vectors)
+            cpp_extension.warp_field(warped_live_field, canonical_field, u_vectors, v_vectors)
 
         np.copyto(warped_live_field, out_warped_live_field)
 
