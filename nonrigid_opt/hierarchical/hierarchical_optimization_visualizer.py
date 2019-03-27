@@ -235,21 +235,14 @@ def load_telemetry_log(output_folder):
     for i_level in range(level_count):
         warp_fields = telemetry_dict["l{:d}_warp_fields".format(i_level)]
         warp_fields = np.dsplit(warp_fields, warp_fields.shape[2]//2)
-        # warp_fields = [warp_field.reshape((warp_field.shape[0], warp_field.shape[1])) for warp_field in warp_fields]
-        data_term_gradients = telemetry_dict["l{:d}_warp_fields".format(i_level)]
+        data_term_gradients = telemetry_dict["l{:d}_data_term_gradients".format(i_level)]
         if len(data_term_gradients.shape) == 3:
             data_term_gradients = np.dsplit(data_term_gradients, data_term_gradients.shape[2]//2)
-            # data_term_gradients = [
-            #     data_term_gradient.reshape((data_term_gradient.shape[0], data_term_gradient.shape[1])) for
-            #     data_term_gradient in data_term_gradients]
         else:
             data_term_gradients = (np.array([])) * len(warp_fields)
         tikhonov_term_gradients = telemetry_dict["l{:d}_tikhonov_term_gradients".format(i_level)]
         if len(tikhonov_term_gradients.shape) == 3:
             tikhonov_term_gradients = np.dsplit(tikhonov_term_gradients, tikhonov_term_gradients.shape[2]//2)
-            # tikhonov_term_gradients = [
-            #     tikhonov_term_gradient.reshape((tikhonov_term_gradient.shape[0], tikhonov_term_gradient.shape[1])) for
-            #     tikhonov_term_gradient in tikhonov_term_gradients]
         else:
             tikhonov_term_gradients = (np.array([])) * len(warp_fields)
         level_data = OptimizationIterationData(warp_fields, data_term_gradients, tikhonov_term_gradients)

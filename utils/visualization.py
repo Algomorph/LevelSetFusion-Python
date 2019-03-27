@@ -69,14 +69,19 @@ def highlight_row_on_gray(gray_image, ix_row):
 # TODO: all visualization functions that currently accept an OpenCV writer and write image should instead simply
 # produce an image, which should be written, if necessary, by another routine
 
-def make_vector_field_plot(warp_field, iteration_number=None, sparsity_factor=1,
+def make_vector_field_plot(warp_field, iteration_number=None, level_number=None, sparsity_factor=1,
                            use_magnitude_for_color=True, scale=1.0, vectors_name="Warp vectors"):
     fig = plt.figure(figsize=(23.6, 14))
     ax = fig.gca()
+    level_string = ""
+    iteration_string = ""
     if iteration_number is not None:
-        ax.set_title("{:s}, iteration {:d}".format(vectors_name, iteration_number))
-    else:
-        ax.set_title(vectors_name)
+        iteration_string = ", iteration {:d}".format(iteration_number)
+    if level_number is not None:
+        level_string = ", level {:d}".format(level_number)
+
+    title_string = vectors_name + level_string + iteration_string
+    ax.set_title(title_string)
     ax.invert_yaxis()
 
     width = warp_field.shape[0] / sparsity_factor

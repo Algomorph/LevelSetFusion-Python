@@ -18,8 +18,11 @@
 import sys
 import os
 import os.path
+# libraries
+import progressbar
 # local
 import utils.visualization as viz
+import nonrigid_opt.hierarchical.hierarchical_optimization_visualizer as viz_ho
 from experiment import dataset as ds
 from tsdf import generation as tsdf
 from nonrigid_opt import field_warping as resampling
@@ -43,7 +46,7 @@ def main():
     # tsdf_generation_method = tsdf.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP
     tsdf_generation_method = tsdf.GenerationMethod.BASIC
     # optimizer_implementation_language = build_opt.ImplementationLanguage.CPP
-    optimizer_implementation_language = build_opt.ImplementationLanguage.PYTHON
+    optimizer_implementation_language = build_opt.ImplementationLanguage.CPP
     visualize_and_save_initial_and_final_fields = False
     out_path = "output/ho/single"
     if not os.path.exists(out_path):
@@ -67,7 +70,7 @@ def main():
     shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
     shared_parameters.maximum_warp_update_threshold = 0.01
     shared_parameters.maximum_iteration_count = 100
-    verbosity_parmeters_py = build_opt.make_common_hierarchical_optimizer2d_py_verbosity_parameters()
+    verbosity_parameters_py = build_opt.make_common_hierarchical_optimizer2d_py_verbosity_parameters()
     verbosity_parameters_cpp = ho_cpp.HierarchicalOptimizer2d.VerbosityParameters(
         print_max_warp_update=True,
         print_iteration_mean_tsdf_difference=True,
@@ -78,19 +81,30 @@ def main():
     visualization_parameters_py = build_opt.make_common_hierarchical_optimizer2d_visualization_parameters()
     visualization_parameters_py.out_path = out_path
     logging_parameters_cpp = ho_cpp.HierarchicalOptimizer2d.LoggingParameters(
-        collect_per_level_convergence_reports=True)
+        collect_per_level_convergence_reports=True,
+        collect_per_level_iteration_data=True
+    )
 
     optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=optimizer_implementation_language,
                                                         shared_parameters=shared_parameters,
                                                         verbosity_parameters_cpp=verbosity_parameters_cpp,
                                                         logging_parameters_cpp=logging_parameters_cpp,
-                                                        verbosity_parameters_py=verbosity_parmeters_py,
+                                                        verbosity_parameters_py=verbosity_parameters_py,
                                                         visualization_parameters_py=visualization_parameters_py)
 
     warp_field = optimizer.optimize(canonical_field, live_field)
 
     if optimizer_implementation_language == build_opt.ImplementationLanguage.CPP:
+        print("===================================================================================")
         print_convergence_reports(optimizer.get_per_level_convergence_reports())
+        telemetry_log = optimizer.get_per_level_iteration_data()
+        l3_iteration_data = telemetry_log[3]
+        data_term_gradients = l3_iteration_data.get_data_term_gradients()
+        metadata = viz_ho.get_telemetry_metadata(telemetry_log)
+        frame_count = viz_ho.get_number_of_frames_to_save_from_telemetry_logs([telemetry_log])
+        progress_bar = progressbar.ProgressBar(max_value=frame_count)
+        viz_ho.convert_cpp_telemetry_logs_to_video(telemetry_log, metadata, canonical_field, live_field, out_path,
+                                                   progressbar=progress_bar)
 
     resampled_live = resampling.warp_field(live_field, warp_field)
 
