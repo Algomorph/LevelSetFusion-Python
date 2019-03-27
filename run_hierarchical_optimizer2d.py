@@ -39,9 +39,12 @@ def print_convergence_reports(reports):
 
 
 def main():
-    data_to_use = ds.PredefinedDatasetEnum.REAL3D_SNOOPY_SET00
-    tsdf_generation_method = tsdf.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP
-    visualize_and_save_initial_and_final_fields = True
+    data_to_use = ds.PredefinedDatasetEnum.REAL3D_SNOOPY_SET05
+    # tsdf_generation_method = tsdf.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP
+    tsdf_generation_method = tsdf.GenerationMethod.BASIC
+    # optimizer_implementation_language = build_opt.ImplementationLanguage.CPP
+    optimizer_implementation_language = build_opt.ImplementationLanguage.PYTHON
+    visualize_and_save_initial_and_final_fields = False
     out_path = "output/ho/single"
     if not os.path.exists(out_path):
         os.makedirs(out_path)
@@ -51,6 +54,7 @@ def main():
 
     live_field, canonical_field = \
         ds.datasets[data_to_use].generate_2d_sdf_fields(method=tsdf_generation_method, smoothing_coefficient=0.5)
+
     view_scaling_factor = 1024 // ds.datasets[data_to_use].field_size
 
     if visualize_and_save_initial_and_final_fields:
@@ -62,6 +66,7 @@ def main():
 
     shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
     shared_parameters.maximum_warp_update_threshold = 0.01
+    shared_parameters.maximum_iteration_count = 100
     verbosity_parmeters_py = build_opt.make_common_hierarchical_optimizer2d_py_verbosity_parameters()
     verbosity_parameters_cpp = ho_cpp.HierarchicalOptimizer2d.VerbosityParameters(
         print_max_warp_update=True,
@@ -74,15 +79,18 @@ def main():
     visualization_parameters_py.out_path = out_path
     logging_parameters_cpp = ho_cpp.HierarchicalOptimizer2d.LoggingParameters(
         collect_per_level_convergence_reports=True)
-    optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=build_opt.ImplementationLanguage.CPP,
+
+    optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=optimizer_implementation_language,
                                                         shared_parameters=shared_parameters,
                                                         verbosity_parameters_cpp=verbosity_parameters_cpp,
                                                         logging_parameters_cpp=logging_parameters_cpp,
                                                         verbosity_parameters_py=verbosity_parmeters_py,
                                                         visualization_parameters_py=visualization_parameters_py)
+
     warp_field = optimizer.optimize(canonical_field, live_field)
 
-    print_convergence_reports(optimizer.get_per_level_convergence_reports())
+    if optimizer_implementation_language == build_opt.ImplementationLanguage.CPP:
+        print_convergence_reports(optimizer.get_per_level_convergence_reports())
 
     resampled_live = resampling.warp_field(live_field, warp_field)
 

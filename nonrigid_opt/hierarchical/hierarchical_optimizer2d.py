@@ -29,6 +29,7 @@ from nonrigid_opt import field_warping as resampling
 import utils.printing as printing
 import math_utils.convolution as convolution
 from nonrigid_opt.hierarchical.hierarchical_optimization_visualizer import HierarchicalOptimizer2dVisualizer
+import utils.sampling as sampling
 
 
 class HierarchicalOptimizer2d:
@@ -193,6 +194,7 @@ class HierarchicalOptimizer2d:
             data_gradient_y = diff * resampled_live_gradient_y
             # this results in the data term gradient
             data_gradient = np.dstack((data_gradient_x, data_gradient_y))
+            print("Data grad max:", data_gradient.max())
 
             if self.tikhonov_term_enabled:
                 # calculate tikhonov regularizer (laplacian of the previous update)

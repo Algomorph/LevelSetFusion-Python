@@ -51,6 +51,8 @@ class PredefinedDatasetEnum(Enum):
     REAL3D_SNOOPY_SET02 = 102
     REAL3D_SNOOPY_SET03 = 103
     REAL3D_SNOOPY_SET04 = 104
+    REAL3D_SNOOPY_SET05 = 105
+    REAL3D_SNOOPY_SET06 = 105
 
 
 class FramePairDataset(ABC):
@@ -155,14 +157,6 @@ class MaskedImageBasedFramePairDataset(ImageBasedFramePairDataset):
 
 
 datasets = {
-    PredefinedDatasetEnum.REAL3D_SNOOPY_SET00: MaskedImageBasedFramePairDataset(
-        utils.path.get_test_data_path("test_data/snoopy_calib.txt"),
-        utils.path.get_test_data_path("test_data/snoopy_depth_000050.png"),
-        utils.path.get_test_data_path("test_data/snoopy_omask_000050.png"),
-        utils.path.get_test_data_path("test_data/snoopy_depth_000051.png"),
-        utils.path.get_test_data_path("test_data/snoopy_omask_000051.png"),
-        300, 128, np.array([-64, -64, 128])
-    ),
     PredefinedDatasetEnum.ZIGZAG001: ImageBasedFramePairDataset(
         os.path.join(utils.path.get_reconstruction_data_directory(), "synthetic_data/zigzag/inf_calib.txt"),
         os.path.join(utils.path.get_reconstruction_data_directory(), "synthetic_data/zigzag/input/depth_00000.png"),
@@ -189,15 +183,27 @@ datasets = {
     ),
     PredefinedDatasetEnum.SYNTHETIC3D_SUZANNE_AWAY: ImageBasedFramePairDataset(
         os.path.join(utils.path.get_reconstruction_data_directory(), "synthetic_data/suzanne_away/inf_calib.txt"),
-        os.path.join(utils.path.get_reconstruction_data_directory(), "synthetic_data/suzanne_away/input/depth_00000.png"),
-        os.path.join(utils.path.get_reconstruction_data_directory(), "synthetic_data/suzanne_away/input/depth_00001.png"),
+        os.path.join(utils.path.get_reconstruction_data_directory(),
+                     "synthetic_data/suzanne_away/input/depth_00000.png"),
+        os.path.join(utils.path.get_reconstruction_data_directory(),
+                     "synthetic_data/suzanne_away/input/depth_00001.png"),
         200, 128, np.array([-64, -64, 0])
     ),
     PredefinedDatasetEnum.SYNTHETIC3D_SUZANNE_TWIST: ImageBasedFramePairDataset(
         os.path.join(utils.path.get_reconstruction_data_directory(), "synthetic_data/suzanne_twist/inf_calib.txt"),
-        os.path.join(utils.path.get_reconstruction_data_directory(), "synthetic_data/suzanne_twist/input/depth_00000.png"),
-        os.path.join(utils.path.get_reconstruction_data_directory(), "synthetic_data/suzanne_twist/input/depth_00010.png"),
+        os.path.join(utils.path.get_reconstruction_data_directory(),
+                     "synthetic_data/suzanne_twist/input/depth_00000.png"),
+        os.path.join(utils.path.get_reconstruction_data_directory(),
+                     "synthetic_data/suzanne_twist/input/depth_00010.png"),
         200, 128, np.array([-64, -64, 64])
+    ),
+    PredefinedDatasetEnum.REAL3D_SNOOPY_SET00: MaskedImageBasedFramePairDataset(
+        utils.path.get_test_data_path("test_data/snoopy_calib.txt"),
+        utils.path.get_test_data_path("test_data/snoopy_depth_000050.png"),
+        utils.path.get_test_data_path("test_data/snoopy_omask_000050.png"),
+        utils.path.get_test_data_path("test_data/snoopy_depth_000051.png"),
+        utils.path.get_test_data_path("test_data/snoopy_omask_000051.png"),
+        300, 128, np.array([-64, -64, 128])
     ),
     PredefinedDatasetEnum.REAL3D_SNOOPY_SET01: ImageBasedFramePairDataset(
         os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/snoopy_calib.txt"),
@@ -222,6 +228,22 @@ datasets = {
         os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/frames/depth_000065.png"),
         os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/frames/depth_000066.png"),
         223, 128, np.array([-64, -64, 128])
+    ),
+    PredefinedDatasetEnum.REAL3D_SNOOPY_SET05: MaskedImageBasedFramePairDataset(
+        os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/snoopy_calib.txt"),
+        os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/frames/depth_000105.png"),
+        os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/frames/omask_000105.png"),
+        os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/frames/depth_000106.png"),
+        os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/frames/omask_000106.png"),
+        355, 128, np.array([-64, -64, 128])
+    ),
+    PredefinedDatasetEnum.REAL3D_SNOOPY_SET06: MaskedImageBasedFramePairDataset(
+        os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/snoopy_calib.txt"),
+        os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/frames/depth_000650.png"),
+        os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/frames/omask_000650.png"),
+        os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/frames/depth_000651.png"),
+        os.path.join(utils.path.get_reconstruction_data_directory(), "real_data/snoopy/frames/omask_000651.png"),
+        387, 128, np.array([-64, -64, 128])
     ),
     PredefinedDatasetEnum.SYNTHETIC3D_PLANE_AWAY: ImageBasedFramePairDataset(
         os.path.join(utils.path.get_reconstruction_data_directory(), "synthetic_data/plane_away/inf_calib.txt"),
