@@ -76,16 +76,16 @@ def warp_field(field, vector_field):
     :param vector_field: 2d vector field to use for bilinear lookups
     :return: the resulting scalar field
     """
-    resampled_field = np.ones_like(field)
+    warped_field = np.ones_like(field)
     for y in range(field.shape[0]):
         for x in range(field.shape[1]):
             warped_location = Point2d(x, y) + Point2d(coordinates=vector_field[y, x])
             new_value = sampling.bilinear_sample_at(field, point=warped_location)
-            resampled_field[y, x] = new_value
-    return resampled_field
+            warped_field[y, x] = new_value
+    return warped_field
 
 
-def warp_field_replacement(field, warp_field, replacement):
+def warp_field_replacement(field, warps, replacement):
     """
     - Accepts a scalar field and a vector field [supposedly of the same dimensions & size -- not checked].
     - Creates a new scalar field of the same dimensions
@@ -94,18 +94,19 @@ def warp_field_replacement(field, warp_field, replacement):
     the interpolation process for any "out-of-bounds" spots.
     - Stores the results of each lookup in the corresponding location of the new scalar field
     :param field: the scalar field containing source values
-    :param vector_field: 2d vector field to use for bilinear lookups
+    :param warps: 2d vector field to use for bilinear lookups
+    :param replacement: value to use when warp points outside the span of the field
     :return: the resulting scalar field
     """
-    resampled_field = np.ones_like(field)
+    warped_field = np.ones_like(field)
     for y in range(field.shape[0]):
         for x in range(field.shape[1]):
-            warped_location = Point2d(x, y) + Point2d(coordinates=warp_field[y, x])
+            warped_location = Point2d(x, y) + Point2d(coordinates=warps[y, x])
             new_value = sampling.bilinear_sample_at_replacement(field,
                                                                 point=warped_location,
                                                                 replacement=replacement)
-            resampled_field[y, x] = new_value
-    return resampled_field
+            warped_field[y, x] = new_value
+    return warped_field
 
 
 def warp_field_advanced(canonical_field, warped_live_field, warp_field, gradient_field, band_union_only=False,
