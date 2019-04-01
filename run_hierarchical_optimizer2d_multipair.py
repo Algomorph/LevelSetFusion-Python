@@ -341,6 +341,7 @@ def main():
             shared_parameters.tikhonov_strength = Arguments.tikhonov_strength.v
             shared_parameters.kernel = sob.generate_1d_sobolev_kernel(Arguments.kernel_size.v,
                                                                       Arguments.kernel_strength.v)
+            resampling_strategy_cpp = Arguments.resampling_strategy.v
             visualization_parameters_py = build_opt.make_common_hierarchical_optimizer2d_visualization_parameters()
             logging_parameters_cpp = cpp_module.HierarchicalOptimizer2d.LoggingParameters(
                 collect_per_level_convergence_reports=True,
@@ -351,7 +352,8 @@ def main():
             optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=args.implementation_language,
                                                                 shared_parameters=shared_parameters,
                                                                 logging_parameters_cpp=logging_parameters_cpp,
-                                                                visualization_parameters_py=visualization_parameters_py)
+                                                                visualization_parameters_py=visualization_parameters_py,
+                                                                resampling_strategy_cpp=resampling_strategy_cpp)
 
             convergence_report_sets = []
             if Arguments.save_initial_and_final_fields.v or Arguments.save_telemetry.v:

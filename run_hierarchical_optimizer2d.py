@@ -84,13 +84,15 @@ def main():
         collect_per_level_convergence_reports=True,
         collect_per_level_iteration_data=True
     )
+    resampling_strategy_cpp = ho_cpp.HierarchicalOptimizer2d.ResamplingStrategy.NEAREST_AND_AVERAGE
 
     optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=optimizer_implementation_language,
                                                         shared_parameters=shared_parameters,
                                                         verbosity_parameters_cpp=verbosity_parameters_cpp,
                                                         logging_parameters_cpp=logging_parameters_cpp,
                                                         verbosity_parameters_py=verbosity_parameters_py,
-                                                        visualization_parameters_py=visualization_parameters_py)
+                                                        visualization_parameters_py=visualization_parameters_py,
+                                                        resampling_strategy_cpp=resampling_strategy_cpp)
 
     warp_field = optimizer.optimize(canonical_field, live_field)
 
@@ -106,10 +108,10 @@ def main():
         viz_ho.convert_cpp_telemetry_logs_to_video(telemetry_log, metadata, canonical_field, live_field, out_path,
                                                    progressbar=progress_bar)
 
-    resampled_live = resampling.warp_field(live_field, warp_field)
+    warped_live = resampling.warp_field(live_field, warp_field)
 
     if visualize_and_save_initial_and_final_fields:
-        viz.visualize_final_fields(canonical_field, resampled_live, view_scaling_factor)
+        viz.visualize_final_fields(canonical_field, warped_live, view_scaling_factor)
 
     return EXIT_CODE_SUCCESS
 

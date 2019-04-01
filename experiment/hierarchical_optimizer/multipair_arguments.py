@@ -22,6 +22,8 @@ from ext_argparse.argument import Argument
 from tsdf import generation as tsdf
 import experiment.hierarchical_optimizer.build_helper as build_opt
 
+# NB: needs to be compiled and installed / added to PYTHONPATH first
+import level_set_fusion_optimization as cpp_module
 
 class Arguments(Enum):
     # optimizer settings
@@ -36,6 +38,10 @@ class Arguments(Enum):
     tikhonov_strength = Argument(arg_type=float, default=0.2)
     kernel_size = Argument(arg_type=int, default=7)
     kernel_strength = Argument(arg_type=float, default=0.1, shorthand="-kst")
+    resampling_strategy = Argument(arg_type=str, default="NEAREST_AND_AVERAGE",
+                                   arg_help="Strategy for upsampling the warps and downsampling the pyramid"
+                                            "in the C++ version of the optimizer, can be "
+                                            "either NEAREST_AND_AVERAGE or LINEAR")
 
     # data generation settings
     generation_method = Argument(arg_type=str, default="BASIC")
@@ -80,3 +86,6 @@ def post_process_enum_args(args):
         args.generation_method = tsdf.GenerationMethod.__dict__[args.generation_method]
     Arguments.implementation_language.v = args.implementation_language = \
         build_opt.ImplementationLanguage.__dict__[args.implementation_language]
+    resampling_strategies = cpp_module.HierarchicalOptimizer2d.ResamplingStrategy.__dict__['values']
+    Arguments.resampling_strategy.v = args.resampling_strategy = [val for key, val in resampling_strategies.items() if val.name == 'NEAREST_AND_AVERAGE'][0]
+

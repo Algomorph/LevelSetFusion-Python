@@ -36,7 +36,7 @@ import level_set_fusion_optimization as ho_cpp
 
 
 class HierarchicalOptimizerTest(TestCase):
-    def test_construction_and_operation(self):
+    def test_construction_and_operation01(self):
         optimizer = ho_py.HierarchicalOptimizer2d(
             rate=0.2,
             data_term_amplifier=1.0,
@@ -48,10 +48,10 @@ class HierarchicalOptimizerTest(TestCase):
                 print_max_warp_update=False
             ))
         warp_field_out = optimizer.optimize(test_data.canonical_field, test_data.live_field)
-        final_live_resampled = resampling.warp_field(test_data.live_field, warp_field_out)
+        final_warped_live = resampling.warp_field(test_data.live_field, warp_field_out)
 
         self.assertTrue(np.allclose(warp_field_out, test_data.warp_field))
-        self.assertTrue(np.allclose(final_live_resampled, test_data.final_live_field))
+        self.assertTrue(np.allclose(final_warped_live, test_data.final_live_field))
 
         optimizer = ho_cpp.HierarchicalOptimizer2d(
             tikhonov_term_enabled=False,
@@ -64,9 +64,9 @@ class HierarchicalOptimizerTest(TestCase):
         )
 
         warp_field_out = optimizer.optimize(test_data.canonical_field, test_data.live_field)
-        final_live_resampled = resampling.warp_field(test_data.live_field, warp_field_out)
+        final_warped_live = resampling.warp_field(test_data.live_field, warp_field_out)
         self.assertTrue(np.allclose(warp_field_out, test_data.warp_field, atol=10e-6))
-        self.assertTrue(np.allclose(final_live_resampled, test_data.final_live_field, atol=10e-6))
+        self.assertTrue(np.allclose(final_warped_live, test_data.final_live_field, atol=10e-6))
 
     def test_cpp_iteration_data(self):
         optimizer = ho_cpp.HierarchicalOptimizer2d(
@@ -82,6 +82,9 @@ class HierarchicalOptimizerTest(TestCase):
             tikhonov_strength=0.0,
 
             kernel=sob.generate_1d_sobolev_kernel(size=7, strength=0.1),
+
+            resampling_strategy=ho_cpp.HierarchicalOptimizer2d.ResamplingStrategy.NEAREST_AND_AVERAGE,
+
             verbosity_parameters=ho_cpp.HierarchicalOptimizer2d.VerbosityParameters(),
             logging_parameters=ho_cpp.HierarchicalOptimizer2d.LoggingParameters(
                 collect_per_level_convergence_reports=True,
@@ -89,16 +92,16 @@ class HierarchicalOptimizerTest(TestCase):
             )
         )
         warp_field_out = optimizer.optimize(test_data.canonical_field, test_data.live_field)
-        final_live_resampled = resampling.warp_field(test_data.live_field, warp_field_out)
+        final_warped_live = resampling.warp_field(test_data.live_field, warp_field_out)
         data = optimizer.get_per_level_iteration_data()
         vec = data[3].get_warp_fields()
 
         self.assertTrue(np.allclose(vec[50], test_data.iteration50_warp_field, atol=1e-6))
 
         self.assertTrue(np.allclose(warp_field_out, test_data.warp_field, atol=10e-6))
-        self.assertTrue(np.allclose(final_live_resampled, test_data.final_live_field, atol=10e-6))
+        self.assertTrue(np.allclose(final_warped_live, test_data.final_live_field, atol=10e-6))
 
-    def test_operation_same_cpp_to_py(self):
+    def test_construction_and_operations02(self):
         dataset_to_use = dataset.PredefinedDatasetEnum.REAL3D_SNOOPY_SET00
         generation_method = tsdf.common.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP
 
@@ -108,14 +111,18 @@ class HierarchicalOptimizerTest(TestCase):
         shared_parameters.maximum_warp_update_threshold = 0.01
         shared_parameters.maximum_iteration_count = 2
 
+        # Python-specific
         verbosity_parameters_py = ho_py.HierarchicalOptimizer2d.VerbosityParameters()
-        verbosity_parameters_cpp = ho_cpp.HierarchicalOptimizer2d.VerbosityParameters()
         visualization_parameters_py = hov_py.HierarchicalOptimizer2dVisualizer.Parameters()
         visualization_parameters_py.out_path = "out"
+
+        # C++-specific
+        verbosity_parameters_cpp = ho_cpp.HierarchicalOptimizer2d.VerbosityParameters()
         logging_parameters_cpp = ho_cpp.HierarchicalOptimizer2d.LoggingParameters(
             collect_per_level_convergence_reports=True,
             collect_per_level_iteration_data=False
         )
+        resampling_strategy = ho_cpp.HierarchicalOptimizer2d.ResamplingStrategy.NEAREST_AND_AVERAGE
 
         optimizer_cpp = build_opt.make_hierarchical_optimizer2d(
             implementation_language=build_opt.ImplementationLanguage.CPP,
@@ -123,10 +130,12 @@ class HierarchicalOptimizerTest(TestCase):
             verbosity_parameters_cpp=verbosity_parameters_cpp,
             logging_parameters_cpp=logging_parameters_cpp,
             verbosity_parameters_py=verbosity_parameters_py,
-            visualization_parameters_py=visualization_parameters_py)
+            visualization_parameters_py=visualization_parameters_py,
+            resampling_strategy_cpp=resampling_strategy
+        )
 
         warp_field_cpp = optimizer_cpp.optimize(canonical_field, live_field)
-        resampled_live_cpp = resampling.warp_field(live_field, warp_field_cpp)
+        warped_live_cpp = resampling.warp_field(live_field, warp_field_cpp)
 
         optimizer_py = build_opt.make_hierarchical_optimizer2d(
             implementation_language=build_opt.ImplementationLanguage.PYTHON,
@@ -137,9 +146,9 @@ class HierarchicalOptimizerTest(TestCase):
             visualization_parameters_py=visualization_parameters_py)
 
         warp_field_py = optimizer_py.optimize(canonical_field, live_field)
-        resampled_live_py = resampling.warp_field(live_field, warp_field_py)
+        warped_live_py = resampling.warp_field(live_field, warp_field_py)
 
         self.assertTrue(np.allclose(warp_field_cpp, warp_field_py, atol=10e-6))
-        self.assertTrue(np.allclose(resampled_live_cpp, resampled_live_py, atol=10e-6))
+        self.assertTrue(np.allclose(warped_live_cpp, warped_live_py, atol=10e-6))
 
 
