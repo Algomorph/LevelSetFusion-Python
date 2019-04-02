@@ -25,6 +25,7 @@ import experiment.hierarchical_optimizer.build_helper as build_opt
 # NB: needs to be compiled and installed / added to PYTHONPATH first
 import level_set_fusion_optimization as cpp_module
 
+
 class Arguments(Enum):
     # optimizer settings
     tikhonov_term_enabled = Argument(action="store_true", default=False, arg_type='bool_flag')
@@ -64,6 +65,9 @@ class Arguments(Enum):
                           "(assuming they are also present in the specified dataset)."
                           " Format is <frame_index>,<pixel row index>,<focus coordinate x>, "
                           "<focus coordinate y>.")
+    series_result_subfolder = Argument(arg_type=str, default=None,
+                                       arg_help="Additional subfolder name to append to the output directory (useful "
+                                                "when saving results for a whole series)")
 
     # other experiment flags
     analyze_only = Argument(action="store_true", default=False, arg_type='bool_flag',
@@ -87,5 +91,5 @@ def post_process_enum_args(args):
     Arguments.implementation_language.v = args.implementation_language = \
         build_opt.ImplementationLanguage.__dict__[args.implementation_language]
     resampling_strategies = cpp_module.HierarchicalOptimizer2d.ResamplingStrategy.__dict__['values']
-    Arguments.resampling_strategy.v = args.resampling_strategy = [val for key, val in resampling_strategies.items() if val.name == 'NEAREST_AND_AVERAGE'][0]
-
+    Arguments.resampling_strategy.v = args.resampling_strategy = \
+        [val for key, val in resampling_strategies.items() if val.name == Arguments.resampling_strategy.v][0]
