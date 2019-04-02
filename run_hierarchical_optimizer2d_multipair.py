@@ -163,24 +163,31 @@ def infer_level_count(data_frame):
     return (len(data_frame.columns) - 2) // 17
 
 
-def analyze_convergence_data(data_frame):
+def analyze_convergence_data(data_frame, out_path):
     df = data_frame
     level_count = infer_level_count(df)
-    print("Per-level convergence ratios:")
-    for i_level in range(level_count):
-        print("  level {:d}: {:.2%}".format(i_level, get_converged_ratio_for_level(data_frame, i_level)), sep="",
-              end="")
-    print()
-    print("Per-level mean iteration counts:")
-    for i_level in range(level_count):
-        print("  level {:d}: {:.2f}".format(i_level, get_mean_iteration_count_for_level(data_frame, i_level)), sep="",
-              end="")
-    print()
+    log_path = os.path.join(out_path, "analysis.txt")
+    if os.path.exists(log_path):
+        os.remove(log_path)
 
-    #
-    # print("Average per-level tsdf difference statistics:")
-    # for i_level in range(level_count):
-    #     pass
+    with open(log_path, 'w') as log_file:
+        print("Per-level convergence ratios:", file=log_file)
+        for i_level in range(level_count):
+            print("  level {:d}: {:.2%}".format(i_level, get_converged_ratio_for_level(data_frame, i_level)), sep="",
+                  end="", file=log_file)
+        print(file=log_file)
+        print("Per-level mean iteration counts:", file=log_file)
+        for i_level in range(level_count):
+            print("  level {:d}: {:.2f}".format(i_level, get_mean_iteration_count_for_level(data_frame, i_level)),
+                  sep="", end="", file=log_file)
+        print(file=log_file)
+        written_to_file = True
+        #
+        # print("Average per-level tsdf difference statistics:")
+        # for i_level in range(level_count):
+        #     pass
+    with open(log_path, 'r') as log_file:
+        print(log_file.read())
 
 
 def save_bad_cases(data_frame, out_path):
@@ -230,11 +237,18 @@ def main():
     if args.generation_method == tsdf.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP:
         generation_method_name_substring = "EWA_TI"
         generation_smoothing_substring = "_sm{:03d}".format(int(Arguments.smoothing_coefficient.v * 100))
+
     elif args.generation_method == tsdf.GenerationMethod.BASIC:
         generation_method_name_substring = "basic"
         generation_smoothing_substring = ""
     else:
         raise ValueError("Unsupported Generation Method")
+
+    if Arguments.implementation_language.v == build_opt.ImplementationLanguage.CPP and \
+            Arguments.resampling_strategy.v == cpp_module.HierarchicalOptimizer2d.ResamplingStrategy.LINEAR:
+        resampling_strategy_substring = "_linear"
+    else:
+        resampling_strategy_substring = "_nearest"
 
     data_subfolder = "tsdf_pairs_128_{:s}{:s}_{:02d}".format(generation_method_name_substring,
                                                              generation_smoothing_substring,
@@ -242,7 +256,7 @@ def main():
     data_path = os.path.join(pu.get_reconstruction_data_directory(), "real_data/snoopy", data_subfolder)
 
     # TODO: add other optimizer parameters to the name
-    experiment_name = "multi_{:s}{:s}_ds{:02d}_wt{:02d}_mi{:04d}_r{:02d}_ts{:02d}_ks{:02d}" \
+    experiment_name = "multi_{:s}{:s}_ds{:02d}_wt{:02d}_mi{:04d}_r{:02d}_ts{:02d}_ks{:02d}{:s}" \
         .format(generation_method_name_substring,
                 generation_smoothing_substring,
                 args.dataset_number,
@@ -250,11 +264,16 @@ def main():
                 args.max_iteration_count,
                 int(Arguments.rate.v * 100),
                 int(Arguments.tikhonov_strength.v * 100 if Arguments.tikhonov_term_enabled.v else 0),
-                int(Arguments.kernel_strength.v * 100 if Arguments.gradient_kernel_enabled.v else 0))
+                int(Arguments.kernel_strength.v * 100 if Arguments.gradient_kernel_enabled.v else 0),
+                resampling_strategy_substring)
 
     print("Running experiment " + experiment_name)
 
-    out_path = os.path.join(args.output_path, experiment_name)
+    if Arguments.series_result_subfolder.v is None:
+        out_path = os.path.join(args.output_path, experiment_name)
+    else:
+        out_path = os.path.join(args.output_path, Arguments.series_result_subfolder.v, experiment_name)
+
     convergence_reports_pickle_path = os.path.join(out_path, "convergence_reports.pk")
 
     df = None
@@ -341,6 +360,7 @@ def main():
             shared_parameters.tikhonov_strength = Arguments.tikhonov_strength.v
             shared_parameters.kernel = sob.generate_1d_sobolev_kernel(Arguments.kernel_size.v,
                                                                       Arguments.kernel_strength.v)
+            resampling_strategy_cpp = Arguments.resampling_strategy.v
             visualization_parameters_py = build_opt.make_common_hierarchical_optimizer2d_visualization_parameters()
             logging_parameters_cpp = cpp_module.HierarchicalOptimizer2d.LoggingParameters(
                 collect_per_level_convergence_reports=True,
@@ -351,7 +371,8 @@ def main():
             optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=args.implementation_language,
                                                                 shared_parameters=shared_parameters,
                                                                 logging_parameters_cpp=logging_parameters_cpp,
-                                                                visualization_parameters_py=visualization_parameters_py)
+                                                                visualization_parameters_py=visualization_parameters_py,
+                                                                resampling_strategy_cpp=resampling_strategy_cpp)
 
             convergence_report_sets = []
             if Arguments.save_initial_and_final_fields.v or Arguments.save_telemetry.v:
@@ -443,7 +464,7 @@ def main():
         df = pd.read_pickle(convergence_reports_pickle_path)
 
     if df is not None:
-        analyze_convergence_data(df)
+        analyze_convergence_data(df, out_path)
         if not Arguments.optimization_case_file.v:
             save_bad_cases(df, out_path)
             save_all_cases(df, out_path)

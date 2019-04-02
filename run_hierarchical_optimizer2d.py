@@ -84,13 +84,16 @@ def main():
         collect_per_level_convergence_reports=True,
         collect_per_level_iteration_data=True
     )
+    resampling_strategy_cpp = ho_cpp.HierarchicalOptimizer2d.ResamplingStrategy.NEAREST_AND_AVERAGE
+    #resampling_strategy_cpp = ho_cpp.HierarchicalOptimizer2d.ResamplingStrategy.LINEAR
 
     optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=optimizer_implementation_language,
                                                         shared_parameters=shared_parameters,
                                                         verbosity_parameters_cpp=verbosity_parameters_cpp,
                                                         logging_parameters_cpp=logging_parameters_cpp,
                                                         verbosity_parameters_py=verbosity_parameters_py,
-                                                        visualization_parameters_py=visualization_parameters_py)
+                                                        visualization_parameters_py=visualization_parameters_py,
+                                                        resampling_strategy_cpp=resampling_strategy_cpp)
 
     warp_field = optimizer.optimize(canonical_field, live_field)
 
@@ -98,18 +101,16 @@ def main():
         print("===================================================================================")
         print_convergence_reports(optimizer.get_per_level_convergence_reports())
         telemetry_log = optimizer.get_per_level_iteration_data()
-        l3_iteration_data = telemetry_log[3]
-        data_term_gradients = l3_iteration_data.get_data_term_gradients()
         metadata = viz_ho.get_telemetry_metadata(telemetry_log)
         frame_count = viz_ho.get_number_of_frames_to_save_from_telemetry_logs([telemetry_log])
         progress_bar = progressbar.ProgressBar(max_value=frame_count)
         viz_ho.convert_cpp_telemetry_logs_to_video(telemetry_log, metadata, canonical_field, live_field, out_path,
-                                                   progressbar=progress_bar)
+                                                   progress_bar=progress_bar)
 
-    resampled_live = resampling.warp_field(live_field, warp_field)
+    warped_live = resampling.warp_field(live_field, warp_field)
 
     if visualize_and_save_initial_and_final_fields:
-        viz.visualize_final_fields(canonical_field, resampled_live, view_scaling_factor)
+        viz.visualize_final_fields(canonical_field, warped_live, view_scaling_factor)
 
     return EXIT_CODE_SUCCESS
 

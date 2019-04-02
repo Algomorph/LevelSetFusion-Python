@@ -89,9 +89,13 @@ def make_hierarchical_optimizer2d(implementation_language=ImplementationLanguage
                                   logging_parameters_cpp=ho_cpp.HierarchicalOptimizer2d.LoggingParameters(
                                       collect_per_level_convergence_reports=True,
                                       collect_per_level_iteration_data=False
-                                  )):
+                                  ),
+                                  resampling_strategy_cpp=
+                                  ho_cpp.HierarchicalOptimizer2d.ResamplingStrategy.NEAREST_AND_AVERAGE
+                                  ):
     if implementation_language == ImplementationLanguage.CPP:
-        return make_cpp_optimizer(shared_parameters, verbosity_parameters_cpp, logging_parameters_cpp)
+        return make_cpp_optimizer(shared_parameters, resampling_strategy_cpp,
+                                  verbosity_parameters_cpp, logging_parameters_cpp)
     elif implementation_language == ImplementationLanguage.PYTHON:
         return make_python_optimizer(shared_parameters, verbosity_parameters_py, visualization_parameters_py)
     else:
@@ -121,11 +125,14 @@ def make_python_optimizer(shared_parameters=HierarchicalOptimizer2dSharedParamet
 
 
 def make_cpp_optimizer(shared_parameters=HierarchicalOptimizer2dSharedParameters(),
+                       resampling_strategy_cpp=
+                       ho_cpp.HierarchicalOptimizer2d.ResamplingStrategy.NEAREST_AND_AVERAGE,
                        verbosity_parameters=ho_cpp.HierarchicalOptimizer2d.VerbosityParameters(),
                        logging_parameters=ho_cpp.HierarchicalOptimizer2d.LoggingParameters(
                            collect_per_level_convergence_reports=True,
                            collect_per_level_iteration_data=False
-                       )):
+                       ),
+                       ):
     optimizer = ho_cpp.HierarchicalOptimizer2d(
         tikhonov_term_enabled=shared_parameters.tikhonov_term_enabled,
         gradient_kernel_enabled=shared_parameters.gradient_kernel_enabled,
@@ -138,6 +145,8 @@ def make_cpp_optimizer(shared_parameters=HierarchicalOptimizer2dSharedParameters
         data_term_amplifier=shared_parameters.data_term_amplifier,
         tikhonov_strength=shared_parameters.tikhonov_strength,
         kernel=shared_parameters.kernel,
+
+        resampling_strategy=resampling_strategy_cpp,
 
         verbosity_parameters=verbosity_parameters,
         logging_parameters=logging_parameters
