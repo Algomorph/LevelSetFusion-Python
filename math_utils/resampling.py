@@ -87,7 +87,7 @@ def downsample2x_linear(field):
 
         new_field = \
             np.zeros((field.shape[0] // 2, field.shape[1] // 2, field.shape[2] // 2))
-        kernel2 = \
+        kernel = \
             np.array([[[0.00195312, 0.00585938, 0.00585938, 0.00195312],
                        [0.00585938, 0.01757812, 0.01757812, 0.00585938],
                        [0.00585938, 0.01757812, 0.01757812, 0.00585938],
@@ -107,26 +107,6 @@ def downsample2x_linear(field):
                        [0.00585938, 0.01757812, 0.01757812, 0.00585938],
                        [0.00585938, 0.01757812, 0.01757812, 0.00585938],
                        [0.00195312, 0.00585938, 0.00585938, 0.00195312]]])
-        kernel = \
-            np.array([[[0.00048828, 0.00146484, 0.00146484, 0.00048828],
-                       [0.00146484, 0.00439453, 0.00439453, 0.00146484],
-                       [0.00146484, 0.00439453, 0.00439453, 0.00146484],
-                       [0.00048828, 0.00146484, 0.00146484, 0.00048828]],
-
-                      [[0.00146484, 0.00439453, 0.00439453, 0.00146484],
-                       [0.00439453, 0.01318359, 0.01318359, 0.00439453],
-                       [0.00439453, 0.01318359, 0.01318359, 0.00439453],
-                       [0.00146484, 0.00439453, 0.00439453, 0.00146484]],
-
-                      [[0.00146484, 0.00439453, 0.00439453, 0.00146484],
-                       [0.00439453, 0.01318359, 0.01318359, 0.00439453],
-                       [0.00439453, 0.01318359, 0.01318359, 0.00439453],
-                       [0.00146484, 0.00439453, 0.00439453, 0.00146484]],
-
-                      [[0.00048828, 0.00146484, 0.00146484, 0.00048828],
-                       [0.00146484, 0.00439453, 0.00439453, 0.00146484],
-                       [0.00146484, 0.00439453, 0.00439453, 0.00146484],
-                       [0.00048828, 0.00146484, 0.00146484, 0.00048828]]])
 
         padded = np.pad(field, 1, mode='edge')
 
@@ -136,45 +116,11 @@ def downsample2x_linear(field):
                 y_source = y_target * 2
                 for x_target in range(new_field.shape[2]):
                     x_source = x_target * 2
-                    new_field[z_target, y_target, x_target] = \
-                        np.matmul(kernel2,
+                    val = np.multiply(kernel,
                                   padded[z_source:z_source + 4, y_source:y_source + 4,
-                                  x_source:x_source + 4]).sum() / 4.0
-
+                                  x_source:x_source + 4]).sum()
+                    new_field[z_target, y_target, x_target] = val
         return new_field
     else:
         raise (NotImplementedError("Cases other than 3D not yet implemented"))
 
-
-if __name__ == "__main__":
-    import os
-
-    x = np.arange(1, 9).reshape(2, 2, 2).astype(np.float32)
-    print("x", x, sep=os.linesep)
-    up_x = upsample2x_linear(x)
-    print("up_x", up_x, sep=os.linesep)
-    down_x = downsample2x_linear(up_x)
-    print("down_x", down_x, sep=os.linesep)
-    y = np.arange(1, 28).reshape(3, 3, 3).astype(np.float32)
-    print("y", y, sep=os.linesep)
-    up_y = upsample2x_linear(y)
-    print("up_y", up_y, sep=os.linesep)
-    down_y = downsample2x_linear(up_y)
-    print("down_y", down_y, sep=os.linesep)
-
-    t = np.array([[[1., 2., 3., 4.],
-                   [1., 2., 3., 4.],
-                   [1., 2., 3., 4.]],
-
-                  [[1., 2., 3., 4.],
-                   [1., 2., 3., 4.],
-                   [1., 2., 3., 4.]],
-
-                  [[1., 2., 3., 4.],
-                   [1., 2., 3., 4.],
-                   [1., 2., 3., 4.]]])
-    print(t)
-    up_t = upsample2x_linear(t)
-    print(up_t)
-    down_t = downsample2x_linear(up_t)
-    print("down_t", down_t, sep=os.linesep)
