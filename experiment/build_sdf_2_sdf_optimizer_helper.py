@@ -10,7 +10,7 @@ from enum import Enum
 import rigid_opt.sdf_2_sdf_optimizer2d as sdf2sdfo_py
 import rigid_opt.sdf_2_sdf_visualizer as sdf2sdfv_py
 # has to be built & installed first (git submodule in cpp folder or http://github/Algomorph/LevelSetFusion-CPP)
-import level_set_fusion_optimization as sdf2sdfo_cpp
+import level_set_fusion_optimization as cpp_module
 
 
 class ImplementationLanguage(Enum):
@@ -50,7 +50,7 @@ def make_common_sdf_2_sdf_optimizer2d_py_verbosity_parameters():
 
 def make_sdf_2_sdf_optimizer2d(implementation_language=ImplementationLanguage.CPP,
                                shared_parameters=Sdf2SdfOptimizer2dSharedParameters(),
-                               verbosity_parameters_cpp=sdf2sdfo_cpp.Sdf2SdfOptimizer2d.VerbosityParameters(),
+                               verbosity_parameters_cpp=cpp_module.Sdf2SdfOptimizer2d.VerbosityParameters(),
                                verbosity_parameters_py=
                                make_common_sdf_2_sdf_optimizer2d_py_verbosity_parameters(),
                                visualization_parameters_py=
@@ -75,8 +75,8 @@ def make_python_optimizer(shared_parameters=Sdf2SdfOptimizer2dSharedParameters()
 
 
 def make_cpp_optimizer(shared_parameters=Sdf2SdfOptimizer2dSharedParameters(),
-                       verbosity_parameters=sdf2sdfo_cpp.Sdf2SdfOptimizer2d.VerbosityParameters()):
-    optimizer = sdf2sdfo_cpp.Sdf2SdfOptimizer2d(
+                       verbosity_parameters=cpp_module.Sdf2SdfOptimizer2d.VerbosityParameters()):
+    optimizer = cpp_module.Sdf2SdfOptimizer2d(
         rate=shared_parameters.rate,
         maximum_iteration_count=shared_parameters.maximum_iteration_count,
         verbosity_parameters=verbosity_parameters
