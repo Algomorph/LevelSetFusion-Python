@@ -61,7 +61,7 @@ class MyTestCase(TestCase):
                                    [0.14063994]])
         twist = optimizer.optimize(data_to_use, narrow_band_width_voxels=narrow_band_width_voxels, iteration=iteration)
         print(twist)
-        self.assertTrue(np.allclose(expected_twist, twist, atol=10e-5))
+        self.assertTrue(np.allclose(expected_twist, twist, atol=10e-4))
 
     def test_operation_same_cpp_to_py(self):
         canonical_frame_path = "tests/test_data/depth_000000.exr"
