@@ -7,6 +7,7 @@ from rigid_opt.sdf_generation import ImageBasedSingleFrameDataset
 import utils.sampling as sampling
 import utils.path
 import experiment.build_sdf_2_sdf_optimizer_helper as build_opt
+import os.path
 
 # C++ extension
 import level_set_fusion_optimization as sdf2sdfo_cpp
@@ -15,8 +16,12 @@ import level_set_fusion_optimization as sdf2sdfo_cpp
 class MyTestCase(TestCase):
 
     def test_sdf_2_sdf_optimizer01(self):
-        canonical_frame_path = utils.path.get_test_data_path("test_data/depth_000000.exr")
-        live_frame_path = utils.path.get_test_data_path("test_data/depth_000003.exr")
+        canonical_frame_path = "tests/test_data/depth_000000.exr"
+        live_frame_path = "tests/test_data/depth_000003.exr"
+
+        if not os.path.exists(canonical_frame_path) or not os.path.exists(live_frame_path):
+            canonical_frame_path = "test_data/depth_000000.exr"
+            live_frame_path = "test_data/depth_000003.exr"
 
         image_pixel_row = 240
 
@@ -59,8 +64,13 @@ class MyTestCase(TestCase):
         self.assertTrue(np.allclose(expected_twist, twist, atol=10e-6))
 
     def test_operation_same_cpp_to_py(self):
-        canonical_frame_path = utils.path.get_test_data_path("test_data/depth_000000.exr")
-        live_frame_path = utils.path.get_test_data_path("test_data/depth_000003.exr")
+        canonical_frame_path = "tests/test_data/depth_000000.exr"
+        live_frame_path = "tests/test_data/depth_000003.exr"
+
+        if not os.path.exists(canonical_frame_path) or not os.path.exists(live_frame_path):
+            canonical_frame_path = "test_data/depth_000000.exr"
+            live_frame_path = "test_data/depth_000003.exr"
+
         image_pixel_row = 240
         intrinsic_matrix = np.array([[570.3999633789062, 0, 320],  # FX = 570.3999633789062 CX = 320.0
                                      [0, 570.3999633789062, 240],  # FY = 570.3999633789062 CY = 240.0
