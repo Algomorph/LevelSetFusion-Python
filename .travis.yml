@@ -1,5 +1,6 @@
 language: python
-
+python:
+  - "2.7"
 os: linux
 dist: xenial
 sudo: true
@@ -7,12 +8,11 @@ addons:
    apt:
      sources:
         - ubuntu-toolchain-r-test
-        - deadsnakes
      packages:
         - cmake-data
         - cmake
         - g++-7
-        - python3.6-dev
+        - libpython3-dev
         - python3-numpy
         - python3-numpy-dbg
         - python3-tk
@@ -37,9 +37,9 @@ before_script:
   - python3 --version
   - sudo -H python3 get-pip.py
   - python3 -m pip --version
-  - python3 -m pip install -r requirements.txt
+  - python3 -m pip install --user -r requirements.txt
   # TODO: fix the bug in scikit-tensor installer (maybe?) to allow it to be added to requirements.txt for pip
-  - python3 -m pip install git+https://github.com/mnick/scikit-tensor.git
+  - python3 -m pip install --user git+https://github.com/mnick/scikit-tensor.git
   - mkdir -p ~/.config/matplotlib/
   - touch ~/.config/matplotlib/matplotlibrc
   - 'echo "backend : agg" > ~/.config/matplotlib/matplotlibrc'
@@ -53,8 +53,7 @@ script:
   - cd cpp
   - mkdir build
   - cd build
-  # - cmake -DHUNTER_ENABLED=OFF -DEIGEN3_INCLUDE_DIR=${Eigen3_ROOT} ..
-  - cmake ..
+  - cmake -DHUNTER_ENABLED=OFF -DEIGEN3_INCLUDE_DIR=${Eigen3_ROOT} ..
   - make
   - sudo make install
   - cd ../..
