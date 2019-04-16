@@ -52,7 +52,8 @@ script:
   - cd cpp
   - mkdir build
   - cd build
-  - cmake -DHUNTER_ENABLED=OFF -DEIGEN3_INCLUDE_DIR=${Eigen3_ROOT} ..
+  # - cmake -DHUNTER_ENABLED=OFF -DEIGEN3_INCLUDE_DIR=${Eigen3_ROOT} ..
+  - cmake ..
   - make
   - sudo make install
   - cd ../..
