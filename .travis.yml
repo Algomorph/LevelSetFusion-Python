@@ -7,11 +7,12 @@ addons:
    apt:
      sources:
         - ubuntu-toolchain-r-test
+        - deadsnakes
      packages:
         - cmake-data
         - cmake
         - g++-7
-        - libpython3-dev
+        - python3.6-dev
         - python3-numpy
         - python3-numpy-dbg
         - python3-tk
