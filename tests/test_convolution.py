@@ -24,7 +24,7 @@ import utils.sampling as sampling
 
 
 class ConvolutionTest(TestCase):
-    def test_convolution(self):
+    def test_convolve_with_kernel_preserve_zeros01(self):
         sampling.set_focus_coordinates(0, 0)
         field = np.array([1, 4, 7, 2, 5, 8, 3, 6, 9], dtype=np.float32).reshape(3, 3)
         vector_field = np.dstack([field] * 2)
@@ -36,8 +36,7 @@ class ConvolutionTest(TestCase):
 
         self.assertTrue(np.allclose(vector_field, expected_output))
 
-    def test_convolution2(self):
-        # corresponds to convolution_test02 in C++
+    def test_convolve_with_kernel_preserve_zeros02(self):
         sampling.set_focus_coordinates(0, 0)
         vector_field = np.array([[[0., 0.],
                                   [0., 0.],
@@ -81,9 +80,7 @@ class ConvolutionTest(TestCase):
         mc.convolve_with_kernel_preserve_zeros(vector_field, np.flip(kernel))
         self.assertTrue(np.allclose(vector_field, expected_output, rtol=0.0))
 
-    def test_convolution3(self):
-        # corresponds to convolution_test03 in C++
-
+    def test_convolve_with_kernel_y(self):
         vector_field = np.array([[[0., 0.],
                                   [0., 0.],
                                   [-0.35937524, -0.18750024],
@@ -126,9 +123,7 @@ class ConvolutionTest(TestCase):
         mc.convolve_with_kernel_y(vector_field, kernel)
         self.assertTrue(np.allclose(vector_field, expected_output))
 
-    def test_convolution4(self):
-        # corresponds to convolution_test04 in C++
-
+    def test_convolve_with_kernel_x(self):
         vector_field = np.array([[[0., 0.],
                                   [-0.02738971, -0.02738965],
                                   [-0.36405864, -0.19928734],
@@ -169,4 +164,151 @@ class ConvolutionTest(TestCase):
                                      [-0.14683422, -0.19089346],
                                      [-0.13971105, -0.2855439]]], dtype=np.float32)
         mc.convolve_with_kernel_x(vector_field, kernel)
+        self.assertTrue(np.allclose(vector_field, expected_output))
+
+    def test_convolve_with_kernel_2d(self):
+        sampling.set_focus_coordinates(0, 0)
+        vector_field = np.array([[[0., 0.],
+                                  [0., 0.],
+                                  [-0.35937524, -0.18750024],
+                                  [-0.13125, -0.17500037]],
+
+                                 [[0., 0.],
+                                  [-0.4062504, -0.4062496],
+                                  [-0.09375, -0.1874992],
+                                  [-0.04375001, -0.17499907]],
+
+                                 [[0., 0.],
+                                  [-0.65624946, -0.21874908],
+                                  [-0.09375, -0.1499992],
+                                  [-0.04375001, -0.21874908]],
+
+                                 [[0., 0.],
+                                  [-0.5312497, -0.18750025],
+                                  [-0.09374999, -0.15000032],
+                                  [-0.13125001, -0.2625004]]], dtype=np.float32)
+        kernel = np.array([0.06742075, 0.99544406, 0.06742075], dtype=np.float32)
+        mc.convolve_with_kernel(vector_field, np.flip(kernel))
+
+        expected_output = np.array([[[-0.00184663, -0.00184663],
+                                     [-0.05181003, -0.04070097],
+                                     [-0.37325418, -0.2127664],
+                                     [-0.1575381, -0.19859035]],
+
+                                    [[-0.03024794, -0.0282592],
+                                     [-0.45495197, -0.43135524],
+                                     [-0.1572882, -0.25023922],
+                                     [-0.06344876, -0.21395193]],
+
+                                    [[-0.04830472, -0.01737996],
+                                     [-0.7203466, -0.2682102],
+                                     [-0.15751791, -0.20533603],
+                                     [-0.06224134, -0.2577237]],
+
+                                    [[-0.03863709, -0.01357815],
+                                     [-0.57718134, -0.2112256],
+                                     [-0.14683421, -0.19089346],
+                                     [-0.13971105, -0.2855439]]], dtype=np.float32)
+        self.assertTrue(np.allclose(vector_field, expected_output))
+
+    def test_convolve_with_kernel_3d(self):
+        vector_field = np.arange(1.0, 241.0).reshape(4, 4, 5, 3).astype(np.float32)
+        kernel = np.array([3.0, 2.0, 1.0])
+        mc.convolve_with_kernel(vector_field, kernel)
+        expected_output = np.array([[[[5975., 6100., 6225.],
+                                      [7500., 7650., 7800.],
+                                      [7950., 8100., 8250.],
+                                      [8400., 8550., 8700.],
+                                      [4275., 4350., 4425.]],
+
+                                     [[8820., 8970., 9120.],
+                                      [10980., 11160., 11340.],
+                                      [11520., 11700., 11880.],
+                                      [12060., 12240., 12420.],
+                                      [6120., 6210., 6300.]],
+
+                                     [[11070., 11220., 11370.],
+                                      [13680., 13860., 14040.],
+                                      [14220., 14400., 14580.],
+                                      [14760., 14940., 15120.],
+                                      [7470., 7560., 7650.]],
+
+                                     [[5910., 5985., 6060.],
+                                      [7290., 7380., 7470.],
+                                      [7560., 7650., 7740.],
+                                      [7830., 7920., 8010.],
+                                      [3960., 4005., 4050.]]],
+
+                                    [[[13770., 13920., 14070.],
+                                      [16920., 17100., 17280.],
+                                      [17460., 17640., 17820.],
+                                      [18000., 18180., 18360.],
+                                      [9090., 9180., 9270.]],
+
+                                     [[18504., 18684., 18864.],
+                                      [22680., 22896., 23112.],
+                                      [23328., 23544., 23760.],
+                                      [23976., 24192., 24408.],
+                                      [12096., 12204., 12312.]],
+
+                                     [[21204., 21384., 21564.],
+                                      [25920., 26136., 26352.],
+                                      [26568., 26784., 27000.],
+                                      [27216., 27432., 27648.],
+                                      [13716., 13824., 13932.]],
+
+                                     [[11052., 11142., 11232.],
+                                      [13500., 13608., 13716.],
+                                      [13824., 13932., 14040.],
+                                      [14148., 14256., 14364.],
+                                      [7128., 7182., 7236.]]],
+
+                                    [[[22770., 22920., 23070.],
+                                      [27720., 27900., 28080.],
+                                      [28260., 28440., 28620.],
+                                      [28800., 28980., 29160.],
+                                      [14490., 14580., 14670.]],
+
+                                     [[29304., 29484., 29664.],
+                                      [35640., 35856., 36072.],
+                                      [36288., 36504., 36720.],
+                                      [36936., 37152., 37368.],
+                                      [18576., 18684., 18792.]],
+
+                                     [[32004., 32184., 32364.],
+                                      [38880., 39096., 39312.],
+                                      [39528., 39744., 39960.],
+                                      [40176., 40392., 40608.],
+                                      [20196., 20304., 20412.]],
+
+                                     [[16452., 16542., 16632.],
+                                      [19980., 20088., 20196.],
+                                      [20304., 20412., 20520.],
+                                      [20628., 20736., 20844.],
+                                      [10368., 10422., 10476.]]],
+
+                                    [[[12885., 12960., 13035.],
+                                      [15660., 15750., 15840.],
+                                      [15930., 16020., 16110.],
+                                      [16200., 16290., 16380.],
+                                      [8145., 8190., 8235.]],
+
+                                     [[16452., 16542., 16632.],
+                                      [19980., 20088., 20196.],
+                                      [20304., 20412., 20520.],
+                                      [20628., 20736., 20844.],
+                                      [10368., 10422., 10476.]],
+
+                                     [[17802., 17892., 17982.],
+                                      [21600., 21708., 21816.],
+                                      [21924., 22032., 22140.],
+                                      [22248., 22356., 22464.],
+                                      [11178., 11232., 11286.]],
+
+                                     [[9126., 9171., 9216.],
+                                      [11070., 11124., 11178.],
+                                      [11232., 11286., 11340.],
+                                      [11394., 11448., 11502.],
+                                      [5724., 5751., 5778.]]]], dtype=np.float32)
+        # print(repr(vector_field))
         self.assertTrue(np.allclose(vector_field, expected_output))

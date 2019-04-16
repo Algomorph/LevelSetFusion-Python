@@ -30,6 +30,23 @@ class ConversionMode(Enum):
     PythonToCpp = 1
 
 
+class CppTypes(Enum):
+    MatrixXf = "eig::MatrixXf"
+    MatrixXd = "eig::MatrixXd"
+    MatrixXi = "eig::MatrixXi"
+    MatrixXuc = "eig::Matrix<unsigned char, eig::Dynamic, eig::Dynamic>"
+    MatrixXus = "eig::Matrix<unsigned short, eig::Dynamic, eig::Dynamic>"
+    Tensor3f = "math::Tensor3f"
+    MatrixXv2f = "math::MatrixXv2f"
+    MatrixXv3f = "math::MatrixXv3f"
+    MatrixXm2f = "math::MatrixXm2f"
+    MatrixXm3f = "math::MatrixXm3f"
+    Tensor3v2f = "math::Tensor3v2f"
+    Tensor3v3f = "math::Tensor3v3f"
+    Tensor3m2f = "math::Tensor3m2f"
+    Tensor3m3f = "math::Tensor3m3f"
+
+
 class MatrixInformation:
     def __init__(self, name, dimensions, element_type, from_line=0, until_line=0):
         self.name = name
@@ -52,22 +69,40 @@ cpp_to_numpy_type_mappings = {
 cpp_extra_dimension_mappings = {
     "v2f": [2],
     "m2f": [2, 2],
+    "v3f": [3]
 }
 
 numpy_to_cpp_type_mappings = {
-    (1, "float32"): ("eig::MatrixXf", np.float32),
-    (1, "float64"): ("eig::MatrixXd", np.float64),
-    (1, "int32"): ("eig::MatrixXi", np.int32),
-    (1, "uint8"): ("eig::Matrix<unsigned char, eig::Dynamic, eig::Dynamic>", np.uint8),
-    (1, "uint16"): ("eig::Matrix<unsigned short, eig::Dynamic, eig::Dynamic>", np.uint16),
-    (2, "float32"): ("eig::MatrixXf", np.float32),
-    (2, "float64"): ("eig::MatrixXd", np.float64),
-    (2, "int32"): ("eig::MatrixXi", np.int32),
-    (2, "uint8"): ("eig::Matrix<unsigned char, eig::Dynamic, eig::Dynamic>", np.uint8),
-    (2, "uint16"): ("eig::Matrix<unsigned short, eig::Dynamic, eig::Dynamic>", np.uint16),
-    (3, "float32"): ("math::MatrixXv2f", np.float32),
-    (4, "float32"): ("math::MatrixXm2f", np.float32),
+    (1, "no", "float32"): (CppTypes.MatrixXf.value, np.float32),
+    (1, "no", "float64"): (CppTypes.MatrixXd.value, np.float64),
+    (1, "no", "int32"): (CppTypes.MatrixXi.value, np.int32),
+    (1, "no", "uint8"): (CppTypes.MatrixXuc.value, np.uint8),
+    (1, "no", "uint16"): (CppTypes.MatrixXus.value, np.uint16),
+    (2, "no", "float32"): (CppTypes.MatrixXf.value, np.float32),
+    (2, "no", "float64"): (CppTypes.MatrixXd.value, np.float64),
+    (2, "no", "int32"): (CppTypes.MatrixXi.value, np.int32),
+    (2, "no", "uint8"): (CppTypes.MatrixXi.value, np.uint8),
+    (2, "no", "uint16"): (CppTypes.MatrixXuc.value, np.uint16),
+    (3, "no", "float32"): (CppTypes.Tensor3f.value, np.float32),
+    (3, "v2", "float32"): (CppTypes.MatrixXv2f.value, np.float32),
+    (3, "v3", "float32"): (CppTypes.MatrixXv3f.value, np.float32),
+    (4, "m2", "float32"): (CppTypes.MatrixXm2f.value, np.float32),
+    (4, "m3", "float32"): (CppTypes.MatrixXm3f.value, np.float32),
+    (4, "v2", "float32"): (CppTypes.Tensor3v2f.value, np.float32),
+    (4, "v3", "float32"): (CppTypes.Tensor3v3f.value, np.float32),
+    (5, "m2", "float32"): (CppTypes.Tensor3m2f.value, np.float32),
+    (3, "m3", "float32"): (CppTypes.Tensor3m3f.value, np.float32),
 }
+
+nested_cpp_types = {
+    "v2": [CppTypes.MatrixXv2f.value, CppTypes.Tensor3v2f.value],
+    "m2": [CppTypes.MatrixXm2f.value, CppTypes.Tensor3m2f.value],
+    "v3": [CppTypes.MatrixXv3f.value, CppTypes.Tensor3v3f.value],
+    "m3": [CppTypes.MatrixXm3f.value, CppTypes.Tensor3m3f.value],
+}
+
+tensor_cpp_types = {CppTypes.Tensor3f.value, CppTypes.Tensor3m2f.value, CppTypes.Tensor3m3f.value,
+                    CppTypes.Tensor3v2f.value, CppTypes.Tensor3v3f.value}
 
 
 def parse_cpp_header(header):
@@ -108,20 +143,34 @@ def parse_numpy_dimensions_and_type(value_text, value_count):
                                  "not currently supported in Python-2-CPP conversion")
         else:
             if quadruple_bracket_count > 1:
-                raise ValueError("Tensors in more than 4 dimensions are not supported.")
+                # TODO: this should be easy to extend to nested 3D tensors (5-dims) right here. The rest of the code
+                #   already supports it.
+                raise ValueError("Tensors in more than 4 dimensions are not yet supported.")
             row_count = triple_bracket_count
             column_count = double_bracket_count // triple_bracket_count
             dimension_3 = single_bracket_count // (row_count * column_count)
             dimension_4 = value_count // (row_count * column_count * dimension_3)
-            if dimension_3 != 2 or dimension_4 != 2:
+            if dimension_4 not in [2, 3]:
                 raise ValueError(
-                    "Tensors where the third and fourth dimensions are not 2 are "
+                    "Tensors where the fourth dimension is not in {2,3} are "
                     "not currently supported in Python-2-CPP conversion")
             dimensions = [row_count, column_count, dimension_3, dimension_4]
     element_and_matrix_type = ("MatrixXd", np.float64)
     search_result = re.findall(re.compile(r'float32|int32|float64|int34|uint16|uint8'), value_text)
     if search_result:
-        element_and_matrix_type = numpy_to_cpp_type_mappings[len(dimensions), search_result[0]]
+        nested_subtype = 'no'
+        if len(dimensions) in [3, 4, 5]:
+            if dimensions[-1] == 2 and dimensions[-2] == 2:
+                nested_subtype = 'm2'
+            elif dimensions[-1] == 3 and dimensions[-2] == 3:
+                nested_subtype = 'm3'
+            elif dimensions[-1] == 2:
+                nested_subtype = 'v2'
+            elif dimensions[-1] == 3:
+                nested_subtype = 'v3'
+        element_and_matrix_type = numpy_to_cpp_type_mappings[len(dimensions),
+                                                             nested_subtype,
+                                                             search_result[0]]
     else:
         if len(dimensions) > 2:
             raise ValueError("Tensors of higher dimensions (3,4) need to be explicitly typed. "
@@ -238,25 +287,48 @@ def main():
                 element_suffix = ""
                 if "f" in matrix_info.matrix_type:
                     element_suffix = "f"
-                output_file.write(matrix_info.matrix_type + " " + matrix_info.name + "("
-                                  + str(matrix_info.dimensions[0]) + "," + str(matrix_info.dimensions[1]) + ");" +
-                                  os.linesep + matrix_info.name + " << ")
+
+                if matrix_info.matrix_type in tensor_cpp_types:
+                    dimension_string = str(matrix_info.dimensions[0]) + "," + str(matrix_info.dimensions[1]) + "," + str(matrix_info.dimensions[2])
+                else:
+                    dimension_string = str(matrix_info.dimensions[0]) + "," + str(matrix_info.dimensions[1])
+                output_file.write(matrix_info.matrix_type + " " + matrix_info.name + "(" + dimension_string + ");"
+                                  + os.linesep)
                 nested = True
-                if matrix_info.matrix_type == "math::MatrixXv2f":
+
+                esx = element_suffix
+                if matrix_info.matrix_type in nested_cpp_types['v2']:
                     elements = matrix_info.numpy_matrix.flatten().reshape(-1, 2)
 
                     def write_element(elem):
                         return str(
-                            "math::Vector2f(" + str(elem[0]) + element_suffix + "," + str(
-                                elem[1]) + element_suffix + ")")
-                elif matrix_info.matrix_type == "math::MatrixXm2f":
+                            "math::Vector2f(" + str(elem[0]) + esx + "," + str(elem[1]) + esx + ")")
+
+                elif matrix_info.matrix_type in nested_cpp_types['v3']:
+                    elements = matrix_info.numpy_matrix.flatten().reshape(-1, 3)
+
+                    def write_element(elem):
+                        return str(
+                            "math::Vector3f("
+                            + str(elem[0]) + esx + "," + str(elem[1]) + esx + "," + str(elem[2]) + esx + ")")
+
+                elif matrix_info.matrix_type in nested_cpp_types['m2']:
                     elements = matrix_info.numpy_matrix.flatten().reshape(-1, 2, 2)
 
                     def write_element(elem):
                         return str(
-                            "math::Matrix2f(" + str(elem[0, 0]) + element_suffix + "," + str(
-                                elem[0, 1]) + element_suffix + ","
-                            + str(elem[1, 0]) + element_suffix + "," + str(elem[1, 1]) + element_suffix + ")")
+                            "math::Matrix2f(" +
+                            str(elem[0, 0]) + esx + "," + str(elem[0, 1]) + esx + "," +
+                            str(elem[1, 0]) + esx + "," + str(elem[1, 1]) + esx + ")")
+                elif matrix_info.matrix_type in nested_cpp_types['m3']:
+                    elements = matrix_info.numpy_matrix.flatten().reshape(-1, 3, 3)
+
+                    def write_element(elem):
+                        return str(
+                            "math::Matrix3f(" +
+                            str(elem[0, 0]) + esx + "," + str(elem[0, 1]) + esx + "," + str(elem[0, 2]) + esx + "," +
+                            str(elem[1, 0]) + esx + "," + str(elem[1, 1]) + esx + "," + str(elem[1, 2]) + esx + "," +
+                            str(elem[2, 0]) + esx + "," + str(elem[2, 1]) + esx + "," + str(elem[2, 2]) + esx + ")")
                 else:
                     elements = matrix_info.numpy_matrix.flatten()
                     nested = False
@@ -264,17 +336,44 @@ def main():
                     def write_element(elem):
                         return str(elem) + element_suffix
 
-                i_element = 0
-                for element in elements[:-1]:
-                    if nested and not i_element == 0:
+                if matrix_info.matrix_type in tensor_cpp_types:
+                    output_file.write(matrix_info.name + ".setValues(" + os.linesep + "{")
+                    for x in range(matrix_info.dimensions[0]):
+                        if x > 0:
+                            output_file.write(" ")
+                        output_file.write("{")
+                        for y in range(matrix_info.dimensions[1]):
+                            if y > 0:
+                                output_file.write("  ")
+                            output_file.write("{")
+                            for z in range(matrix_info.dimensions[2]):
+                                element = matrix_info.numpy_matrix[x, y, z]
+                                if z < matrix_info.dimensions[2] - 1:
+                                    output_file.write(write_element(element) + ", ")
+                                else:
+                                    output_file.write(write_element(element))
+                            if y < matrix_info.dimensions[1] - 1:
+                                output_file.write("}," + os.linesep)
+                            else:
+                                output_file.write("}")
+                        if x < matrix_info.dimensions[0] - 1:
+                            output_file.write("}," + os.linesep)
+                        else:
+                            output_file.write("}")
+                    output_file.write("});")
+                else:
+                    output_file.write(matrix_info.name + " << ")
+                    i_element = 0
+                    for element in elements[:-1]:
+                        if nested and not i_element == 0:
+                            output_file.write(os.linesep)
+                        if i_element % matrix_info.dimensions[1] == 0:
+                            output_file.write(os.linesep)
+                        output_file.write(write_element(element) + ", ")
+                        i_element += 1
+                    if nested:
                         output_file.write(os.linesep)
-                    if i_element % matrix_info.dimensions[1] == 0:
-                        output_file.write(os.linesep)
-                    output_file.write(write_element(element) + ", ")
-                    i_element += 1
-                if nested:
-                    output_file.write(os.linesep)
-                output_file.write(write_element(elements[-1]) + ";")
+                    output_file.write(write_element(elements[-1]) + ";")
 
         else:
             raise ValueError("Unsupported ConversionMode: " + str(conversion_mode))
