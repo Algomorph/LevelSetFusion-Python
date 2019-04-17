@@ -139,11 +139,11 @@ class TestNonRigidOptimization(TestCase):
         self.assertTrue(report1 == report2)
 
         expected_warp_stats = \
-            cpp_module.WarpDeltaStatistics(0.272727, 0.0, 0.0684823, 0.0364445,
-                                           0.0167321, cpp_module.Vector2i(1, 2), False, False)
+            cpp_module.WarpDeltaStatistics2d(0.272727, 0.0, 0.0684823, 0.0364445,
+                                             0.0167321, cpp_module.Vector2i(1, 2), False, False)
         expected_diff_stats = \
-            cpp_module.TsdfDifferenceStatistics(0, 0.246834, 0.111843, 0.0838871, cpp_module.Vector2i(3, 3))
+            cpp_module.TsdfDifferenceStatistics2d(0, 0.246834, 0.111843, 0.0838871, cpp_module.Vector2i(3, 3))
 
-        expected_report = cpp_module.ConvergenceReport(2, True, expected_warp_stats, expected_diff_stats)
+        expected_report = cpp_module.ConvergenceReport2d(2, True, expected_warp_stats, expected_diff_stats)
 
         self.assertTrue(report2 == expected_report)
