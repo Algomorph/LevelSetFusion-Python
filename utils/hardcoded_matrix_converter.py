@@ -279,6 +279,7 @@ def main():
                                   .replace("int32", "np.int32") + os.linesep)
 
         elif conversion_mode == ConversionMode.PythonToCpp:
+            static_global_variables = True
             output_file.write("#include <Eigen/Eigen>" + os.linesep)
             output_file.write("#include \"../math/tensors.hpp\"" + os.linesep + os.linesep)
             output_file.write("namespace eig=Eigen;")
@@ -289,11 +290,20 @@ def main():
                     element_suffix = "f"
 
                 if matrix_info.matrix_type in tensor_cpp_types:
-                    dimension_string = str(matrix_info.dimensions[0]) + "," + str(matrix_info.dimensions[1]) + "," + str(matrix_info.dimensions[2])
+                    # Eigen Tensors default to column-major order, so z,y,x becomes x,y,z
+                    dimension_string = str(matrix_info.dimensions[2]) + "," + str(
+                        matrix_info.dimensions[1]) + "," + str(matrix_info.dimensions[0])
                 else:
                     dimension_string = str(matrix_info.dimensions[0]) + "," + str(matrix_info.dimensions[1])
-                output_file.write(matrix_info.matrix_type + " " + matrix_info.name + "(" + dimension_string + ");"
-                                  + os.linesep)
+
+                line_prefix_whitespace = ""
+                if static_global_variables:
+                    line_prefix_whitespace = "		"
+                    output_file.write(
+                        "static " + matrix_info.matrix_type + " " + matrix_info.name + " = []{" + os.linesep)
+
+                output_file.write(line_prefix_whitespace + matrix_info.matrix_type + " " +
+                                  matrix_info.name + "(" + dimension_string + ");" + os.linesep)
                 nested = True
 
                 esx = element_suffix
@@ -337,18 +347,19 @@ def main():
                         return str(elem) + element_suffix
 
                 if matrix_info.matrix_type in tensor_cpp_types:
-                    output_file.write(matrix_info.name + ".setValues(" + os.linesep + "{")
-                    for x in range(matrix_info.dimensions[0]):
+                    output_file.write(line_prefix_whitespace + matrix_info.name + ".setValues(  // @formatter:off" +
+                                      os.linesep + line_prefix_whitespace + "{")
+                    for x in range(matrix_info.dimensions[2]):
                         if x > 0:
-                            output_file.write(" ")
+                            output_file.write(line_prefix_whitespace + " ")
                         output_file.write("{")
                         for y in range(matrix_info.dimensions[1]):
                             if y > 0:
-                                output_file.write("  ")
+                                output_file.write(line_prefix_whitespace + "  ")
                             output_file.write("{")
-                            for z in range(matrix_info.dimensions[2]):
-                                element = matrix_info.numpy_matrix[x, y, z]
-                                if z < matrix_info.dimensions[2] - 1:
+                            for z in range(matrix_info.dimensions[0]):
+                                element = matrix_info.numpy_matrix[z, y, x]
+                                if z < matrix_info.dimensions[0] - 1:
                                     output_file.write(write_element(element) + ", ")
                                 else:
                                     output_file.write(write_element(element))
@@ -356,24 +367,27 @@ def main():
                                 output_file.write("}," + os.linesep)
                             else:
                                 output_file.write("}")
-                        if x < matrix_info.dimensions[0] - 1:
+                        if x < matrix_info.dimensions[2] - 1:
                             output_file.write("}," + os.linesep)
                         else:
                             output_file.write("}")
-                    output_file.write("});")
+                    output_file.write("}); // @formatter:on")
                 else:
                     output_file.write(matrix_info.name + " << ")
                     i_element = 0
                     for element in elements[:-1]:
                         if nested and not i_element == 0:
-                            output_file.write(os.linesep)
+                            output_file.write(os.linesep + line_prefix_whitespace)
                         if i_element % matrix_info.dimensions[1] == 0:
-                            output_file.write(os.linesep)
+                            output_file.write(os.linesep + line_prefix_whitespace)
                         output_file.write(write_element(element) + ", ")
                         i_element += 1
                     if nested:
-                        output_file.write(os.linesep)
+                        output_file.write(os.linesep + line_prefix_whitespace)
                     output_file.write(write_element(elements[-1]) + ";")
+                if static_global_variables:
+                    output_file.write(os.linesep + line_prefix_whitespace + "return " + matrix_info.name + ";" +
+                                      os.linesep + "}();")
 
         else:
             raise ValueError("Unsupported ConversionMode: " + str(conversion_mode))

@@ -50,15 +50,15 @@ def convolve_with_kernel_x(vector_field, kernel):
         for y in range(vector_field.shape[0]):
             x_convolved[y, :, 0] = np.convolve(vector_field[y, :, 0], kernel, mode='same')
             x_convolved[y, :, 1] = np.convolve(vector_field[y, :, 1], kernel, mode='same')
-        np.copyto(vector_field, x_convolved)
     elif len(vector_field.shape) == 4 and vector_field.shape[3] == 3:
-        for z in range(vector_field.shape[2]):
+        for z in range(vector_field.shape[0]):
             for y in range(vector_field.shape[1]):
                 for i_val in range(3):
-                    x_convolved[:, y, z, i_val] = np.convolve(vector_field[:, y, z, i_val], kernel, mode='same')
+                    x_convolved[z, y, :, i_val] = np.convolve(vector_field[z, y, :, i_val], kernel, mode='same')
     else:
         raise ValueError("Can only process tensors with 3 dimensions (where last dimension is 2) or "
                          "tensors with 4 dimensions (where last dimension is 3), i.e. 2D & 3D vector fields")
+    np.copyto(vector_field, x_convolved)
     return x_convolved
 
 
@@ -91,18 +91,18 @@ def convolve_with_kernel(vector_field, kernel=sobolev_kernel_1d, print_focus_coo
 
     elif len(vector_field.shape) == 4 and vector_field.shape[3] == 3:
         z_convolved = np.zeros_like(vector_field)
-        for z in range(vector_field.shape[2]):
+        for z in range(vector_field.shape[0]):
             for y in range(vector_field.shape[1]):
                 for i_val in range(3):
-                    x_convolved[:, y, z, i_val] = np.convolve(vector_field[:, y, z, i_val], kernel, mode='same')
-        for z in range(vector_field.shape[2]):
-            for x in range(vector_field.shape[0]):
+                    x_convolved[z, y, :, i_val] = np.convolve(vector_field[z, y, :, i_val], kernel, mode='same')
+        for z in range(vector_field.shape[0]):
+            for x in range(vector_field.shape[2]):
                 for i_val in range(3):
-                    y_convolved[x, :, z, i_val] = np.convolve(x_convolved[x, :, z, i_val], kernel, mode='same')
+                    y_convolved[z, :, x, i_val] = np.convolve(x_convolved[z, :, x, i_val], kernel, mode='same')
         for y in range(vector_field.shape[1]):
-            for x in range(vector_field.shape[0]):
+            for x in range(vector_field.shape[2]):
                 for i_val in range(3):
-                    z_convolved[x, y, :, i_val] = np.convolve(y_convolved[x, y, :, i_val], kernel, mode='same')
+                    z_convolved[:, y, x, i_val] = np.convolve(y_convolved[:, y, x, i_val], kernel, mode='same')
         np.copyto(vector_field, z_convolved)
     else:
         raise ValueError("Can only process tensors with 3 dimensions (where last dimension is 2) or "
