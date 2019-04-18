@@ -198,8 +198,8 @@ class HierarchicalOptimizer2d:
 
             if self.tikhonov_term_enabled:
                 # calculate tikhonov regularizer (laplacian of the previous update)
-                laplace_u = scipy.ndimage.laplace(gradient[:, :, 0])
-                laplace_v = scipy.ndimage.laplace(gradient[:, :, 1])
+                laplace_u = scipy.ndimage.laplace(gradient[:, :, 0], mode='nearest')
+                laplace_v = scipy.ndimage.laplace(gradient[:, :, 1], mode='nearest')
                 tikhonov_gradient = np.stack((laplace_u, laplace_v), axis=2)
 
                 if self.verbosity_parameters.print_iteration_tikhonov_energy:

@@ -138,9 +138,6 @@ def parse_numpy_dimensions_and_type(value_text, value_count):
             column_count = single_bracket_count // double_bracket_count
             layer_count = value_count // (row_count * column_count)
             dimensions = [row_count, column_count, layer_count]
-            if layer_count != 2:
-                raise ValueError("Tensors where the third dimension is not 2 are "
-                                 "not currently supported in Python-2-CPP conversion")
         else:
             if quadruple_bracket_count > 1:
                 # TODO: this should be easy to extend to nested 3D tensors (5-dims) right here. The rest of the code
@@ -373,7 +370,7 @@ def main():
                             output_file.write("}")
                     output_file.write("}); // @formatter:on")
                 else:
-                    output_file.write(matrix_info.name + " << ")
+                    output_file.write(line_prefix_whitespace + matrix_info.name + " << ")
                     i_element = 0
                     for element in elements[:-1]:
                         if nested and not i_element == 0:
