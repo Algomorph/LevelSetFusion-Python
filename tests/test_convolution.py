@@ -21,10 +21,11 @@ import numpy as np
 # test targets
 import math_utils.convolution as mc
 import utils.sampling as sampling
+import tests.test_data.test_data_convolution as test_data
 
 
 class ConvolutionTest(TestCase):
-    def test_convolution(self):
+    def test_convolve_with_kernel_preserve_zeros01(self):
         sampling.set_focus_coordinates(0, 0)
         field = np.array([1, 4, 7, 2, 5, 8, 3, 6, 9], dtype=np.float32).reshape(3, 3)
         vector_field = np.dstack([field] * 2)
@@ -36,8 +37,7 @@ class ConvolutionTest(TestCase):
 
         self.assertTrue(np.allclose(vector_field, expected_output))
 
-    def test_convolution2(self):
-        # corresponds to convolution_test02 in C++
+    def test_convolve_with_kernel_preserve_zeros02(self):
         sampling.set_focus_coordinates(0, 0)
         vector_field = np.array([[[0., 0.],
                                   [0., 0.],
@@ -81,9 +81,7 @@ class ConvolutionTest(TestCase):
         mc.convolve_with_kernel_preserve_zeros(vector_field, np.flip(kernel))
         self.assertTrue(np.allclose(vector_field, expected_output, rtol=0.0))
 
-    def test_convolution3(self):
-        # corresponds to convolution_test03 in C++
-
+    def test_convolve_with_kernel_y(self):
         vector_field = np.array([[[0., 0.],
                                   [0., 0.],
                                   [-0.35937524, -0.18750024],
@@ -126,9 +124,7 @@ class ConvolutionTest(TestCase):
         mc.convolve_with_kernel_y(vector_field, kernel)
         self.assertTrue(np.allclose(vector_field, expected_output))
 
-    def test_convolution4(self):
-        # corresponds to convolution_test04 in C++
-
+    def test_convolve_with_kernel_x(self):
         vector_field = np.array([[[0., 0.],
                                   [-0.02738971, -0.02738965],
                                   [-0.36405864, -0.19928734],
@@ -170,3 +166,60 @@ class ConvolutionTest(TestCase):
                                      [-0.13971105, -0.2855439]]], dtype=np.float32)
         mc.convolve_with_kernel_x(vector_field, kernel)
         self.assertTrue(np.allclose(vector_field, expected_output))
+
+    def test_convolve_with_kernel_2d(self):
+        sampling.set_focus_coordinates(0, 0)
+        vector_field = np.array([[[0., 0.],
+                                  [0., 0.],
+                                  [-0.35937524, -0.18750024],
+                                  [-0.13125, -0.17500037]],
+
+                                 [[0., 0.],
+                                  [-0.4062504, -0.4062496],
+                                  [-0.09375, -0.1874992],
+                                  [-0.04375001, -0.17499907]],
+
+                                 [[0., 0.],
+                                  [-0.65624946, -0.21874908],
+                                  [-0.09375, -0.1499992],
+                                  [-0.04375001, -0.21874908]],
+
+                                 [[0., 0.],
+                                  [-0.5312497, -0.18750025],
+                                  [-0.09374999, -0.15000032],
+                                  [-0.13125001, -0.2625004]]], dtype=np.float32)
+        kernel = np.array([0.06742075, 0.99544406, 0.06742075], dtype=np.float32)
+        mc.convolve_with_kernel(vector_field, np.flip(kernel))
+
+        expected_output = np.array([[[-0.00184663, -0.00184663],
+                                     [-0.05181003, -0.04070097],
+                                     [-0.37325418, -0.2127664],
+                                     [-0.1575381, -0.19859035]],
+
+                                    [[-0.03024794, -0.0282592],
+                                     [-0.45495197, -0.43135524],
+                                     [-0.1572882, -0.25023922],
+                                     [-0.06344876, -0.21395193]],
+
+                                    [[-0.04830472, -0.01737996],
+                                     [-0.7203466, -0.2682102],
+                                     [-0.15751791, -0.20533603],
+                                     [-0.06224134, -0.2577237]],
+
+                                    [[-0.03863709, -0.01357815],
+                                     [-0.57718134, -0.2112256],
+                                     [-0.14683421, -0.19089346],
+                                     [-0.13971105, -0.2855439]]], dtype=np.float32)
+        self.assertTrue(np.allclose(vector_field, expected_output))
+
+    def test_convolve_with_kernel_3d(self):
+        vector_field = np.arange(1.0, 241.0).reshape(5, 4, 4, 3).astype(np.float32)
+        kernel = np.array([3.0, 2.0, 1.0])
+        mc.convolve_with_kernel(vector_field, kernel)
+        self.assertTrue(np.allclose(vector_field, test_data.convolved_3d_vector_field))
+
+    def test_convolve_with_kernel_3d_x(self):
+        vector_field = np.arange(1.0, 241.0).reshape(5, 4, 4, 3).astype(np.float32)
+        kernel = np.array([3.0, 2.0, 1.0])
+        mc.convolve_with_kernel_x(vector_field, kernel)
+        self.assertTrue(np.allclose(vector_field, test_data.convolved_x_3d_vector_field))

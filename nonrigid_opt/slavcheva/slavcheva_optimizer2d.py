@@ -61,7 +61,7 @@ class OptimizationLog:
         self.smoothing_energies = []
         self.level_set_energies = []
         self.max_warps = []
-        self.convergence_report = cpp_extension.ConvergenceReport()
+        self.convergence_report = cpp_extension.ConvergenceReport2d()
 
 
 class ComputeMethod(Enum):
@@ -391,13 +391,13 @@ class SlavchevaOptimizer2d:
 
         # log end-of-optimization stats
         if self.enable_convergence_status_logging:
-            warp_stats = cpp_extension.WarpDeltaStatistics(warp_field, canonical_field, live_field,
-                                                           self.maximum_warp_length_lower_threshold,
-                                                           self.maximum_warp_length_upper_threshold)
+            warp_stats = cpp_extension.build_warp_delta_statistics2d(warp_field, canonical_field, live_field,
+                                                                     self.maximum_warp_length_lower_threshold,
+                                                                     self.maximum_warp_length_upper_threshold)
 
-            tsdf_stats = cpp_extension.TsdfDifferenceStatistics(canonical_field, live_field)
+            tsdf_stats = cpp_extension.TsdfDifferenceStatistics2d(canonical_field, live_field)
 
-            self.log.convergence_report = cpp_extension.ConvergenceReport(
+            self.log.convergence_report = cpp_extension.ConvergenceReport2d(
                 iteration_number,
                 iteration_number >= self.max_iterations,
                 warp_stats,
