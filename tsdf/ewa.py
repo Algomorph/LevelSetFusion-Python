@@ -109,13 +109,14 @@ def generate_tsdf_3d_ewa_image(depth_image, camera,
 
     squared_radius_threshold = 4.0 * gaussian_covariance_scale * voxel_size
 
-    for x_field in range(field_shape[2]):
+    for z_field in range(field_shape[2]):
         for y_field in range(field_shape[1]):
-            for z_field in range(field_shape[0]):
-
-                x_voxel = (x_field + array_offset[0]) * voxel_size
+            for x_field in range(field_shape[0]):
+                # coordinates deliberately flipped here to maintain consistency between Python & C++ implementations
+                # Eigen Tensors being used are column-major, whereas here we use row-major layout by default
+                x_voxel = (z_field + array_offset[0]) * voxel_size
                 y_voxel = (y_field + array_offset[1]) * voxel_size
-                z_voxel = (z_field + array_offset[2]) * voxel_size
+                z_voxel = (x_field + array_offset[2]) * voxel_size
 
                 voxel_world = np.array([[x_voxel, y_voxel, z_voxel, w_voxel]], dtype=np.float32).T
                 voxel_camera = camera_extrinsic_matrix.dot(voxel_world).flatten()[:3]
@@ -178,7 +179,7 @@ def generate_tsdf_3d_ewa_image(depth_image, camera,
                 final_depth = depth_sum / weights_sum
 
                 signed_distance = final_depth - voxel_camera[2]
-                field[x_field, y_field, z_field] = common.compute_tsdf_value(signed_distance, narrow_band_half_width)
+                field[z_field, y_field, x_field] = common.compute_tsdf_value(signed_distance, narrow_band_half_width)
 
     return field
 
