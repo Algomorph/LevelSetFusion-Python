@@ -55,12 +55,12 @@ class MyTestCase(TestCase):
                 save_live_progression=False
             )
         )
-        expected_twist = np.array([[-0.07044821],
-                                   [0.00506055],
-                                   [0.14063994]])
+        expected_twist = np.array([[-0.07018717],
+                                   [0.00490206],
+                                   [0.13993476]])
         twist = optimizer.optimize(data_to_use, narrow_band_width_voxels=narrow_band_width_voxels, iteration=iteration)
         print(twist)
-        self.assertTrue(np.allclose(expected_twist, twist, atol=10e-4))
+        self.assertTrue(np.allclose(expected_twist, twist, atol=1e-6))
 
     def test_operation_same_cpp_to_py(self):
         canonical_frame_path = "tests/test_data/depth_000000.exr"
