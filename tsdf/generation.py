@@ -12,7 +12,7 @@ from utils.point2d import Point2d
 import utils.sampling as sampling
 import tsdf.ewa as ewa
 
-from tsdf.common import GenerationMethod
+from tsdf.common import GenerationMethod, compute_tsdf_value
 
 IGNORE_OPENCV = False
 
@@ -207,12 +207,8 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
 
             signed_distance_to_voxel_along_camera_ray = depth - point_in_camera_space[2]
 
-            if signed_distance_to_voxel_along_camera_ray < -narrow_band_half_width:
-                field[y_field, x_field] = -1.0
-            elif signed_distance_to_voxel_along_camera_ray > narrow_band_half_width:
-                field[y_field, x_field] = 1.0
-            else:
-                field[y_field, x_field] = signed_distance_to_voxel_along_camera_ray / narrow_band_half_width
+            field[y_field, x_field] = compute_tsdf_value(signed_distance_to_voxel_along_camera_ray,
+                                                         narrow_band_half_width)
 
     return field
 
@@ -396,7 +392,6 @@ def generate_3d_tsdf_field_from_depth_image(depth_image, camera,
         field.fill(default_value)
 
     projection_matrix = camera.intrinsics.intrinsic_matrix
-
     depth_ratio = camera.depth_unit_ratio
     narrow_band_half_width = narrow_band_width_voxels / 2 * voxel_size  # in metric units
 
@@ -436,10 +431,11 @@ def generate_3d_tsdf_field_from_depth_image(depth_image, camera,
                 signed_distance_to_voxel_along_camera_ray = depth - point_in_camera_space[2]
 
                 if signed_distance_to_voxel_along_camera_ray < -narrow_band_half_width:
-                    field[y_field, x_field] = -1.0
+                    field[z_field, y_field, x_field] = -1.0
                 elif signed_distance_to_voxel_along_camera_ray > narrow_band_half_width:
-                    field[y_field, x_field] = 1.0
+                    field[z_field, y_field, x_field] = 1.0
                 else:
-                    field[y_field, x_field] = signed_distance_to_voxel_along_camera_ray / narrow_band_half_width
+                    field[
+                        z_field, y_field, x_field] = signed_distance_to_voxel_along_camera_ray / narrow_band_half_width
 
     return field
