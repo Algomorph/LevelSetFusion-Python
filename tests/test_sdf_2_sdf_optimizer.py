@@ -5,7 +5,6 @@ from calib.camera import DepthCamera
 from rigid_opt import sdf_2_sdf_visualizer as sdf2sdfv, sdf_2_sdf_optimizer2d as sdf2sdfo_py
 from rigid_opt.sdf_generation import ImageBasedSingleFrameDataset
 import utils.sampling as sampling
-import utils.path
 import experiment.build_sdf_2_sdf_optimizer_helper as build_opt
 import os.path
 
@@ -106,13 +105,13 @@ class MyTestCase(TestCase):
 
         # Read image for c++ optimizer, identical to python, which is done inside ImageBasedSingleFrameDataset class.
         canonical_depth_image = cv2.imread(canonical_frame_path, cv2.IMREAD_UNCHANGED)
-        canonical_depth_image = cv2.cvtColor(canonical_depth_image, cv2.COLOR_BGR2GRAY)
         canonical_depth_image = canonical_depth_image.astype(np.uint16)  # mm
+        canonical_depth_image = cv2.cvtColor(canonical_depth_image, cv2.COLOR_BGR2GRAY)
         canonical_depth_image[canonical_depth_image == 0] = np.iinfo(np.uint16).max
 
         live_depth_image = cv2.imread(live_frame_path, cv2.IMREAD_UNCHANGED)
-        live_depth_image = cv2.cvtColor(live_depth_image, cv2.COLOR_BGR2GRAY)
         live_depth_image = live_depth_image.astype(np.uint16)  # mm
+        live_depth_image = cv2.cvtColor(live_depth_image, cv2.COLOR_BGR2GRAY)
         live_depth_image[live_depth_image == 0] = np.iinfo(np.uint16).max
 
         optimizer_cpp = build_opt.make_sdf_2_sdf_optimizer2d(
