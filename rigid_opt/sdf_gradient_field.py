@@ -13,7 +13,7 @@ from math_utils.transformation import twist_vector_to_matrix2d
 def calculate_gradient_wrt_twist(live_field, twist, array_offset, voxel_size=0.004):
     gradient_field = np.zeros((live_field.shape[0], live_field.shape[1], 3), dtype=np.float32)
     sdf_gradient_first_term = np.gradient(live_field)
-    twist_matrix_homo_inv = twist_vector_to_matrix2d(-twist)
+    twist_matrix_inv = twist_vector_to_matrix2d(-twist)
 
     y_voxel = 0.0
     w_voxel = 1.0
@@ -24,7 +24,7 @@ def calculate_gradient_wrt_twist(live_field, twist, array_offset, voxel_size=0.0
             z_voxel = (y_field + array_offset[2]) * voxel_size  # acts as "Z" coordinate
 
             point = np.array([[x_voxel, z_voxel, w_voxel]], dtype=np.float32).T
-            trans = np.dot(twist_matrix_homo_inv, point)
+            trans = np.dot(twist_matrix_inv, point)
 
             sdf_gradient_second_term = np.array([[1, 0, trans[1]],
                                                  [0, 1, -trans[0]]])
