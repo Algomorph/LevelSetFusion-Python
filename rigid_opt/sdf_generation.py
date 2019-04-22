@@ -40,7 +40,6 @@ class ImageBasedSingleFrameDataset:
                                                              array_offset=self.offset,
                                                              narrow_band_width_voxels=narrow_band_width_voxels,
                                                              generation_method=method)
-        # print(str(depth_image0[240]))
         return canonical_field
 
     def generate_2d_live_field(self, method=tsdf_gen.GenerationMethod.BASIC,
