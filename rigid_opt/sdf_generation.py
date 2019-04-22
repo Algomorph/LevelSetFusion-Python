@@ -30,8 +30,9 @@ class ImageBasedSingleFrameDataset:
 
     def generate_2d_canonical_field(self, narrow_band_width_voxels=20., method=tsdf_gen.GenerationMethod.BASIC):
         depth_image0 = cv2.imread(self.first_frame_path, -1)
+        depth_image0 = depth_image0.astype(np.uint16)  # mm
         depth_image0 = cv2.cvtColor(depth_image0, cv2.COLOR_BGR2GRAY)
-        depth_image0 = depth_image0.astype(float)  # cm
+        depth_image0[depth_image0 == 0] = np.iinfo(np.uint16).max
 
         canonical_field = \
             tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image0, self.depth_camera, self.image_pixel_row,
@@ -45,8 +46,9 @@ class ImageBasedSingleFrameDataset:
                                narrow_band_width_voxels=20.,
                                twist=np.zeros((6, 1))):
         depth_image1 = cv2.imread(self.second_frame_path, -1)
+        depth_image1 = depth_image1.astype(np.uint16)  # mm
         depth_image1 = cv2.cvtColor(depth_image1, cv2.COLOR_BGR2GRAY)
-        depth_image1 = depth_image1.astype(float)  # cm
+        depth_image1[depth_image1 == 0] = np.iinfo(np.uint16).max
 
         twist_matrix = twist_vector_to_matrix3d(twist)
 
