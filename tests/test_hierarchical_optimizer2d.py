@@ -105,6 +105,10 @@ class HierarchicalOptimizerTest(TestCase):
         dataset_to_use = dataset.PredefinedDatasetEnum.REAL3D_SNOOPY_SET00
         generation_method = ho_cpp.tsdf.FilteringMethod.EWA_VOXEL_SPACE_INCLUSIVE
 
+        camera_intrinsic_matrix = np.array([[700., 0., 320.],
+                                            [0., 700., 240.],
+                                            [0., 0., 1.]], dtype=np.float32)
+
         canonical_field, live_field = dataset.datasets[dataset_to_use].generate_2d_sdf_fields(generation_method,
                                                                                               use_cpp=True)
 

@@ -27,8 +27,10 @@ import numpy as np
 
 # local
 from calib.camerarig import DepthCameraRig
+from calib.camera import DepthCamera, Camera
 from tsdf import generation as tsdf_gen
 import utils.path
+import os.path
 import level_set_fusion_optimization as cpp_module
 
 
@@ -88,7 +90,16 @@ class ImageBasedFramePairDataset(FramePairDataset):
         self.field_size = field_size
         self.offset = offset
         self.voxel_size = voxel_size
-        self.rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
+        if os.path.exists(self.calibration_file_path) and os.path.isdir(self.calibration_file_path):
+            self.rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
+        else:
+            camera_intrinsic_matrix = np.array([[700., 0., 320.],
+                                                [0., 700., 240.],
+                                                [0., 0., 1.]], dtype=np.float32)
+            camera = DepthCamera(
+                intrinsics=Camera.Intrinsics((480, 640), intrinsic_matrix=camera_intrinsic_matrix),
+                depth_unit_ratio=0.001)
+            self.rig = DepthCameraRig(cameras=(camera,))
         parameters = cpp_module.tsdf.Parameters2d()
         parameters.interpolation_method = cpp_module.tsdf.FilteringMethod.NONE
         parameters.projection_matrix = self.rig.depth_camera.intrinsics.intrinsic_matrix.astype(np.float32)
