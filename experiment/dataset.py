@@ -29,6 +29,7 @@ import numpy as np
 from calib.camerarig import DepthCameraRig
 from tsdf import generation as tsdf_gen
 import utils.path
+import level_set_fusion_optimization as cpp_module
 
 
 class PredefinedDatasetEnum(Enum):
@@ -61,7 +62,7 @@ class FramePairDataset(ABC):
         self.out_subpath = ""
 
     @abstractmethod
-    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.BASIC, smoothing_coefficient=1.0):
+    def generate_2d_sdf_fields(self, method=cpp_module.tsdf.FilteringMethod.NONE, smoothing_coefficient=1.0):
         pass
 
 
@@ -72,7 +73,7 @@ class HardcodedFramePairDataset(FramePairDataset):
         self.canonical_field = canonical_field
         self.live_field = live_field
 
-    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.BASIC, smoothing_coefficient=1.0):
+    def generate_2d_sdf_fields(self, method=cpp_module.tsdf.FilteringMethod.NONE, smoothing_coefficient=1.0):
         return self.live_field, self.canonical_field
 
 
@@ -87,38 +88,53 @@ class ImageBasedFramePairDataset(FramePairDataset):
         self.field_size = field_size
         self.offset = offset
         self.voxel_size = voxel_size
+        self.rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
+        parameters = cpp_module.tsdf.Parameters2d()
+        parameters.interpolation_method = cpp_module.tsdf.FilteringMethod.NONE
+        parameters.projection_matrix = self.rig.depth_camera.intrinsics.intrinsic_matrix.astype(np.float32)
+        parameters.array_offset = cpp_module.Vector2i(int(self.offset[0]), int(self.offset[2]))
+        parameters.field_shape = cpp_module.Vector2i(self.field_size, self.field_size)
+        self.parameters = parameters
 
-    def generate_2d_sdf_canonical(self, method=tsdf_gen.GenerationMethod.BASIC, smoothing_coefficient=1.0):
-        rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
-        depth_camera = rig.depth_camera
-        depth_image0 = cv2.imread(self.first_frame_path, cv2.IMREAD_UNCHANGED)
+    def _generate_2d_sdf_aux_image(self, depth_image, method=cpp_module.tsdf.FilteringMethod.NONE,
+                                   smoothing_coefficient=1.0, use_cpp=False):
+
         max_depth = np.iinfo(np.uint16).max
-        depth_image0[depth_image0 == 0] = max_depth
-        canonical_field = \
-            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, self.image_pixel_row,
-                                                             field_size=self.field_size, array_offset=self.offset,
-                                                             generation_method=method,
-                                                             voxel_size=self.voxel_size,
-                                                             smoothing_coefficient=smoothing_coefficient)
-        return canonical_field
+        depth_image[depth_image == 0] = max_depth
+        if not use_cpp:
+            field = \
+                tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image, self.rig.depth_camera,
+                                                                 self.image_pixel_row, field_size=self.field_size,
+                                                                 array_offset=self.offset,
+                                                                 interpolation_method=method,
+                                                                 voxel_size=self.voxel_size,
+                                                                 smoothing_coefficient=smoothing_coefficient)
+        else:
+            self.parameters.smoothing_factor = smoothing_coefficient
+            self.parameters.interpolation_method = method
+            generator = cpp_module.tsdf.Generator2d(self.parameters)
+            print(depth_image.dtype)
+            field = generator.generate(depth_image, np.identity(4, dtype=np.float32), self.image_pixel_row)
+        return field
 
-    def generate_2d_sdf_live(self, method=tsdf_gen.GenerationMethod.BASIC, smoothing_coefficient=1.0):
-        rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
-        depth_camera = rig.depth_camera
-        depth_image1 = cv2.imread(self.second_frame_path, cv2.IMREAD_UNCHANGED)
-        max_depth = np.iinfo(np.uint16).max
-        depth_image1[depth_image1 == 0] = max_depth
-        live_field = \
-            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image1, depth_camera, self.image_pixel_row,
-                                                             field_size=self.field_size, array_offset=self.offset,
-                                                             generation_method=method,
-                                                             voxel_size=self.voxel_size,
-                                                             smoothing_coefficient=smoothing_coefficient)
-        return live_field
+    def _generate_2d_sdf_aux(self, path, method=cpp_module.tsdf.FilteringMethod.NONE,
+                             smoothing_coefficient=1.0,
+                             use_cpp=False):
+        depth_image = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        return self._generate_2d_sdf_aux_image(self, depth_image, method, smoothing_coefficient, use_cpp)
 
-    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.BASIC, smoothing_coefficient=1.0):
-        live_field = self.generate_2d_sdf_live(method, smoothing_coefficient)
-        canonical_field = self.generate_2d_sdf_canonical(method, smoothing_coefficient)
+    def generate_2d_sdf_canonical(self, method=cpp_module.tsdf.FilteringMethod.NONE, smoothing_coefficient=1.0,
+                                  use_cpp=False):
+        return self._generate_2d_sdf_aux(self.first_frame_path, method, smoothing_coefficient, use_cpp)
+
+    def generate_2d_sdf_live(self, method=cpp_module.tsdf.FilteringMethod.NONE, smoothing_coefficient=1.0,
+                             use_cpp=False):
+        return self._generate_2d_sdf_aux(self.second_frame_path, method, smoothing_coefficient, use_cpp)
+
+    def generate_2d_sdf_fields(self, method=cpp_module.tsdf.FilteringMethod.NONE, smoothing_coefficient=1.0,
+                               use_cpp=False):
+        live_field = self.generate_2d_sdf_live(method, smoothing_coefficient, use_cpp)
+        canonical_field = self.generate_2d_sdf_canonical(method, smoothing_coefficient, use_cpp)
         return live_field, canonical_field
 
 
@@ -131,28 +147,22 @@ class MaskedImageBasedFramePairDataset(ImageBasedFramePairDataset):
         self.first_mask_path = first_mask_path
         self.second_mask_path = second_mask_path
 
-    def generate_2d_sdf_fields(self, method=tsdf_gen.GenerationMethod.BASIC, smoothing_coefficient=1.0):
-        rig = DepthCameraRig.from_infinitam_format(self.calibration_file_path)
-        depth_camera = rig.depth_camera
-        depth_image0 = cv2.imread(self.first_frame_path, cv2.IMREAD_UNCHANGED)
-        mask_image0 = cv2.imread(self.first_mask_path, cv2.IMREAD_UNCHANGED)
+    def _generate_2d_sdf_masked_aux(self, frame_path, mask_path, method=cpp_module.tsdf.FilteringMethod.NONE,
+                                    smoothing_coefficient=1.0, use_cpp=False):
+        depth_image = cv2.imread(frame_path, cv2.IMREAD_UNCHANGED)
+        mask_image = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
         max_depth = np.iinfo(np.uint16).max
-        depth_image0[mask_image0 == 0] = max_depth
-        depth_image0[depth_image0 == 0] = max_depth
-        canonical_field = \
-            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, self.image_pixel_row,
-                                                             field_size=self.field_size, array_offset=self.offset,
-                                                             generation_method=method,
-                                                             smoothing_coefficient=smoothing_coefficient)
-        depth_image1 = cv2.imread(self.second_frame_path, cv2.IMREAD_UNCHANGED)
-        mask_image1 = cv2.imread(self.second_mask_path, cv2.IMREAD_UNCHANGED)
-        depth_image1[mask_image1 == 0] = max_depth
-        depth_image1[depth_image0 == 0] = max_depth
-        live_field = \
-            tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image1, depth_camera, self.image_pixel_row,
-                                                             field_size=self.field_size, array_offset=self.offset,
-                                                             generation_method=method,
-                                                             smoothing_coefficient=smoothing_coefficient)
+        depth_image[mask_image == 0] = max_depth
+        depth_image[depth_image == 0] = max_depth
+        return super()._generate_2d_sdf_aux_image(depth_image=depth_image, method=method,
+                                                  smoothing_coefficient=smoothing_coefficient, use_cpp=use_cpp)
+
+    def generate_2d_sdf_fields(self, method=cpp_module.tsdf.FilteringMethod.NONE, smoothing_coefficient=1.0,
+                               use_cpp=False):
+        live_field = self._generate_2d_sdf_masked_aux(self.first_frame_path, self.first_mask_path, method,
+                                                      smoothing_coefficient, use_cpp)
+        canonical_field = self._generate_2d_sdf_masked_aux(self.second_frame_path, self.second_mask_path, method,
+                                                           smoothing_coefficient, use_cpp)
         return live_field, canonical_field
 
 

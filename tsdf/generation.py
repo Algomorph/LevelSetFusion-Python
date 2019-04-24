@@ -12,14 +12,8 @@ from utils.point2d import Point2d
 import utils.sampling as sampling
 import tsdf.ewa as ewa
 
-from tsdf.common import GenerationMethod
-
-IGNORE_OPENCV = False
-
-try:
-    import cv2
-except ImportError:
-    IGNORE_OPENCV = True
+from tsdf.common import compute_tsdf_value
+import level_set_fusion_optimization as cpp_module
 
 
 def generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space(depth_image, camera, image_y_coordinate,
@@ -207,20 +201,18 @@ def generate_2d_tsdf_field_from_depth_image_no_interpolation(depth_image, camera
 
             signed_distance_to_voxel_along_camera_ray = depth - point_in_camera_space[2]
 
-            if signed_distance_to_voxel_along_camera_ray < -narrow_band_half_width:
-                field[y_field, x_field] = -1.0
-            elif signed_distance_to_voxel_along_camera_ray > narrow_band_half_width:
-                field[y_field, x_field] = 1.0
-            else:
-                field[y_field, x_field] = signed_distance_to_voxel_along_camera_ray / narrow_band_half_width
+            field[y_field, x_field] = compute_tsdf_value(signed_distance_to_voxel_along_camera_ray,
+                                                         narrow_band_half_width)
 
     return field
 
 
 generate_tsdf_2d_conventional_functions = {
-    GenerationMethod.BASIC: generate_2d_tsdf_field_from_depth_image_no_interpolation,
-    GenerationMethod.BILINEAR_IMAGE: generate_2d_tsdf_field_from_depth_image_bilinear_image_space,
-    GenerationMethod.BILINEAR_TSDF: generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space,
+    cpp_module.tsdf.FilteringMethod.NONE: generate_2d_tsdf_field_from_depth_image_no_interpolation,
+    cpp_module.tsdf.FilteringMethod.BILINEAR_IMAGE_SPACE:
+        generate_2d_tsdf_field_from_depth_image_bilinear_image_space,
+    cpp_module.tsdf.FilteringMethod.BILINEAR_VOXEL_SPACE:
+        generate_2d_tsdf_field_from_depth_image_bilinear_tsdf_space,
 }
 
 
@@ -229,18 +221,18 @@ def generate_2d_tsdf_field_from_depth_image(depth_image, camera, image_y_coordin
                                             field_size=128, default_value=1, voxel_size=0.004,
                                             array_offset=np.array([-64, -64, 64]),
                                             narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                            generation_method=GenerationMethod.BASIC,
+                                            interpolation_method=cpp_module.tsdf.FilteringMethod.NONE,
                                             smoothing_coefficient=1.0):
-    if generation_method in generate_tsdf_2d_conventional_functions:
-        return generate_tsdf_2d_conventional_functions[generation_method](
+    if interpolation_method in generate_tsdf_2d_conventional_functions:
+        return generate_tsdf_2d_conventional_functions[interpolation_method](
             depth_image, camera, image_y_coordinate, camera_extrinsic_matrix, field_size, default_value,
             voxel_size, array_offset, narrow_band_width_voxels, back_cutoff_voxels)
-    elif generation_method in ewa.generate_tsdf_2d_ewa_functions:
-        return ewa.generate_tsdf_2d_ewa_functions[generation_method](
+    elif interpolation_method in ewa.generate_tsdf_2d_ewa_functions:
+        return ewa.generate_tsdf_2d_ewa_functions[interpolation_method](
             depth_image, camera, image_y_coordinate, camera_extrinsic_matrix, field_size, default_value,
             voxel_size, array_offset, narrow_band_width_voxels, back_cutoff_voxels, smoothing_coefficient)
     else:
-        raise ValueError("Unrecognized GenerationMethod enum value: " + str(generation_method))
+        raise ValueError("Unrecognized GenerationMethod enum value: " + str(interpolation_method))
 
 
 def add_surface_to_2d_tsdf_field_sample(field, consecutive_surface_points, narrow_band_width_voxels=20,
@@ -396,7 +388,6 @@ def generate_3d_tsdf_field_from_depth_image(depth_image, camera,
         field.fill(default_value)
 
     projection_matrix = camera.intrinsics.intrinsic_matrix
-
     depth_ratio = camera.depth_unit_ratio
     narrow_band_half_width = narrow_band_width_voxels / 2 * voxel_size  # in metric units
 
@@ -436,10 +427,11 @@ def generate_3d_tsdf_field_from_depth_image(depth_image, camera,
                 signed_distance_to_voxel_along_camera_ray = depth - point_in_camera_space[2]
 
                 if signed_distance_to_voxel_along_camera_ray < -narrow_band_half_width:
-                    field[y_field, x_field] = -1.0
+                    field[z_field, y_field, x_field] = -1.0
                 elif signed_distance_to_voxel_along_camera_ray > narrow_band_half_width:
-                    field[y_field, x_field] = 1.0
+                    field[z_field, y_field, x_field] = 1.0
                 else:
-                    field[y_field, x_field] = signed_distance_to_voxel_along_camera_ray / narrow_band_half_width
+                    field[
+                        z_field, y_field, x_field] = signed_distance_to_voxel_along_camera_ray / narrow_band_half_width
 
     return field

@@ -22,6 +22,8 @@ import tsdf.ewa as ewa
 import os.path
 import cv2
 
+import level_set_fusion_optimization as cpp_module
+
 
 class TsdfTest(TestCase):
 
@@ -47,7 +49,7 @@ class TsdfTest(TestCase):
         depth_image[:, 399:417] = depth_image_region
         camera_intrinsic_matrix = np.array([[700., 0., 320.],
                                             [0., 700., 240.],
-                                            [0., 0., 1.]])
+                                            [0., 0., 1.]], dtype=np.float32)
         camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 3), intrinsic_matrix=camera_intrinsic_matrix),
                                  depth_unit_ratio=0.001)
         field = \
@@ -57,11 +59,14 @@ class TsdfTest(TestCase):
                                            voxel_size=0.004)
         self.assertTrue(np.allclose(field, data.out_sdf_field01, atol=2e-5))
 
-        field2 = ewa.generate_tsdf_2d_ewa_image_cpp(depth_image, camera, 1,
-                                                    field_size=16,
-                                                    array_offset=np.array([94, -256, 804],
-                                                                          dtype=np.int32),
-                                                    voxel_size=0.004)
+        parameters = cpp_module.tsdf.Parameters2d()
+        parameters.interpolation_method = cpp_module.tsdf.FilteringMethod.EWA_IMAGE_SPACE
+        parameters.projection_matrix = camera_intrinsic_matrix
+        parameters.array_offset = cpp_module.Vector2i(94, 804)
+        parameters.field_shape = cpp_module.Vector2i(16, 16)
+
+        generator = cpp_module.tsdf.Generator2d(parameters)
+        field2 = generator.generate(depth_image, np.identity(4, dtype=np.float32), 1)
         self.assertTrue(np.allclose(field2, data.out_sdf_field01, atol=1e-6))
 
     def test_2d_ewa_tsdf_generation2(self):
@@ -70,11 +75,11 @@ class TsdfTest(TestCase):
         test_full_image = False
         camera_intrinsic_matrix = np.array([[700., 0., 320.],
                                             [0., 700., 240.],
-                                            [0., 0., 1.]])
+                                            [0., 0., 1.]], dtype=np.float32)
         camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 480), intrinsic_matrix=camera_intrinsic_matrix),
                                  depth_unit_ratio=0.001)
 
-        offset_full_image = np.array([-256, -256, 0])
+        offset_full_image = np.array([-256, 0, 0])
         chunk_x_start = 210
         chunk_y_start = 103
         chunk_size = 16
@@ -82,17 +87,24 @@ class TsdfTest(TestCase):
         offset_chunk = offset_full_image + offset_chunk_from_image
 
         if test_full_image:
-            field2 = ewa.generate_tsdf_2d_ewa_image_cpp(depth_image, camera, 200,
-                                                        field_size=512,
-                                                        array_offset=offset_full_image,
-                                                        voxel_size=0.004)
+            parameters = cpp_module.tsdf.Parameters2d()
+            parameters.projection_matrix = camera_intrinsic_matrix
+            parameters.field_shape = cpp_module.Vector2i(512, 512)
+            parameters.array_offset = cpp_module.Vector2i(int(offset_full_image[0]), int(offset_full_image[2]))
+            parameters.interpolation_method = cpp_module.tsdf.FilteringMethod.EWA_IMAGE_SPACE
 
+            generator = cpp_module.tsdf.Generator2d(parameters)
+            field2 = generator.generate(depth_image, np.identity(4, dtype=np.float32), 200)
             chunk = field2[chunk_y_start:chunk_y_start + chunk_size, chunk_x_start:chunk_x_start + chunk_size].copy()
         else:
-            chunk = ewa.generate_tsdf_2d_ewa_image_cpp(depth_image, camera, 200,
-                                                       field_size=chunk_size,
-                                                       array_offset=offset_chunk,
-                                                       voxel_size=0.004)
+            parameters = cpp_module.tsdf.Parameters2d()
+            parameters.interpolation_method = cpp_module.tsdf.FilteringMethod.EWA_IMAGE_SPACE
+            parameters.projection_matrix = camera_intrinsic_matrix
+            parameters.array_offset = cpp_module.Vector2i(int(offset_chunk[0]), int(offset_chunk[2]))
+            parameters.field_shape = cpp_module.Vector2i(16, 16)
+
+            generator = cpp_module.tsdf.Generator2d(parameters)
+            chunk = generator.generate(depth_image, np.identity(4, dtype=np.float32), 200)
         self.assertTrue(np.allclose(chunk, data.out_sdf_chunk))
 
         field = \
@@ -107,7 +119,7 @@ class TsdfTest(TestCase):
         depth_image = self.image_load_helper(filename)
         camera_intrinsic_matrix = np.array([[700., 0., 320.],
                                             [0., 700., 240.],
-                                            [0., 0., 1.]])
+                                            [0., 0., 1.]], dtype=np.float32)
         camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 3), intrinsic_matrix=camera_intrinsic_matrix),
                                  depth_unit_ratio=0.001)
         field = \
@@ -119,12 +131,16 @@ class TsdfTest(TestCase):
                                           )
 
         self.assertTrue(np.allclose(field, data.out_sdf_field03))
+        parameters = cpp_module.tsdf.Parameters2d()
+        parameters.interpolation_method = cpp_module.tsdf.FilteringMethod.EWA_VOXEL_SPACE
+        parameters.projection_matrix = camera_intrinsic_matrix
+        parameters.array_offset = cpp_module.Vector2i(-232, 490)
+        parameters.field_shape = cpp_module.Vector2i(16, 16)
+        parameters.smoothing_factor = 0.5
 
-        field2 = ewa.generate_tsdf_2d_ewa_tsdf_cpp(depth_image, camera, 1,
-                                                   field_size=16,
-                                                   array_offset=np.array([-232, -256, 490]),
-                                                   voxel_size=0.004,
-                                                   gaussian_covariance_scale=0.5)
+        generator = cpp_module.tsdf.Generator2d(parameters)
+        field2 = generator.generate(depth_image, np.identity(4, dtype=np.float32), 1)
+
         self.assertTrue(np.allclose(field2, data.out_sdf_field03, atol=1e-5))
 
     def test_2D_ewa_tsdf_generation4(self):
@@ -132,7 +148,7 @@ class TsdfTest(TestCase):
         depth_image = self.image_load_helper(filename)
         camera_intrinsic_matrix = np.array([[700., 0., 320.],
                                             [0., 700., 240.],
-                                            [0., 0., 1.]])
+                                            [0., 0., 1.]], dtype=np.float32)
         camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 3), intrinsic_matrix=camera_intrinsic_matrix),
                                  depth_unit_ratio=0.001)
         field = \
@@ -145,11 +161,15 @@ class TsdfTest(TestCase):
 
         self.assertTrue(np.allclose(field, data.out_sdf_field04))
 
-        field2 = ewa.generate_tsdf_2d_ewa_tsdf_inclusive_cpp(depth_image, camera, 1,
-                                                             field_size=16,
-                                                             array_offset=np.array([-232, -256, 490]),
-                                                             voxel_size=0.004,
-                                                             gaussian_covariance_scale=0.5)
+        parameters = cpp_module.tsdf.Parameters2d()
+        parameters.interpolation_method = cpp_module.tsdf.FilteringMethod.EWA_VOXEL_SPACE_INCLUSIVE
+        parameters.projection_matrix = camera_intrinsic_matrix
+        parameters.array_offset = cpp_module.Vector2i(-232, 490)
+        parameters.field_shape = cpp_module.Vector2i(16, 16)
+        parameters.smoothing_factor = 0.5
+
+        generator = cpp_module.tsdf.Generator2d(parameters)
+        field2 = generator.generate(depth_image, np.identity(4, dtype=np.float32), 1)
         self.assertTrue(np.allclose(field2, data.out_sdf_field04, atol=1e-5))
 
     def test_3d_ewa_tsdf_generation1(self):
@@ -157,16 +177,21 @@ class TsdfTest(TestCase):
         depth_image = self.image_load_helper(filename)
         array_offset = np.array([-46, -8, 105], dtype=np.int32)
         field_shape = np.array([16, 1, 16], dtype=np.int32)
-        camera_intrisic_matrix = np.array([[700., 0., 320.],
-                                           [0., 700., 240.],
-                                           [0., 0., 1.]])
-        camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 480), intrinsic_matrix=camera_intrisic_matrix),
+        camera_intrinsic_matrix = np.array([[700., 0., 320.],
+                                            [0., 700., 240.],
+                                            [0., 0., 1.]], dtype=np.float32)
+        camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 480), intrinsic_matrix=camera_intrinsic_matrix),
                                  depth_unit_ratio=0.001)
 
-        field2 = ewa.generate_tsdf_3d_ewa_image_cpp(depth_image, camera,
-                                                    field_shape=field_shape,
-                                                    array_offset=array_offset,
-                                                    voxel_size=0.004)
+        parameters = cpp_module.tsdf.Parameters3d()
+        parameters.interpolation_method = cpp_module.tsdf.FilteringMethod.EWA_IMAGE_SPACE
+        parameters.projection_matrix = camera_intrinsic_matrix
+        parameters.array_offset = cpp_module.Vector3i(-46, -8, 105)
+        parameters.field_shape = cpp_module.Vector3i(16, 1, 16)
+        parameters.smoothing_factor = 1.0
+
+        generator = cpp_module.tsdf.Generator3d(parameters)
+        field2 = generator.generate(depth_image, np.identity(4, dtype=np.float32), 1)
         self.assertTrue(np.allclose(field2, data.sdf_3d_slice01))
 
         field = \
@@ -184,15 +209,19 @@ class TsdfTest(TestCase):
         field_shape = np.array([16, 1, 16], dtype=np.int32)
         camera_intrinsic_matrix = np.array([[700., 0., 320.],
                                             [0., 700., 240.],
-                                            [0., 0., 1.]])
+                                            [0., 0., 1.]], dtype=np.float32)
         camera = cam.DepthCamera(intrinsics=cam.Camera.Intrinsics((640, 480), intrinsic_matrix=camera_intrinsic_matrix),
                                  depth_unit_ratio=0.001)
 
-        field2 = ewa.generate_tsdf_3d_ewa_image_cpp(depth_image, camera,
-                                                    field_shape=field_shape,
-                                                    array_offset=array_offset,
-                                                    voxel_size=0.004,
-                                                    gaussian_covariance_scale=0.5)
+        parameters = cpp_module.tsdf.Parameters3d()
+        parameters.interpolation_method = cpp_module.tsdf.FilteringMethod.EWA_IMAGE_SPACE
+        parameters.projection_matrix = camera_intrinsic_matrix
+        parameters.array_offset = cpp_module.Vector3i(-46, -8, 105)
+        parameters.field_shape = cpp_module.Vector3i(16, 1, 16)
+        parameters.smoothing_factor = 0.5
+
+        generator = cpp_module.tsdf.Generator3d(parameters)
+        field2 = generator.generate(depth_image, np.identity(4, dtype=np.float32), 1)
 
         self.assertTrue(np.allclose(field2, data.sdf_3d_slice02, atol=1e-5))
 

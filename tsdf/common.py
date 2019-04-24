@@ -14,16 +14,16 @@
 #  limitations under the License.
 #  ================================================================
 
-class GenerationMethod:
-    BASIC = 0
-    BILINEAR_IMAGE = 1
-    BILINEAR_TSDF = 2
-    EWA_IMAGE = 3
-    EWA_IMAGE_CPP = 4
-    EWA_TSDF = 5
-    EWA_TSDF_CPP = 6
-    EWA_TSDF_INCLUSIVE = 7
-    EWA_TSDF_INCLUSIVE_CPP = 8
+# class GenerationMethod:
+#     BASIC = 0
+#     BILINEAR_IMAGE = 1
+#     BILINEAR_TSDF = 2
+#     EWA_IMAGE = 3
+#     EWA_IMAGE_CPP = 4
+#     EWA_TSDF = 5
+#     EWA_TSDF_CPP = 6
+#     EWA_TSDF_INCLUSIVE = 7
+#     EWA_TSDF_INCLUSIVE_CPP = 8
 
 def get_generation_method_keys():
     standard_class_dict_keys = {'__dict__', '__doc__', '__module__', '__weakref__'}

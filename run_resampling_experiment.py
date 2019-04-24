@@ -86,7 +86,7 @@ def main():
                 gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, 200,
                                                             field_size=field_size,
                                                             array_offset=offset,
-                                                            generation_method=depth_interpolation_method,
+                                                            interpolation_method=depth_interpolation_method,
                                                             voxel_size=voxel_size,
                                                             smoothing_coefficient=0.5
                                                             )
@@ -108,7 +108,7 @@ def main():
                 gen.generate_2d_tsdf_field_from_depth_image(depth_image0, depth_camera, 200,
                                                             field_size=field_size,
                                                             array_offset=np.array([-256, -256, z_offset]),
-                                                            generation_method=depth_interpolation_method,
+                                                            interpolation_method=depth_interpolation_method,
                                                             voxel_size=voxel_size,
                                                             smoothing_coefficient=0.5)
             print(repr(field[103:119, 210:226]))

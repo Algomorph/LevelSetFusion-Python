@@ -27,7 +27,6 @@ class Sdf2SdfOptimizer2dSharedParameters:
 
 
 def make_common_sdf_2_sdf_optimizer2d_visualization_parameters(out_path="out/sdf_2_sdf"):
-
     visualization_parameters = sdf2sdfv_py.Sdf2SdfVisualizer.Parameters(
         out_path=out_path,
         show_live_progression=True,
@@ -54,9 +53,10 @@ def make_sdf_2_sdf_optimizer2d(implementation_language=ImplementationLanguage.CP
                                verbosity_parameters_py=
                                make_common_sdf_2_sdf_optimizer2d_py_verbosity_parameters(),
                                visualization_parameters_py=
-                               make_common_sdf_2_sdf_optimizer2d_visualization_parameters()):
+                               make_common_sdf_2_sdf_optimizer2d_visualization_parameters(),
+                               tsdf_generation_parameters_cpp=cpp_module.tsdf.Parameters2d()):
     if implementation_language == ImplementationLanguage.CPP:
-        return make_cpp_optimizer(shared_parameters, verbosity_parameters_cpp)
+        return make_cpp_optimizer(shared_parameters, verbosity_parameters_cpp, tsdf_generation_parameters_cpp)
     elif implementation_language == ImplementationLanguage.PYTHON:
         return make_python_optimizer(shared_parameters, verbosity_parameters_py, visualization_parameters_py)
     else:
@@ -75,10 +75,12 @@ def make_python_optimizer(shared_parameters=Sdf2SdfOptimizer2dSharedParameters()
 
 
 def make_cpp_optimizer(shared_parameters=Sdf2SdfOptimizer2dSharedParameters(),
-                       verbosity_parameters=cpp_module.Sdf2SdfOptimizer2d.VerbosityParameters()):
+                       verbosity_parameters=cpp_module.Sdf2SdfOptimizer2d.VerbosityParameters(),
+                       tsdf_generation_parameters=cpp_module.tsdf.Parameters2d()):
     optimizer = cpp_module.Sdf2SdfOptimizer2d(
         rate=shared_parameters.rate,
         maximum_iteration_count=shared_parameters.maximum_iteration_count,
+        tsdf_generation_parameters=tsdf_generation_parameters,
         verbosity_parameters=verbosity_parameters
     )
     return optimizer
