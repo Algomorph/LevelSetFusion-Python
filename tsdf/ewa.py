@@ -21,7 +21,7 @@ import numpy as np
 import math
 import math_utils.elliptical_gaussians as eg
 import tsdf.common as common
-from tsdf.common import GenerationMethod
+import level_set_fusion_optimization as cpp_module
 
 # C++ extension
 import level_set_fusion_optimization as cpp_extension
@@ -205,91 +205,6 @@ def sampling_area_heatmap_2d_ewa_image(depth_image, camera, image_y_coordinate,
                                                             narrow_band_width_voxels,
                                                             gaussian_covariance_scale)
 
-
-def generate_tsdf_2d_ewa_image_cpp(depth_image, camera, image_y_coordinate,
-                                   camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
-                                   field_size=128, default_value=1, voxel_size=0.004,
-                                   array_offset=np.array([-64, -64, 64], dtype=np.int32),
-                                   narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                   gaussian_covariance_scale=1.0):
-    if type(array_offset) != np.ndarray:
-        array_offset = np.array(array_offset).astype(np.int32)
-    return cpp_extension.generate_tsdf_2d_ewa_image(image_y_coordinate,
-                                                    depth_image,
-                                                    camera.depth_unit_ratio,
-                                                    camera.intrinsics.intrinsic_matrix.astype(
-                                                        np.float32),
-                                                    camera_extrinsic_matrix.astype(np.float32),
-                                                    array_offset.astype(np.int32),
-                                                    field_size,
-                                                    voxel_size,
-                                                    narrow_band_width_voxels,
-                                                    gaussian_covariance_scale)
-
-
-def generate_tsdf_2d_ewa_tsdf_cpp(depth_image, camera, image_y_coordinate,
-                                  camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
-                                  field_size=128, default_value=1, voxel_size=0.004,
-                                  array_offset=np.array([-64, -64, 64], dtype=np.int32),
-                                  narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                  gaussian_covariance_scale=1.0):
-    if type(array_offset) != np.ndarray:
-        array_offset = np.array(array_offset).astype(np.int32)
-    return cpp_extension.generate_tsdf_2d_ewa_tsdf(image_y_coordinate,
-                                                   depth_image,
-                                                   camera.depth_unit_ratio,
-                                                   camera.intrinsics.intrinsic_matrix.astype(
-                                                       np.float32),
-                                                   camera_extrinsic_matrix.astype(np.float32),
-                                                   array_offset.astype(np.int32),
-                                                   field_size,
-                                                   voxel_size,
-                                                   narrow_band_width_voxels,
-                                                   gaussian_covariance_scale)
-
-
-def generate_tsdf_2d_ewa_tsdf_inclusive_cpp(depth_image, camera, image_y_coordinate,
-                                            camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
-                                            field_size=128, default_value=1, voxel_size=0.004,
-                                            array_offset=np.array([-64, -64, 64], dtype=np.int32),
-                                            narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                            gaussian_covariance_scale=1.0):
-    if type(array_offset) != np.ndarray:
-        array_offset = np.array(array_offset).astype(np.int32)
-    return cpp_extension.generate_tsdf_2d_ewa_tsdf_inclusive(int(image_y_coordinate),
-                                                             depth_image,
-                                                             camera.depth_unit_ratio,
-                                                             camera.intrinsics.intrinsic_matrix.astype(
-                                                                 np.float32),
-                                                             camera_extrinsic_matrix.astype(np.float32),
-                                                             array_offset.astype(np.int32),
-                                                             field_size,
-                                                             voxel_size,
-                                                             narrow_band_width_voxels,
-                                                             gaussian_covariance_scale)
-
-
-def generate_tsdf_3d_ewa_image_cpp(depth_image, camera,
-                                   camera_extrinsic_matrix=np.eye(4, dtype=np.float32),
-                                   field_shape=np.array([128, 128, 128], dtype=np.int32),
-                                   default_value=1, voxel_size=0.004,
-                                   array_offset=np.array([-64, -64, 64], dtype=np.int32),
-                                   narrow_band_width_voxels=20, back_cutoff_voxels=np.inf,
-                                   gaussian_covariance_scale=1.0):
-    if type(field_shape) != np.ndarray:
-        field_shape = np.array(field_shape).astype(np.int32)
-    if type(array_offset) != np.ndarray:
-        array_offset = np.array(array_offset).astype(np.int32)
-    return cpp_extension.generate_tsdf_3d_ewa_image(depth_image,
-                                                    camera.depth_unit_ratio,
-                                                    camera.intrinsics.intrinsic_matrix.astype(
-                                                        np.float32),
-                                                    camera_extrinsic_matrix.astype(np.float32),
-                                                    array_offset.astype(np.int32),
-                                                    field_shape.astype(np.int32),
-                                                    voxel_size,
-                                                    narrow_band_width_voxels,
-                                                    gaussian_covariance_scale)
 
 
 def generate_tsdf_3d_ewa_image_visualization_cpp(depth_image, camera, field,
@@ -710,10 +625,7 @@ def generate_tsdf_2d_ewa_tsdf_inclusive(depth_image, camera, image_y_coordinate,
 
 
 generate_tsdf_2d_ewa_functions = {
-    GenerationMethod.EWA_IMAGE: generate_tsdf_2d_ewa_image,
-    GenerationMethod.EWA_IMAGE_CPP: generate_tsdf_2d_ewa_image_cpp,
-    GenerationMethod.EWA_TSDF: generate_tsdf_2d_ewa_tsdf,
-    GenerationMethod.EWA_TSDF_CPP: generate_tsdf_2d_ewa_tsdf_cpp,
-    GenerationMethod.EWA_TSDF_INCLUSIVE: generate_tsdf_2d_ewa_tsdf_inclusive,
-    GenerationMethod.EWA_TSDF_INCLUSIVE_CPP: generate_tsdf_2d_ewa_tsdf_inclusive_cpp,
+    cpp_module.tsdf.FilteringMethod.EWA_IMAGE_SPACE: generate_tsdf_2d_ewa_image,
+    cpp_module.tsdf.FilteringMethod.EWA_VOXEL_SPACE: generate_tsdf_2d_ewa_tsdf,
+    cpp_module.tsdf.FilteringMethod.EWA_VOXEL_SPACE_INCLUSIVE: generate_tsdf_2d_ewa_tsdf_inclusive,
 }

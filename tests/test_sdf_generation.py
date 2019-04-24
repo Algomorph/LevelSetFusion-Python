@@ -10,7 +10,7 @@ import os.path
 import cv2
 
 # C++ extension
-import level_set_fusion_optimization as cpp_extension
+import level_set_fusion_optimization as cpp_module
 
 
 class MyTestCase(TestCase):
@@ -309,8 +309,9 @@ class MyTestCase(TestCase):
                                             [0., 0., 1.]], dtype=np.float32)
         camera_extrinsic_matrix = np.eye(4, dtype=np.float32)
 
-        depth_camera = DepthCamera(intrinsics=DepthCamera.Intrinsics((640, 480), intrinsic_matrix=camera_intrinsic_matrix),
-                                   depth_unit_ratio=0.001)
+        depth_camera = DepthCamera(
+            intrinsics=DepthCamera.Intrinsics((640, 480), intrinsic_matrix=camera_intrinsic_matrix),
+            depth_unit_ratio=0.001)
 
         field = tsdf_gen.generate_2d_tsdf_field_from_depth_image(depth_image, depth_camera, image_pixel_row,
                                                                  camera_extrinsic_matrix=camera_extrinsic_matrix,
@@ -321,15 +322,13 @@ class MyTestCase(TestCase):
                                                                  narrow_band_width_voxels=narrow_band_width_voxels)
         self.assertTrue(np.allclose(field, data.out_sdf_field01))
 
-        field2 = cpp_extension.generate_tsdf_2d(image_pixel_row,
-                                                depth_image,
-                                                0.001,  # cm to m
-                                                camera_intrinsic_matrix,
-                                                camera_extrinsic_matrix,
-                                                offset,
-                                                field_size,
-                                                0.004,  # voxel side length
-                                                narrow_band_width_voxels,
-                                                -999)
+        parameters = cpp_module.tsdf.Parameters2d()
+        parameters.interpolation_method = cpp_module.tsdf.FilteringMethod.NONE
+        parameters.projection_matrix = camera_intrinsic_matrix
+        parameters.array_offset = cpp_module.Vector2i(int(offset[0]), int(offset[2]))
+        parameters.field_shape = cpp_module.Vector2i(field_size, field_size)
+
+        generator = cpp_module.tsdf.Generator2d(parameters)
+        field2 = generator.generate(depth_image, np.identity(4, dtype=np.float32), 1)
+
         self.assertTrue(np.allclose(field, field2, atol=1e-6))
-        # print(np.array2string(field, precision=8, separator=', ', formatter={'float': lambda x: "%.8f" % x + 'f'}))

@@ -103,9 +103,10 @@ class HierarchicalOptimizerTest(TestCase):
 
     def test_construction_and_operations02(self):
         dataset_to_use = dataset.PredefinedDatasetEnum.REAL3D_SNOOPY_SET00
-        generation_method = tsdf.common.GenerationMethod.EWA_TSDF_INCLUSIVE_CPP
+        generation_method = ho_cpp.tsdf.FilteringMethod.EWA_VOXEL_SPACE_INCLUSIVE
 
-        canonical_field, live_field = dataset.datasets[dataset_to_use].generate_2d_sdf_fields(generation_method)
+        canonical_field, live_field = dataset.datasets[dataset_to_use].generate_2d_sdf_fields(generation_method,
+                                                                                              use_cpp=True)
 
         shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
         shared_parameters.maximum_warp_update_threshold = 0.01
@@ -150,5 +151,3 @@ class HierarchicalOptimizerTest(TestCase):
 
         self.assertTrue(np.allclose(warp_field_cpp, warp_field_py, atol=10e-6))
         self.assertTrue(np.allclose(warped_live_cpp, warped_live_py, atol=10e-6))
-
-

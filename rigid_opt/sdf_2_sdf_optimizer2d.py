@@ -11,6 +11,8 @@ from rigid_opt.sdf_gradient_field import calculate_gradient_wrt_twist
 import utils.printing as printing
 from rigid_opt.sdf_2_sdf_visualizer import Sdf2SdfVisualizer
 from tsdf import generation as tsdf_gen
+# needs to be compiled & installed apriori from submodule
+import level_set_fusion_optimization as cpp_module
 
 
 class Sdf2SdfOptimizer2d:
@@ -73,9 +75,9 @@ class Sdf2SdfOptimizer2d:
         """
 
         canonical_field = data_to_use.generate_2d_canonical_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                                  method=tsdf_gen.GenerationMethod.BASIC)
+                                                                  method=cpp_module.tsdf.FilteringMethod.NONE)
         live_field = data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                        method=tsdf_gen.GenerationMethod.BASIC)
+                                                        method=cpp_module.tsdf.FilteringMethod.NONE)
         field_size = canonical_field.shape[0]
         offset = data_to_use.offset
         twist = np.zeros((3, 1))
@@ -89,7 +91,7 @@ class Sdf2SdfOptimizer2d:
             canonical_weight = (canonical_field > -eta).astype(np.int)
             twist3d = np.array([twist[0], [0.], twist[1], [0.], twist[2], [0.]], dtype=np.float32)
             live_field = data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                            method=tsdf_gen.GenerationMethod.BASIC,
+                                                            method=cpp_module.tsdf.FilteringMethod.NONE,
                                                             twist=twist3d)
             live_weight = (live_field > -eta).astype(np.int)
             live_gradient = calculate_gradient_wrt_twist(live_field, twist, array_offset=offset, voxel_size=voxel_size)
@@ -122,7 +124,7 @@ class Sdf2SdfOptimizer2d:
 
             self.visualizer.generate_per_iteration_visualizations(
                 data_to_use.generate_2d_live_field(narrow_band_width_voxels=narrow_band_width_voxels,
-                                                   method=tsdf_gen.GenerationMethod.BASIC,
+                                                   method=cpp_module.tsdf.FilteringMethod.NONE,
                                                    twist=np.array([twist[0],
                                                                   [0.],
                                                                   twist[1],
