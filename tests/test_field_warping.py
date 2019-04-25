@@ -18,7 +18,7 @@ import numpy as np
 from nonrigid_opt import field_warping as ipt
 import tests.test_data.hierarchical_optimizer_test_data as fixtures
 
-import level_set_fusion_optimization as cpp_extension
+import level_set_fusion_optimization as cpp
 
 
 class InterpolationTest(TestCase):
@@ -57,9 +57,9 @@ class InterpolationTest(TestCase):
         # re-prep data
         warped_live_field = warped_live_template.copy()
 
-        warped_live_field, (out_u_vectors, out_v_vectors) = cpp_extension.warp_field(warped_live_field,
-                                                                                     canonical_field, u_vectors,
-                                                                                     v_vectors)
+        warped_live_field, (out_u_vectors, out_v_vectors) = cpp.warp_field_advanced(warped_live_field,
+                                                                           canonical_field, u_vectors,
+                                                                           v_vectors)
 
         self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
         self.assertTrue(np.allclose(out_u_vectors, expected_u_vectors))
@@ -110,8 +110,8 @@ class InterpolationTest(TestCase):
         warped_live_field = warped_live_template.copy()
 
         warped_live_field, (out_u_vectors, out_v_vectors) = \
-            cpp_extension.warp_field(warped_live_field, canonical_field, u_vectors, v_vectors,
-                                     band_union_only=True, known_values_only=False, substitute_original=True)
+            cpp.warp_field_advanced(warped_live_field, canonical_field, u_vectors, v_vectors,
+                           band_union_only=True, known_values_only=False, substitute_original=True)
 
         self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
         self.assertTrue(np.allclose(out_u_vectors, expected_u_vectors))
@@ -164,9 +164,9 @@ class InterpolationTest(TestCase):
         # re-prep data
         warped_live_field = warped_live_template.copy()
 
-        warped_live_field, (out_u_vectors, out_v_vectors) = cpp_extension.warp_field(warped_live_field,
-                                                                                     canonical_field, u_vectors,
-                                                                                     v_vectors)
+        warped_live_field, (out_u_vectors, out_v_vectors) = cpp.warp_field_advanced(warped_live_field,
+                                                                           canonical_field, u_vectors,
+                                                                           v_vectors)
 
         self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
         self.assertTrue(np.allclose(out_u_vectors, expected_u_vectors))
@@ -213,9 +213,9 @@ class InterpolationTest(TestCase):
         # re-prep data
         warped_live_field = warped_live_template.copy()
 
-        warped_live_field, (out_u_vectors, out_v_vectors) = cpp_extension.warp_field(warped_live_field,
-                                                                                     canonical_field, u_vectors,
-                                                                                     v_vectors)
+        warped_live_field, (out_u_vectors, out_v_vectors) = cpp.warp_field_advanced(warped_live_field,
+                                                                           canonical_field, u_vectors,
+                                                                           v_vectors)
         self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
 
     def test_warp_field_advanced05(self):
@@ -258,7 +258,7 @@ class InterpolationTest(TestCase):
         warped_live_field = warped_live_template.copy()
 
         warped_live_field, (out_u_vectors, out_v_vectors) = \
-            cpp_extension.warp_field(warped_live_field, canonical_field, u_vectors, v_vectors)
+            cpp.warp_field_advanced(warped_live_field, canonical_field, u_vectors, v_vectors)
         self.assertTrue(np.allclose(warped_live_field, expected_new_warped_live_field))
 
     def test_warp_field01(self):

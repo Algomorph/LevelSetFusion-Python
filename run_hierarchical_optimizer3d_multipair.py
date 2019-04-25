@@ -181,6 +181,7 @@ def analyze_convergence_data(data_frame, out_path):
             print("  level {:d}: {:.2f}".format(i_level, get_mean_iteration_count_for_level(data_frame, i_level)),
                   sep="", end="", file=log_file)
         print(file=log_file)
+        # TODO collect more/better statistics?
         written_to_file = True
         #
         # print("Average per-level tsdf difference statistics:")
@@ -227,22 +228,23 @@ def filter_files_based_on_case_file(case_file_path, frame_numbers_and_rows, file
     return filtered_files, filtered_frame_numbers_and_rows
 
 
-def main():
-    args = process_arguments(Arguments, "Runs 2D hierarchical optimizer on TSDF inputs generated from frame-pairs "
-                                        "& random pixel rows from these. Alternatively, generates the said data or "
-                                        "loads it from a folder from further re-use.")
-    post_process_enum_args(args)
-    perform_optimization = not Arguments.skip_optimization.v
+def get_filter_substrings():
+    if Arguments.filtering_method.v == cpp_module.tsdf.FilteringMethod.EWA_VOXEL_SPACE_INCLUSIVE:
+        filter_method_name_substring = "EWA_VI"
+        filter_smoothing_substring = "_sm{:03d}".format(int(Arguments.smoothing_coefficient.v * 100))
 
-    if args.generation_method == cpp_module.tsdf.FilteringMethod.EWA_VOXEL_SPACE_INCLUSIVE:
-        generation_method_name_substring = "EWA_VI"
-        generation_smoothing_substring = "_sm{:03d}".format(int(Arguments.smoothing_coefficient.v * 100))
-
-    elif args.generation_method == cpp_module.tsdf.FilteringMethod.NONE:
-        generation_method_name_substring = "NONE"
-        generation_smoothing_substring = ""
+    elif Arguments.filtering_method.v == cpp_module.tsdf.FilteringMethod.NONE:
+        filter_method_name_substring = "NONE"
+        filter_smoothing_substring = ""
     else:
         raise ValueError("Unsupported Generation Method")
+    return filter_method_name_substring, filter_smoothing_substring
+
+
+def build_experiment_name(filter_method_name_substring=None,
+                          filter_smoothing_substring=None):
+    if filter_method_name_substring is None or filter_smoothing_substring is None:
+        filter_method_name_substring, filter_smoothing_substring = get_filter_substrings()
 
     if Arguments.implementation_language.v == build_opt.ImplementationLanguage.CPP and \
             Arguments.resampling_strategy.v == cpp_module.HierarchicalOptimizer2d.ResamplingStrategy.LINEAR:
@@ -250,22 +252,33 @@ def main():
     else:
         resampling_strategy_substring = "_nearest"
 
-    data_subfolder = "tsdf_pairs_2d_128_{:s}{:s}_{:02d}".format(generation_method_name_substring,
-                                                                generation_smoothing_substring,
-                                                                Arguments.dataset_number.v)
-    data_path = os.path.join(pu.get_reconstruction_data_directory(), "real_data/snoopy", data_subfolder)
-
     # TODO: add other optimizer parameters to the name
     experiment_name = "multi_{:s}{:s}_ds{:02d}_wt{:02d}_mi{:04d}_r{:02d}_ts{:02d}_ks{:02d}{:s}" \
-        .format(generation_method_name_substring,
-                generation_smoothing_substring,
-                args.dataset_number,
-                int(args.max_warp_update_threshold * 100),
-                args.max_iteration_count,
+        .format(filter_method_name_substring,
+                filter_smoothing_substring,
+                Arguments.dataset_number.v,
+                int(Arguments.max_warp_update_threshold.v * 100),
+                Arguments.max_iteration_count.v,
                 int(Arguments.rate.v * 100),
                 int(Arguments.tikhonov_strength.v * 100 if Arguments.tikhonov_term_enabled.v else 0),
                 int(Arguments.kernel_strength.v * 100 if Arguments.gradient_kernel_enabled.v else 0),
                 resampling_strategy_substring)
+    return experiment_name
+
+
+def main():
+    args = process_arguments(Arguments, "Runs 2D hierarchical optimizer on TSDF inputs generated from frame-pairs "
+                                        "& random pixel rows from these. Alternatively, generates the said data or "
+                                        "loads it from a folder from further re-use.")
+    post_process_enum_args(args, for_3d=True)
+    perform_optimization = not Arguments.skip_optimization.v
+
+    filter_method_name_substring, filter_smoothing_substring = get_filter_substrings()
+    data_subfolder = "tsdf_pairs_128_{:s}{:s}_{:02d}".format(filter_method_name_substring,
+                                                             filter_smoothing_substring,
+                                                             Arguments.dataset_number.v)
+    data_path = os.path.join(pu.get_reconstruction_data_directory(), "real_data/snoopy", data_subfolder)
+    experiment_name = build_experiment_name(filter_method_name_substring, filter_smoothing_substring)
 
     print("Running experiment " + experiment_name)
 
@@ -307,9 +320,8 @@ def main():
                 create_folder_if_necessary(initial_fields_folder)
 
             for dataset in progressbar.progressbar(datasets):
-                canonical_field, live_field = dataset.generate_2d_sdf_fields(args.generation_method,
-                                                                             args.smoothing_coefficient,
-                                                                             use_cpp=True)
+                canonical_field, live_field = dataset.generate_3d_sdf_fields(args.generation_method,
+                                                                             args.smoothing_coefficient)
                 initial_fields.append((canonical_field, live_field))
                 if args.generate_data:
                     canonical_frame = infer_frame_number_from_filename(dataset.first_frame_path)
@@ -326,7 +338,7 @@ def main():
                                                        "tsdf_frame_{:06d}.png".format(live_frame))
                         viz.save_field(live_field, live_image_path, 1024 // dataset.field_size)
 
-            sys.stdout.flush()
+                sys.stdout.flush()
         else:
             files = os.listdir(data_path)
             files.sort()
@@ -351,29 +363,30 @@ def main():
         telemetry_logs = []
         telemetry_folder = os.path.join(out_path, "telemetry")
         if perform_optimization:
-            shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
-            shared_parameters.maximum_iteration_count = Arguments.max_iteration_count.v
-            shared_parameters.maximum_warp_update_threshold = Arguments.max_warp_update_threshold.v
-            shared_parameters.rate = Arguments.rate.v
-            shared_parameters.tikhonov_term_enabled = Arguments.tikhonov_term_enabled.v
-            shared_parameters.gradient_kernel_enabled = Arguments.gradient_kernel_enabled.v
-            shared_parameters.data_term_amplifier = Arguments.data_term_amplifier.v
-            shared_parameters.tikhonov_strength = Arguments.tikhonov_strength.v
-            shared_parameters.kernel = sob.generate_1d_sobolev_kernel(Arguments.kernel_size.v,
-                                                                      Arguments.kernel_strength.v)
-            resampling_strategy_cpp = Arguments.resampling_strategy.v
-            visualization_parameters_py = build_opt.make_common_hierarchical_optimizer2d_visualization_parameters()
-            logging_parameters_cpp = cpp_module.HierarchicalOptimizer2d.LoggingParameters(
-                collect_per_level_convergence_reports=True,
-                collect_per_level_iteration_data=args.save_telemetry
 
+            optimizer = cpp_module.HierarchicalOptimizer3d(
+                tikhonov_term_enabled=Arguments.tikhonov_term_enabled.v,
+                gradient_kernel_enabled=Arguments.gradient_kernel_enabled.v,
+
+                maximum_chunk_size=8,
+                rate=Arguments.rate.v,
+                maximum_iteration_count=Arguments.max_iteration_count.v,
+                maximum_warp_update_threshold=Arguments.max_warp_update_threshold.v,
+
+                data_term_amplifier=Arguments.data_term_amplifier.v,
+                tikhonov_strength=Arguments.tikhonov_strength.v,
+                kernel=sob.generate_1d_sobolev_kernel(Arguments.kernel_size.v,
+                                                      Arguments.kernel_strength.v),
+
+                resampling_strategy=Arguments.resampling_strategy.v,
+
+                verbosity_parameters=cpp_module.HierarchicalOptimizer3d.VerbosityParameters(),
+                logging_parameters=cpp_module.HierarchicalOptimizer3d.LoggingParameters(
+                    collect_per_level_convergence_reports=True,
+                    collect_per_level_iteration_data=Arguments.save_telemetry.v
+
+                )
             )
-
-            optimizer = build_opt.make_hierarchical_optimizer2d(implementation_language=args.implementation_language,
-                                                                shared_parameters=shared_parameters,
-                                                                logging_parameters_cpp=logging_parameters_cpp,
-                                                                visualization_parameters_py=visualization_parameters_py,
-                                                                resampling_strategy_cpp=resampling_strategy_cpp)
 
             convergence_report_sets = []
             if Arguments.save_initial_and_final_fields.v or Arguments.save_telemetry.v:
@@ -391,7 +404,7 @@ def main():
                 (frame_number, pixel_row) = frame_numbers_and_rows[i_pair]
                 live_copy = live_field.copy()
                 warp_field_out = optimizer.optimize(canonical_field, live_field)
-                final_live_resampled = resampling.warp_field(live_field, warp_field_out)
+
                 if args.save_telemetry:
                     if args.implementation_language == build_opt.ImplementationLanguage.CPP:
                         telemetry_logs.append(optimizer.get_per_level_iteration_data())
@@ -409,6 +422,7 @@ def main():
                         final_live_path = os.path.join(telemetry_subfolder, "final_live.png")
                         canonical_path = os.path.join(telemetry_subfolder, "canonical.png")
                         initial_live_path = os.path.join(telemetry_subfolder, "live.png")
+                    final_live_resampled = resampling.warp_field(live_field, warp_field_out)
                     scale = 1024 // final_live_resampled.shape[0]
                     viz.save_field(final_live_resampled, final_live_path, scale)
                     viz.save_field(canonical_field, canonical_path, scale)
@@ -470,7 +484,10 @@ def main():
             save_bad_cases(df, out_path)
             save_all_cases(df, out_path)
 
+    print()
+
     return EXIT_CODE_SUCCESS
+
 
 if __name__ == "__main__":
     sys.exit(main())
