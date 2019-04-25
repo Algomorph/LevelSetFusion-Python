@@ -37,7 +37,7 @@ from nonrigid_opt.slavcheva.level_set_term import level_set_term_at_location
 from nonrigid_opt.slavcheva import data_term as dt, smoothing_term as st, slavcheva_visualizer as viz
 
 # C++ extension
-import level_set_fusion_optimization as cpp_extension
+import level_set_fusion_optimization as cpp
 
 
 class AdaptiveLearningRateMethod(Enum):
@@ -61,7 +61,7 @@ class OptimizationLog:
         self.smoothing_energies = []
         self.level_set_energies = []
         self.max_warps = []
-        self.convergence_report = cpp_extension.ConvergenceReport2d()
+        self.convergence_report = cpp.ConvergenceReport2d()
 
 
 class ComputeMethod(Enum):
@@ -225,7 +225,7 @@ class SlavchevaOptimizer2d:
         v_vectors = warp_field[:, :, 1].copy()
 
         out_warped_live_field, (out_u_vectors, out_v_vectors) = \
-            cpp_extension.warp_field(warped_live_field, canonical_field, u_vectors, v_vectors)
+            cpp.warp_field_advanced(warped_live_field, canonical_field, u_vectors, v_vectors)
 
         np.copyto(warped_live_field, out_warped_live_field)
 
@@ -391,13 +391,13 @@ class SlavchevaOptimizer2d:
 
         # log end-of-optimization stats
         if self.enable_convergence_status_logging:
-            warp_stats = cpp_extension.build_warp_delta_statistics2d(warp_field, canonical_field, live_field,
-                                                                     self.maximum_warp_length_lower_threshold,
-                                                                     self.maximum_warp_length_upper_threshold)
+            warp_stats = cpp.build_warp_delta_statistics_2d(warp_field, canonical_field, live_field,
+                                                           self.maximum_warp_length_lower_threshold,
+                                                           self.maximum_warp_length_upper_threshold)
 
-            tsdf_stats = cpp_extension.TsdfDifferenceStatistics2d(canonical_field, live_field)
+            tsdf_stats = cpp.build_tsdf_difference_statistics_2d(canonical_field, live_field)
 
-            self.log.convergence_report = cpp_extension.ConvergenceReport2d(
+            self.log.convergence_report = cpp.ConvergenceReport2d(
                 iteration_number,
                 iteration_number >= self.max_iterations,
                 warp_stats,

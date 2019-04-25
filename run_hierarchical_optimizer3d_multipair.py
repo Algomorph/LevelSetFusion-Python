@@ -404,7 +404,7 @@ def main():
                 (frame_number, pixel_row) = frame_numbers_and_rows[i_pair]
                 live_copy = live_field.copy()
                 warp_field_out = optimizer.optimize(canonical_field, live_field)
-                final_live_resampled = resampling.warp_field(live_field, warp_field_out)
+
                 if args.save_telemetry:
                     if args.implementation_language == build_opt.ImplementationLanguage.CPP:
                         telemetry_logs.append(optimizer.get_per_level_iteration_data())
@@ -422,6 +422,7 @@ def main():
                         final_live_path = os.path.join(telemetry_subfolder, "final_live.png")
                         canonical_path = os.path.join(telemetry_subfolder, "canonical.png")
                         initial_live_path = os.path.join(telemetry_subfolder, "live.png")
+                    final_live_resampled = resampling.warp_field(live_field, warp_field_out)
                     scale = 1024 // final_live_resampled.shape[0]
                     viz.save_field(final_live_resampled, final_live_path, scale)
                     viz.save_field(canonical_field, canonical_path, scale)
