@@ -44,7 +44,7 @@ class Arguments(Enum):
                                             "either NEAREST_AND_AVERAGE or LINEAR")
 
     # data generation settings
-    generation_method = Argument(arg_type=str, default="BASIC")
+    filtering_method = Argument(arg_type=str, default="NONE")
     smoothing_coefficient = Argument(arg_type=float, default=0.5)
 
     # other experiment settings
@@ -85,13 +85,15 @@ class Arguments(Enum):
 
 
 def post_process_enum_args(args, for_3d=False):
-    Arguments.generation_method.v = \
-        args.generation_method = cpp_module.tsdf.FilteringMethod.__dict__[args.generation_method]
+    Arguments.filtering_method.v = \
+        args.filtering_method = cpp_module.tsdf.FilteringMethod.__dict__[args.filtering_method]
     Arguments.implementation_language.v = args.implementation_language = \
         build_opt.ImplementationLanguage.__dict__[args.implementation_language]
     if for_3d:
-        Arguments.resampling_strategy.v = cpp_module.HierarchicalOptimizer3d.ResamplingStrategy.__dict__[
-            Arguments.resampling_strategy.v]
+        Arguments.resampling_strategy.v = args.resampling_strategy = \
+            cpp_module.HierarchicalOptimizer3d.ResamplingStrategy.__dict__[
+                Arguments.resampling_strategy.v]
     else:
-        Arguments.resampling_strategy.v = cpp_module.HierarchicalOptimizer2d.ResamplingStrategy.__dict__[
-            Arguments.resampling_strategy.v]
+        Arguments.resampling_strategy.v = args.resampling_strategy = \
+            cpp_module.HierarchicalOptimizer2d.ResamplingStrategy.__dict__[
+                Arguments.resampling_strategy.v]

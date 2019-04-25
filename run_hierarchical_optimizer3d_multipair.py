@@ -229,11 +229,11 @@ def filter_files_based_on_case_file(case_file_path, frame_numbers_and_rows, file
 
 
 def get_filter_substrings():
-    if Arguments.generation_method.v == cpp_module.tsdf.FilteringMethod.EWA_VOXEL_SPACE_INCLUSIVE:
+    if Arguments.filtering_method.v == cpp_module.tsdf.FilteringMethod.EWA_VOXEL_SPACE_INCLUSIVE:
         filter_method_name_substring = "EWA_VI"
         filter_smoothing_substring = "_sm{:03d}".format(int(Arguments.smoothing_coefficient.v * 100))
 
-    elif Arguments.generation_method.v == cpp_module.tsdf.FilteringMethod.NONE:
+    elif Arguments.filtering_method.v == cpp_module.tsdf.FilteringMethod.NONE:
         filter_method_name_substring = "NONE"
         filter_smoothing_substring = ""
     else:
