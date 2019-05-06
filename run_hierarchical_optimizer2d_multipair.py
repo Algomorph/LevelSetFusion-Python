@@ -234,15 +234,15 @@ def main():
     post_process_enum_args(args)
     perform_optimization = not Arguments.skip_optimization.v
 
-    if args.generation_method == cpp_module.tsdf.FilteringMethod.EWA_VOXEL_SPACE_INCLUSIVE:
+    if args.filtering_method == cpp_module.tsdf.FilteringMethod.EWA_VOXEL_SPACE_INCLUSIVE:
         generation_method_name_substring = "EWA_VI"
         generation_smoothing_substring = "_sm{:03d}".format(int(Arguments.smoothing_coefficient.v * 100))
 
-    elif args.generation_method == cpp_module.tsdf.FilteringMethod.NONE:
+    elif args.filtering_method == cpp_module.tsdf.FilteringMethod.NONE:
         generation_method_name_substring = "NONE"
         generation_smoothing_substring = ""
     else:
-        raise ValueError("Unsupported Generation Method")
+        raise ValueError("Unsupported filtering method")
 
     if Arguments.implementation_language.v == build_opt.ImplementationLanguage.CPP and \
             Arguments.resampling_strategy.v == cpp_module.HierarchicalOptimizer2d.ResamplingStrategy.LINEAR:
