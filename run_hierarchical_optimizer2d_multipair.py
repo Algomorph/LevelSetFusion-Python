@@ -256,15 +256,16 @@ def main():
     data_path = os.path.join(pu.get_reconstruction_data_directory(), "real_data/snoopy", data_subfolder)
 
     # TODO: add other optimizer parameters to the name
-    experiment_name = "multi_{:s}{:s}_ds{:02d}_wt{:02d}_mi{:04d}_r{:02d}_ts{:02d}_ks{:02d}{:s}" \
+    experiment_name = "multi_{:s}{:s}_ds{:02d}_wt{:02d}_mi{:04d}_r{:02d}_ts{:02d}_ks{:02d}_mcs{:02d}{:s}" \
         .format(generation_method_name_substring,
                 generation_smoothing_substring,
-                args.dataset_number,
-                int(args.max_warp_update_threshold * 100),
-                args.max_iteration_count,
+                Arguments.dataset_number.v,
+                int(Arguments.maximum_warp_update_threshold.v * 100),
+                Arguments.maximum_iteration_count.v,
                 int(Arguments.rate.v * 100),
                 int(Arguments.tikhonov_strength.v * 100 if Arguments.tikhonov_term_enabled.v else 0),
                 int(Arguments.kernel_strength.v * 100 if Arguments.gradient_kernel_enabled.v else 0),
+                Arguments.maximum_chunk_size.v,
                 resampling_strategy_substring)
 
     print("Running experiment " + experiment_name)
@@ -352,8 +353,9 @@ def main():
         telemetry_folder = os.path.join(out_path, "telemetry")
         if perform_optimization:
             shared_parameters = build_opt.HierarchicalOptimizer2dSharedParameters()
-            shared_parameters.maximum_iteration_count = Arguments.max_iteration_count.v
-            shared_parameters.maximum_warp_update_threshold = Arguments.max_warp_update_threshold.v
+            shared_parameters.maximum_chunk_size = Arguments.maximum_chunk_size.v
+            shared_parameters.maximum_iteration_count = Arguments.maximum_iteration_count.v
+            shared_parameters.maximum_warp_update_threshold = Arguments.maximum_warp_update_threshold.v
             shared_parameters.rate = Arguments.rate.v
             shared_parameters.tikhonov_term_enabled = Arguments.tikhonov_term_enabled.v
             shared_parameters.gradient_kernel_enabled = Arguments.gradient_kernel_enabled.v

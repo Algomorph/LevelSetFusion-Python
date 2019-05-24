@@ -25,13 +25,15 @@ import experiment.hierarchical_optimizer.build_helper as build_opt
 import level_set_fusion_optimization as cpp_module
 
 
+# TODO: add (class) methods / properties for **assigned** values, use them instead of the ".v", which is very obscure
 class Arguments(Enum):
     # optimizer settings
     tikhonov_term_enabled = Argument(action="store_true", default=False, arg_type='bool_flag')
     gradient_kernel_enabled = Argument(action="store_true", default=False, arg_type='bool_flag')
 
-    max_warp_update_threshold = Argument(arg_type=float, default=0.01)
-    max_iteration_count = Argument(arg_type=int, default=1000)
+    maximum_warp_update_threshold = Argument(arg_type=float, default=0.01)
+    maximum_iteration_count = Argument(arg_type=int, default=1000)
+    maximum_chunk_size = Argument(arg_type=int, default=8)
 
     rate = Argument(arg_type=float, default=0.1)
     data_term_amplifier = Argument(arg_type=float, default=1.0)
