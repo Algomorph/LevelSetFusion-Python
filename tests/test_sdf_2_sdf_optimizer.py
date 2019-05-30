@@ -7,6 +7,8 @@ from rigid_opt.sdf_generation import ImageBasedSingleFrameDataset
 import utils.sampling as sampling
 import experiment.build_sdf_2_sdf_optimizer_helper as build_opt
 import os.path
+from tsdf import generation as tsdf_gen
+from math_utils import transformation
 
 # C++ extension
 import level_set_fusion_optimization as sdf2sdfo_cpp
@@ -92,7 +94,7 @@ class MyTestCase(TestCase):
         visualization_parameters_py = sdf2sdfv.Sdf2SdfVisualizer.Parameters()
         visualization_parameters_py.out_path = "out"
 
-        # For c++ TSDF generator
+        # For C++ TSDF generator
         tsdf_generation_parameters = sdf2sdfo_cpp.tsdf.Parameters2d(
             depth_unit_ratio=0.001,  # mm to meter
             projection_matrix=intrinsic_matrix,
@@ -114,6 +116,12 @@ class MyTestCase(TestCase):
         live_depth_image = live_depth_image.astype(np.uint16)  # mm
         live_depth_image = cv2.cvtColor(live_depth_image, cv2.COLOR_BGR2GRAY)
         live_depth_image[live_depth_image == 0] = np.iinfo(np.uint16).max
+        canonical_field = \
+            tsdf_gen.generate_2d_tsdf_field_from_depth_image(canonical_depth_image, camera, image_pixel_row,
+                                                         field_size=field_size,
+                                                         array_offset=offset,
+                                                         narrow_band_width_voxels=narrow_band_width_voxels,
+                                                         interpolation_method=sdf2sdfo_cpp.tsdf.FilteringMethod.NONE)
 
         optimizer_cpp = build_opt.make_sdf_2_sdf_optimizer2d(
             implementation_language=build_opt.ImplementationLanguage.CPP,
@@ -124,7 +132,7 @@ class MyTestCase(TestCase):
             tsdf_generation_parameters_cpp=tsdf_generation_parameters)
 
         twist_cpp = optimizer_cpp.optimize(image_y_coordinate=image_pixel_row,
-                                           canonical_depth_image=canonical_depth_image,
+                                           canonical_field=canonical_field,
                                            live_depth_image=live_depth_image,
                                            eta=eta,
                                            initial_camera_pose=camera_pose)
@@ -149,4 +157,4 @@ class MyTestCase(TestCase):
                                          iteration=shared_parameters.maximum_iteration_count,
                                          eta=eta)
 
-        self.assertTrue(np.allclose(twist_cpp, twist_py, atol=1e-4))
+        self.assertTrue(np.allclose(twist_cpp, transformation.twist_vector_to_matrix2d(twist_py), atol=1e-4))
