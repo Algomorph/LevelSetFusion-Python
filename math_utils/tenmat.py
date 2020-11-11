@@ -18,8 +18,8 @@
 
 import numpy as np
 from sktensor.core import tensor_mixin
-from sktensor.dtensor import dtensor
-from sktensor.pyutils import is_number
+from sktensor import dtensor
+from numbers import Number
 
 
 # import tools
@@ -86,9 +86,9 @@ class tenmat():
         self.original_tensor_size = T.shape
         n = T.ndim
 
-        if is_number(row_wise_dimensions):
+        if isinstance(row_wise_dimensions, Number):
             row_wise_dimensions = [row_wise_dimensions]
-        if is_number(column_wise_dimensions):
+        if isinstance(row_wise_dimensions, Number):
             column_wise_dimensions = [column_wise_dimensions]
 
         if row_wise_dimensions is not None:
